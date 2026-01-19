@@ -19,6 +19,7 @@ urlpatterns = [
     # Для арендатора
     path('my-bookings/', views.my_bookings, name='my_bookings'),
     path('my-favorites/', views.my_favorites, name='my_favorites'),
+    path('bookings/<int:booking_id>/', views.booking_detail, name='booking_detail'),  # Добавьте эту строку
     path('bookings/<int:booking_id>/cancel/', views.cancel_booking, name='cancel_booking'),
     path('bookings/<int:booking_id>/review/', views.add_review, name='add_review'),
 
@@ -37,6 +38,7 @@ urlpatterns = [
     path('properties/<slug:slug>/', views.property_detail, name='property_detail'),
     path('properties/<int:property_id>/favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('properties/<int:property_id>/book/', views.create_booking, name='create_booking'),
+    path('api/properties/<int:property_id>/book-ajax/', views.ajax_create_booking, name='ajax_create_booking'),  # Добавьте эту строку
 
     # Кастомная админка
     path('admin/dashboard/', views.custom_admin_dashboard, name='custom_admin_dashboard'),

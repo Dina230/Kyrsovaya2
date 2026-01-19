@@ -1,4 +1,3 @@
-# core/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login, update_session_auth_hash
@@ -8,6 +7,10 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import datetime, timedelta
 from django.utils import timezone
 from functools import wraps
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from .models import *
 from .forms import *
@@ -372,11 +375,42 @@ def property_detail(request, slug):
         status='active'
     ).exclude(id=property_obj.id)[:4]
 
+    # Для календаря - получаем забронированные даты на ближайшие 30 дней
+    today = datetime.now().date()
+    next_month = today + timedelta(days=30)
+
+    booked_dates = Booking.objects.filter(
+        property=property_obj,
+        start_datetime__date__lte=next_month,
+        end_datetime__date__gte=today,
+        status__in=['confirmed', 'pending']
+    ).values_list('start_datetime__date', flat=True).distinct()
+
+    # Преобразуем в JSON
+    booked_dates_json = json.dumps([date.strftime('%Y-%m-%d') for date in booked_dates])
+
+    # Для времени - создаем список часов
+    hours_range = list(range(9, 23))  # с 9 утра до 22 вечера
+
+    # Создаем данные для календаря
+    calendar_data = []
+    for i in range(30):
+        date = today + timedelta(days=i)
+        has_bookings = date in booked_dates
+        calendar_data.append({
+            'date': date,
+            'bookings': has_bookings
+        })
+
     context = {
         'property': property_obj,
         'is_favorite': is_favorite,
         'reviews': reviews,
         'similar_properties': similar_properties,
+        'today': today.strftime('%Y-%m-%d'),
+        'booked_dates_json': booked_dates_json,
+        'hours_range': hours_range,
+        'calendar_data': calendar_data,
     }
 
     return render(request, 'core/property_detail.html', context)
@@ -438,6 +472,131 @@ def create_booking(request, property_id):
         'form': form,
         'property': property_obj
     })
+
+
+@csrf_exempt
+@require_POST
+@login_required
+def ajax_create_booking(request, property_id):
+    """AJAX создание бронирования"""
+    try:
+        property_obj = Property.objects.get(id=property_id, status='active')
+
+        if request.user.user_type != 'tenant':
+            return JsonResponse({
+                'success': False,
+                'error': 'Только арендаторы могут создавать бронирования'
+            }, status=403)
+
+        data = json.loads(request.body)
+
+        # Проверяем данные
+        booking_date = datetime.strptime(data['booking_date'], '%Y-%m-%d').date()
+        start_time = data['start_time']
+        end_time = data['end_time']
+        guests = int(data['guests'])
+
+        # Создаем datetime объекты
+        start_datetime = timezone.make_aware(
+            datetime.combine(booking_date, datetime.strptime(start_time, '%H:%M').time())
+        )
+        end_datetime = timezone.make_aware(
+            datetime.combine(booking_date, datetime.strptime(end_time, '%H:%M').time())
+        )
+
+        # Проверка на корректность времени
+        if end_datetime <= start_datetime:
+            return JsonResponse({
+                'success': False,
+                'error': 'Время окончания должно быть позже времени начала'
+            }, status=400)
+
+        # Проверка на минимальную длительность (1 час)
+        duration = (end_datetime - start_datetime).total_seconds() / 3600
+        if duration < 1:
+            return JsonResponse({
+                'success': False,
+                'error': 'Минимальное время бронирования - 1 час'
+            }, status=400)
+
+        # Проверка доступности помещения
+        conflicting_bookings = Booking.objects.filter(
+            property=property_obj,
+            status__in=['confirmed', 'pending'],
+            start_datetime__lt=end_datetime,
+            end_datetime__gt=start_datetime
+        ).exists()
+
+        if conflicting_bookings:
+            return JsonResponse({
+                'success': False,
+                'error': 'Помещение уже забронировано на выбранное время'
+            }, status=400)
+
+        # Проверка количества гостей
+        if guests > property_obj.capacity:
+            return JsonResponse({
+                'success': False,
+                'error': f'Максимальная вместимость: {property_obj.capacity} человек'
+            }, status=400)
+
+        # Расчет стоимости
+        total_price = duration * property_obj.price_per_hour
+
+        # Создание бронирования
+        booking = Booking.objects.create(
+            property=property_obj,
+            tenant=request.user,
+            start_datetime=start_datetime,
+            end_datetime=end_datetime,
+            guests=guests,
+            special_requests=data.get('special_requests', ''),
+            total_price=total_price,
+            status='pending'
+        )
+
+        return JsonResponse({
+            'success': True,
+            'booking_id': booking.id,
+            'booking_uuid': str(booking.booking_id),
+            'message': 'Бронирование успешно создано! Ожидайте подтверждения от владельца.',
+            'redirect_url': f'/bookings/{booking.id}/'
+        })
+
+    except Property.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Помещение не найдено'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+
+
+@login_required
+def booking_detail(request, booking_id):
+    """Детальная страница бронирования"""
+    booking = get_object_or_404(
+        Booking.objects.select_related('property', 'tenant'),
+        id=booking_id
+    )
+
+    # Проверяем права доступа
+    if request.user != booking.tenant and request.user != booking.property.landlord:
+        if not request.user.is_staff:
+            messages.error(request, 'У вас нет прав для просмотра этого бронирования.')
+            return redirect('dashboard')
+
+    context = {
+        'booking': booking,
+        'can_cancel': booking.status in ['pending', 'confirmed'] and request.user == booking.tenant,
+        'can_review': booking.status == 'completed' and request.user == booking.tenant and not hasattr(booking,
+                                                                                                       'review'),
+    }
+
+    return render(request, 'core/booking_detail.html', context)
 
 
 @login_required
