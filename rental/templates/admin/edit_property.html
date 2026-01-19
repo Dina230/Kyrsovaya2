@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Редактирование помещения{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-building-gear"></i> Редактирование помещения: {{ property.title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                {{ form.title|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.slug|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{ form.description|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.property_type|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.category|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.landlord|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.area|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.capacity|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.address|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.city|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.floor|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                {{ form.latitude|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.longitude|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.amenities|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4 mb-3">Цены</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                {{ form.price_per_hour|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.price_per_day|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.price_per_week|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.price_per_month|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4 mb-3">Статус</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.status|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.is_featured|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'admin_property_management' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-warning me-2">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                                </button>
+                                <button type="submit" class="btn btn-info">
+                                    <i class="bi bi-check-circle"></i> Сохранить изменения
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

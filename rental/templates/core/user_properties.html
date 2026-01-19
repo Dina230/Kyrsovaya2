@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои помещения{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Мои помещения</h2>
+        <a href="#" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Добавить помещение
+        </a>
+    </div>
+    
+    {% if properties %}
+        <div class="row">
+            {% for property in properties %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        {% if property.get_main_image %}
+                            <img src="{{ property.get_main_image.image.url }}" 
+                                 class="card-img-top property-card-img" 
+                                 alt="{{ property.title }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ property.title }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    {{ property.get_property_type_display }} • {{ property.area }} м²
+                                </small>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{% if property.status == 'active' %}success{% else %}secondary{% endif %}">
+                                    {{ property.get_status_display }}
+                                </span>
+                                <div>
+                                    <a href="{% url 'property_detail' property.slug %}" class="btn btn-sm btn-outline-primary">
+                                        Просмотр
+                                    </a>
+                                    <a href="{% url 'booking_calendar' property.id %}" class="btn btn-sm btn-outline-secondary">
+                                        Календарь
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            У вас пока нет добавленных помещений.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Личный кабинет арендатора{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Боковая панель -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" class="rounded-circle mb-3" width="100" height="100" alt="Аватар">
+                    {% else %}
+                        <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle mb-3" width="100" height="100" alt="Аватар">
+                    {% endif %}
+                    <h5 class="card-title">{{ user.get_full_name }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+                    <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary btn-sm">Редактировать профиль</a>
+                </div>
+            </div>
+
+            <div class="list-group mb-4">
+                <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-tachometer-alt"></i> Обзор
+                </a>
+                <a href="{% url 'my_bookings' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar-check"></i> Мои бронирования
+                </a>
+                <a href="{% url 'my_favorites' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-heart"></i> Избранное
+                </a>
+                <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user-edit"></i> Профиль
+                </a>
+                <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-key"></i> Сменить пароль
+                </a>
+            </div>
+
+            <!-- Статистика -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Статистика</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><i class="fas fa-calendar text-primary"></i> Всего бронирований: {{ stats.total_bookings }}</p>
+                    <p class="mb-2"><i class="fas fa-check-circle text-success"></i> Активных: {{ stats.active_bookings }}</p>
+                    <p class="mb-2"><i class="fas fa-clipboard-check text-info"></i> Завершено: {{ stats.completed_bookings }}</p>
+                    <p class="mb-0"><i class="fas fa-ruble-sign text-warning"></i> Потрачено: {{ stats.total_spent }} ₽</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <!-- Приветствие -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">Добро пожаловать, {{ user.first_name }}!</h4>
+                    <p class="card-text">Здесь вы можете управлять своими бронированиями, просматривать избранные помещения и настраивать профиль.</p>
+                </div>
+            </div>
+
+            <!-- Активные бронирования -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock text-warning"></i> Активные бронирования</h5>
+                </div>
+                <div class="card-body">
+                    {% if active_bookings %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Помещение</th>
+                                        <th>Дата</th>
+                                        <th>Время</th>
+                                        <th>Стоимость</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in active_bookings %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'property_detail' booking.property.slug %}">
+                                                    {{ booking.property.title }}
+                                                </a>
+                                            </td>
+                                            <td>{{ booking.start_datetime|date:"d.m.Y" }}</td>
+                                            <td>{{ booking.start_datetime|time:"H:i" }} - {{ booking.end_datetime|time:"H:i" }}</td>
+                                            <td>{{ booking.total_price }} ₽</td>
+                                            <td>
+                                                {% if booking.status == 'pending' %}
+                                                    <span class="badge bg-warning">Ожидание</span>
+                                                {% elif booking.status == 'confirmed' %}
+                                                    <span class="badge bg-success">Подтверждено</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <a href="{% url 'my_bookings' %}" class="btn btn-outline-primary">Все бронирования</a>
+                    {% else %}
+                        <p class="text-muted">У вас нет активных бронирований.</p>
+                        <a href="{% url 'property_list' %}" class="btn btn-primary">Найти помещение</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Избранные помещения -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-heart text-danger"></i> Избранные помещения</h5>
+                </div>
+                <div class="card-body">
+                    {% if favorite_properties %}
+                        <div class="row">
+                            {% for property in favorite_properties %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100">
+                                        {% if property.get_main_image %}
+                                            <img src="{{ property.get_main_image.image.url }}" class="card-img-top" alt="{{ property.title }}" height="150" style="object-fit: cover;">
+                                        {% else %}
+                                            <img src="{% static 'images/default-property.jpg' %}" class="card-img-top" alt="{{ property.title }}" height="150" style="object-fit: cover;">
+                                        {% endif %}
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ property.title|truncatechars:30 }}</h6>
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-map-marker-alt"></i> {{ property.city }}
+                                                </small><br>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-users"></i> до {{ property.capacity }} чел.
+                                                </small>
+                                            </p>
+                                            <p class="card-text">
+                                                <strong>{{ property.price_per_hour }} ₽/час</strong>
+                                            </p>
+                                        </div>
+                                        <div class="card-footer bg-transparent">
+                                            <a href="{% url 'property_detail' property.slug %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+                                            <a href="{% url 'toggle_favorite' property.id %}" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-heart"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <a href="{% url 'my_favorites' %}" class="btn btn-outline-primary mt-3">Все избранные</a>
+                    {% else %}
+                        <p class="text-muted">У вас нет избранных помещений.</p>
+                        <a href="{% url 'property_list' %}" class="btn btn-primary">Найти помещение</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- История бронирований -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history text-secondary"></i> Недавние бронирования</h5>
+                </div>
+                <div class="card-body">
+                    {% if booking_history %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Помещение</th>
+                                        <th>Дата</th>
+                                        <th>Статус</th>
+                                        <th>Стоимость</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in booking_history %}
+                                        <tr>
+                                            <td>{{ booking.property.title|truncatechars:30 }}</td>
+                                            <td>{{ booking.created_at|date:"d.m.Y" }}</td>
+                                            <td>
+                                                {% if booking.status == 'completed' %}
+                                                    <span class="badge bg-success">Завершено</span>
+                                                {% elif booking.status == 'cancelled' %}
+                                                    <span class="badge bg-danger">Отменено</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ booking.total_price }} ₽</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <a href="{% url 'my_bookings' %}" class="btn btn-outline-primary">Вся история</a>
+                    {% else %}
+                        <p class="text-muted">У вас пока нет истории бронирований.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

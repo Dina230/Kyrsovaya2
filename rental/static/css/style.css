@@ -1,0 +1,59 @@
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #64748b;
+    --background-color: #f8fafc;
+    --surface-color: #ffffff;
+}
+
+body {
+    background-color: var(--background-color);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.navbar {
+    background-color: var(--surface-color) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.property-card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.property-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.price-tag {
+    background: linear-gradient(45deg, #2563eb, #3b82f6);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.calendar-day {
+    min-height: 80px;
+}
+
+.calendar-day.booked {
+    background-color: #fee2e2;
+    border-color: #ef4444;
+}
+
+.calendar-day.today {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+}

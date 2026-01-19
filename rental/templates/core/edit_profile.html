@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактирование профиля{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Левая колонка - навигация -->
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="avatar-circle bg-primary text-white d-inline-flex align-items-center justify-content-center rounded-circle mb-3" 
+                             style="width: 80px; height: 80px; font-size: 2rem;">
+                            {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                {{ user.get_full_name|default:user.username|first|upper }}
+                            {% endif %}
+                        </div>
+                        <h5>{{ user.get_full_name|default:user.username }}</h5>
+                        <span class="badge bg-primary">{{ user.get_user_type_display }}</span>
+                    </div>
+                    
+                    <nav class="nav flex-column">
+                        <a class="nav-link active" href="{% url 'edit_profile' %}">
+                            <i class="bi bi-person"></i> Профиль
+                        </a>
+                        <a class="nav-link" href="{% url 'change_password' %}">
+                            <i class="bi bi-shield-lock"></i> Безопасность
+                        </a>
+                        <a class="nav-link" href="{% url 'my_bookings' %}">
+                            <i class="bi bi-calendar-check"></i> Мои бронирования
+                        </a>
+                        <a class="nav-link" href="{% url 'my_favorites' %}">
+                            <i class="bi bi-heart"></i> Избранное
+                        </a>
+                        {% if user.user_type == 'landlord' %}
+                        <a class="nav-link" href="{% url 'my_properties' %}">
+                            <i class="bi bi-buildings"></i> Мои помещения
+                        </a>
+                        {% endif %}
+                        <hr>
+                        <a class="nav-link" href="{% url 'dashboard' %}">
+                            <i class="bi bi-arrow-left"></i> Назад в кабинет
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Правая колонка - форма редактирования -->
+        <div class="col-lg-9">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-person-gear"></i> Редактирование профиля</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Аватар -->
+                            <div class="col-md-4 mb-4">
+                                <div class="text-center">
+                                    <div class="mb-3">
+                                        <div class="avatar-circle bg-light border d-inline-flex align-items-center justify-content-center rounded-circle mb-3" 
+                                             style="width: 150px; height: 150px; font-size: 3rem; overflow: hidden;">
+                                            {% if user.avatar %}
+                                                <img src="{{ user.avatar.url }}" id="avatarPreview" class="w-100 h-100" style="object-fit: cover;">
+                                            {% else %}
+                                                <div id="avatarPreview" class="w-100 h-100 d-flex align-items-center justify-content-center bg-primary text-white">
+                                                    {{ user.get_full_name|default:user.username|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <label for="{{ form.avatar.id_for_label }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-camera"></i> Изменить фото
+                                        </label>
+                                        {{ form.avatar }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Информация -->
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Имя *</label>
+                                        {{ form.first_name }}
+                                        {% if form.first_name.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Фамилия *</label>
+                                        {{ form.last_name }}
+                                        {% if form.last_name.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Email *</label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Телефон</label>
+                                    {{ form.phone }}
+                                    {% if form.phone.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.phone.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Название компании</label>
+                                    {{ form.company_name }}
+                                    {% if form.company_name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.company_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Информация только для чтения -->
+                                <div class="alert alert-info">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>Тип аккаунта:</strong> {{ user.get_user_type_display }}</p>
+                                            <p class="mb-1"><strong>Имя пользователя:</strong> {{ user.username }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1"><strong>Дата регистрации:</strong> {{ user.date_joined|date:"d.m.Y" }}</p>
+                                            <p class="mb-0"><strong>Статус:</strong> 
+                                                {% if user.is_active %}
+                                                <span class="badge bg-success">Активен</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Неактивен</span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-warning me-2">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Сохранить изменения
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        transition: all 0.3s ease;
+        border: 3px solid #dee2e6;
+    }
+    
+    .avatar-circle:hover {
+        border-color: #0d6efd;
+        transform: scale(1.05);
+    }
+    
+    #{{ form.avatar.id_for_label }} {
+        display: none;
+    }
+</style>
+
+<script>
+    // Превью аватара
+    document.addEventListener('DOMContentLoaded', function() {
+        const avatarInput = document.querySelector('#{{ form.avatar.id_for_label }}');
+        const avatarPreview = document.querySelector('#avatarPreview');
+        
+        avatarInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    avatarPreview.innerHTML = `<img src="${e.target.result}" class="w-100 h-100" style="object-fit: cover;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+</script>
+{% endblock %}

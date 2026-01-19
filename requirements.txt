@@ -1,0 +1,10 @@
+Django==4.2.7
+Pillow==10.0.0
+django-crispy-forms==2.0
+crispy-bootstrap5==0.7
+django-geojson==3.2.0
+python-dotenv==1.0.0
+django-cleanup==8.0.0
+django-filter==23.3
+django-widget-tweaks==1.5.0
+psycopg2-binary==2.9.7

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Добавление пользователя{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-plus"></i> Добавление нового пользователя
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> После создания пользователя, он сможет войти используя указанный username и email.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.username|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.email|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.first_name|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.last_name|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.phone|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.company_name|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.user_type|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.is_active|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.is_staff|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            {{ form.is_superuser|as_crispy_field }}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'admin_user_management' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-warning me-2">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-person-add"></i> Создать пользователя
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Избранные помещения{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Избранные помещения</h2>
+    
+    {% if favorites %}
+        <div class="row">
+            {% for favorite in favorites %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        {% if favorite.property.get_main_image %}
+                            <img src="{{ favorite.property.get_main_image.image.url }}" 
+                                 class="card-img-top property-card-img" 
+                                 alt="{{ favorite.property.title }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'property_detail' favorite.property.slug %}" class="text-decoration-none">
+                                    {{ favorite.property.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted">
+                                <small>
+                                    <i class="bi bi-geo-alt"></i> {{ favorite.property.city }}
+                                </small>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="price-tag">
+                                    {{ favorite.property.price_per_hour }} ₽/час
+                                </span>
+                                <a href="{% url 'property_detail' favorite.property.slug %}" class="btn btn-sm btn-primary">
+                                    Подробнее
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <small class="text-muted">
+                                Добавлено {{ favorite.created_at|date:"d.m.Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            У вас пока нет избранных помещений.
+            <a href="{% url 'home' %}">Найдите помещения</a> и добавьте их в избранное.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

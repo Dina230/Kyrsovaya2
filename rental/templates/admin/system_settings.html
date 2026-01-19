@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Настройки системы{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="bi bi-gear"></i> Настройки системы</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <h5 class="mb-3">Основные настройки</h5>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenance_mode">
+                                <label class="form-check-label" for="maintenanceMode">Режим обслуживания</label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="registrationEnabled" name="registration_enabled" checked>
+                                <label class="form-check-label" for="registrationEnabled">Регистрация новых пользователей</label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications" checked>
+                                <label class="form-check-label" for="emailNotifications">Email уведомления</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="mb-3">Настройки бронирования</h5>
+                            <div class="mb-3">
+                                <label for="maxBookingDays" class="form-label">Максимальное количество дней для бронирования</label>
+                                <input type="number" class="form-control" id="maxBookingDays" name="max_booking_days" value="90" min="1" max="365">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="minBookingHours" class="form-label">Минимальная длительность бронирования (часов)</label>
+                                <input type="number" class="form-control" id="minBookingHours" name="min_booking_hours" value="1" min="1" max="24">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="mb-3">Уведомления</h5>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notifyNewBooking" name="notify_new_booking" checked>
+                                <label class="form-check-label" for="notifyNewBooking">Уведомлять о новых бронированиях</label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notifyNewReview" name="notify_new_review" checked>
+                                <label class="form-check-label" for="notifyNewReview">Уведомлять о новых отзывах</label>
+                            </div>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notifyCancellation" name="notify_cancellation" checked>
+                                <label class="form-check-label" for="notifyCancellation">Уведомлять об отмене бронирований</label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'custom_admin_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Сохранить настройки
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- System Information -->
+            <div class="card shadow mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Информация о системе</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Версия системы:</strong> 1.0.0</p>
+                            <p><strong>Всего пользователей:</strong> {{ total_users }}</p>
+                            <p><strong>Всего помещений:</strong> {{ total_properties }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>База данных:</strong> SQLite</p>
+                            <p><strong>Последнее обновление:</strong> {{ last_update|date:"d.m.Y H:i" }}</p>
+                            <p><strong>Статус:</strong> <span class="badge bg-success">Работает</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

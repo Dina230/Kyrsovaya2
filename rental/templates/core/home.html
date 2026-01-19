@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Аренда коммерческих помещений{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Hero Section -->
+    <div class="row align-items-center mb-5">
+        <div class="col-lg-6">
+            <h1 class="display-5 fw-bold mb-4">
+                Найдите идеальное помещение для вашего бизнеса
+            </h1>
+            <p class="lead mb-4">
+                Арендуйте коммерческие помещения на любой срок. Офисы, конференц-залы, 
+                торговые площади и многое другое в одном месте.
+            </p>
+            <div class="d-flex gap-3">
+                <a href="{% url 'property_list' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-search"></i> Найти помещение
+                </a>
+                {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right"></i> Войти
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0">
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                     style="height: 300px;">
+                    <i class="bi bi-building text-primary" style="font-size: 5rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <div class="row mb-5">
+        <div class="col-md-4 text-center mb-4">
+            <div class="card border-0 bg-light p-4 h-100">
+                <i class="bi bi-search display-4 text-primary mb-3"></i>
+                <h4>Поиск</h4>
+                <p>Используйте фильтры для быстрого поиска подходящего помещения</p>
+            </div>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+            <div class="card border-0 bg-light p-4 h-100">
+                <i class="bi bi-calendar-check display-4 text-primary mb-3"></i>
+                <h4>Бронирование</h4>
+                <p>Бронируйте онлайн в несколько кликов с подтверждением в реальном времени</p>
+            </div>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+            <div class="card border-0 bg-light p-4 h-100">
+                <i class="bi bi-shield-check display-4 text-primary mb-3"></i>
+                <h4>Безопасность</h4>
+                <p>Защищенные платежи и официальное подтверждение бронирования</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Properties -->
+    <h2 class="text-center mb-5">Популярные помещения</h2>
+    
+    {% if properties %}
+    <div class="row">
+        {% for property in properties %}
+        <div class="col-md-4 mb-4">
+            <div class="card property-card h-100">
+                {% if property.is_featured %}
+                <div class="featured-badge">Рекомендуем</div>
+                {% endif %}
+                
+                <div class="position-relative">
+                    {% if property.images.first %}
+                    <img src="{{ property.images.first.image.url }}" 
+                         class="card-img-top" 
+                         alt="{{ property.title }}"
+                         style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                         style="height: 200px;">
+                        <i class="bi bi-building text-secondary" style="font-size: 3rem;"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body">
+                    <h5 class="card-title">{{ property.title }}</h5>
+                    <p class="card-text text-muted">
+                        <i class="bi bi-geo-alt"></i> {{ property.city }}
+                    </p>
+                    <p class="card-text">{{ property.description|truncatechars:100 }}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            <span class="price-tag">{{ property.price_per_hour|default:"0" }} ₽/час</span>
+                        </div>
+                        <span class="badge bg-secondary">{{ property.get_property_type_display }}</span>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-white border-0">
+                    <a href="{% url 'property_detail' property.slug %}" class="btn btn-outline-primary w-100">
+                        Подробнее
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="text-center mt-4">
+        <a href="{% url 'property_list' %}" class="btn btn-primary">
+            Посмотреть все помещения
+        </a>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-building display-1 text-muted"></i>
+        <h3 class="mt-3">Пока нет доступных помещений</h3>
+        <p class="text-muted">Загляните позже или свяжитесь с нами</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

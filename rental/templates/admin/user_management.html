@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Управление пользователями{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-table img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .action-buttons .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Управление пользователями</h2>
+                <a href="{% url 'admin_add_user' %}" class="btn btn-primary">
+                    <i class="bi bi-person-plus"></i> Добавить пользователя
+                </a>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-body">
+                    <!-- Search Form -->
+                    <form method="get" class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <input type="text" name="search" class="form-control" placeholder="Поиск по имени или email" value="{{ request.GET.search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="user_type" class="form-control">
+                                <option value="">Все типы</option>
+                                <option value="admin" {% if request.GET.user_type == 'admin' %}selected{% endif %}>Администраторы</option>
+                                <option value="landlord" {% if request.GET.user_type == 'landlord' %}selected{% endif %}>Арендодатели</option>
+                                <option value="tenant" {% if request.GET.user_type == 'tenant' %}selected{% endif %}>Арендаторы</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="status" class="form-control">
+                                <option value="">Все статусы</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Активные</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Неактивные</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">Поиск</button>
+                        </div>
+                    </form>
+                    
+                    <!-- Users Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover user-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Пользователь</th>
+                                    <th>Email</th>
+                                    <th>Тип</th>
+                                    <th>Статус</th>
+                                    <th>Дата регистрации</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if user.avatar %}
+                                            <img src="{{ user.avatar.url }}" class="me-2">
+                                            {% else %}
+                                            <div class="bg-secondary text-white rounded-circle me-2 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                {{ user.username|first|upper }}
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ user.get_full_name|default:user.username }}</strong><br>
+                                                <small class="text-muted">{{ user.phone|default:"Без телефона" }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if user.user_type == 'admin' %}danger{% elif user.user_type == 'landlord' %}success{% else %}info{% endif %}">
+                                            {{ user.get_user_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success">Активен</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Неактивен</span>
+                                        {% endif %}
+                                        {% if user.is_staff %}
+                                        <span class="badge bg-primary">Админ</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.date_joined|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="{% url 'admin_edit_user' user.id %}" class="btn btn-sm btn-outline-primary" title="Редактировать">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                
+                                                {% if user.is_active %}
+                                                <button type="submit" name="action" value="toggle_active" 
+                                                        class="btn btn-sm btn-outline-warning" title="Деактивировать">
+                                                    <i class="bi bi-person-x"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="submit" name="action" value="toggle_active" 
+                                                        class="btn btn-sm btn-outline-success" title="Активировать">
+                                                    <i class="bi bi-person-check"></i>
+                                                </button>
+                                                {% endif %}
+                                                
+                                                {% if not user.is_staff %}
+                                                <button type="submit" name="action" value="toggle_staff" 
+                                                        class="btn btn-sm btn-outline-info" title="Сделать администратором">
+                                                    <i class="bi bi-shield"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="submit" name="action" value="toggle_staff" 
+                                                        class="btn btn-sm btn-outline-secondary" title="Убрать из администраторов">
+                                                    <i class="bi bi-shield-slash"></i>
+                                                </button>
+                                                {% endif %}
+                                                
+                                                <button type="submit" name="action" value="delete" 
+                                                        class="btn btn-sm btn-outline-danger" 
+                                                        onclick="return confirm('Удалить пользователя {{ user.username }}?')" 
+                                                        title="Удалить">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="bi bi-people display-4 text-muted"></i>
+                                        <h5 class="mt-3">Пользователи не найдены</h5>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if users.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if users.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ users.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for i in users.paginator.page_range %}
+                                {% if users.number == i %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ i }}</span>
+                                </li>
+                                {% elif i > users.number|add:'-3' and i < users.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if users.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ users.next_page_number }}{% for

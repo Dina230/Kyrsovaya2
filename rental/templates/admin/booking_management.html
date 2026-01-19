@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Управление бронированиями{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Управление бронированиями</h2>
+            
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Помещение</th>
+                                    <th>Арендатор</th>
+                                    <th>Дата/Время</th>
+                                    <th>Стоимость</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                <tr>
+                                    <td><small>{{ booking.booking_id }}</small></td>
+                                    <td>{{ booking.property.title }}</td>
+                                    <td>{{ booking.tenant.get_full_name|default:booking.tenant.username }}</td>
+                                    <td>
+                                        {{ booking.start_datetime|date:"d.m.Y" }}<br>
+                                        <small>{{ booking.start_datetime|time:"H:i" }} - {{ booking.end_datetime|time:"H:i" }}</small>
+                                    </td>
+                                    <td>{{ booking.total_price }} ₽</td>
+                                    <td>
+                                        <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                                                
+                                                {% if booking.status == 'pending' %}
+                                                <button type="submit" name="action" value="confirm" class="btn btn-outline-success btn-sm">
+                                                    Подтвердить
+                                                </button>
+                                                {% endif %}
+                                                
+                                                {% if booking.status in 'pending,confirmed' %}
+                                                <button type="submit" name="action" value="cancel" class="btn btn-outline-danger btn-sm">
+                                                    Отменить
+                                                </button>
+                                                {% endif %}
+                                                
+                                                {% if booking.status == 'confirmed' %}
+                                                <button type="submit" name="action" value="complete" class="btn btn-outline-info btn-sm">
+                                                    Завершить
+                                                </button>
+                                                {% endif %}
+                                                
+                                                <button type="submit" name="action" value="delete" 
+                                                        class="btn btn-outline-danger btn-sm"
+                                                        onclick="return confirm('Удалить бронирование?')">
+                                                    Удалить
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ property.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+    }
+
+    .calendar-header {
+        font-weight: bold;
+        text-align: center;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'property_list' %}">Помещения</a></li>
+            <li class="breadcrumb-item active">{{ property.title|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Left Column - Property Info -->
+        <div class="col-lg-8">
+            <!-- Property Images -->
+            <div class="card mb-4">
+                <div class="card-body p-0">
+                    {% if property.images.all %}
+                        <div id="propertyCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                {% for image in property.images.all %}
+                                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                        <img src="{{ image.image.url }}"
+                                             class="d-block w-100"
+                                             alt="{{ property.title }}"
+                                             style="height: 400px; object-fit: cover;">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if property.images.count > 1 %}
+                                <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Предыдущее</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Следующее</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-building display-1 text-muted"></i>
+                            <p class="mt-3">Изображения отсутствуют</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Property Details -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h1 class="h2 mb-3">{{ property.title }}</h1>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-2">
+                                <i class="bi bi-geo-alt"></i> {{ property.address }}
+                            </p>
+                            <p class="text-muted mb-2">
+                                <i class="bi bi-building"></i> {{ property.city }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-md-end">
+                                <div class="text-center me-4">
+                                    <div class="fw-bold">{{ property.area }} м²</div>
+                                    <small class="text-muted">Площадь</small>
+                                </div>
+                                <div class="text-center me-4">
+                                    <div class="fw-bold">{{ property.capacity }}</div>
+                                    <small class="text-muted">Вместимость</small>
+                                </div>
+                                {% if property.floor %}
+                                    <div class="text-center">
+                                        <div class="fw-bold">{{ property.floor }}</div>
+                                        <small class="text-muted">Этаж</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3">Описание</h5>
+                    <p class="mb-4">{{ property.description|linebreaks }}</p>
+
+                    <!-- Amenities -->
+                    {% if property.amenities.all %}
+                        <h5 class="mb-3">Удобства</h5>
+                        <div class="row">
+                            {% for amenity in property.amenities.all %}
+                                <div class="col-6 col-md-4 mb-2">
+                                    <i class="bi bi-check-circle text-success"></i> {{ amenity.name }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Booking Calendar -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Календарь доступности</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Ближайшие 30 дней (забронированные дни отмечены красным)</p>
+
+                    <div class="calendar-grid mb-4">
+                        <!-- Days of week -->
+                        <div class="calendar-header">Пн</div>
+                        <div class="calendar-header">Вт</div>
+                        <div class="calendar-header">Ср</div>
+                        <div class="calendar-header">Чт</div>
+                        <div class="calendar-header">Пт</div>
+                        <div class="calendar-header">Сб</div>
+                        <div class="calendar-header">Вс</div>
+
+                        <!-- Calendar days -->
+                        {% for day in calendar_data %}
+                            <div class="calendar-day {% if day.bookings %}booked{% endif %}">
+                                <div class="text-center">
+                                    <small class="fw-bold {% if day.bookings %}text-danger{% endif %}">
+                                        {{ day.date.day }}
+                                    </small>
+                                    {% if day.bookings %}
+                                        <div class="mt-1">
+                                            <small class="badge bg-danger">Занято</small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="calendar-day booked d-inline-block me-2" style="width: 20px; height: 20px;"></div>
+                            <small>Забронировано</small>
+                        </div>
+                        <div class="me-3">
+                            <div class="calendar-day d-inline-block me-2 border" style="width: 20px; height: 20px;"></div>
+                            <small>Свободно</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Booking & Info -->
+        <div class="col-lg-4">
+            <!-- Booking Card -->
+            <div class="card mb-4 sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Бронирование</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h4 class="text-center">
+                            {{ property.price_per_hour|default:"0" }} ₽
+                            <small class="text-muted">/ час</small>
+                        </h4>
+
+                        {% if property.price_per_day %}
+                            <p class="text-center text-muted mb-2">
+                                {{ property.price_per_day }} ₽ / день
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {% if user.is_authenticated %}
+                            <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#bookingModal">
+                                <i class="bi bi-calendar-plus"></i> Забронировать
+                            </button>
+                        {% else %}
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right"></i> Войти для бронирования
+                            </a>
+                        {% endif %}
+
+                        <button class="btn btn-outline-primary" id="favoriteBtn">
+                            <i class="bi bi-heart"></i> В избранное
+                        </button>
+                    </div>
+
+                    <!-- Owner Info -->
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="bi bi-person-circle fs-3 text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">{{ property.landlord.get_full_name|default:property.landlord.username }}</h6>
+                                <small class="text-muted">Владелец помещения</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property Details -->
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-3">Детали</h6>
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Тип помещения</small>
+                        <strong>{{ property.get_property_type_display }}</strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Категория</small>
+                        <strong>{{ property.category.name|default:"Не указана" }}</strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Статус</small>
+                        <span class="badge bg-{% if property.status == 'active' %}success{% else %}secondary{% endif %}">
+                            {{ property.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Добавлено</small>
+                        <strong>{{ property.created_at|date:"d.m.Y" }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Booking Modal -->
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bookingModalLabel">Бронирование помещения</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bookingForm">
+                    <div class="mb-3">
+                        <label for="bookingDate" class="form-label">Дата</label>
+                        <input type="date" class="form-control" id="bookingDate" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label for="startTime" class="form-label">Время начала</label>
+                            <input type="time" class="form-control" id="startTime" required>
+                        </div>
+                        <div class="col">
+                            <label for="endTime" class="form-label">Время окончания</label>
+                            <input type="time" class="form-control" id="endTime" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="guests" class="form-label">Количество гостей</label>
+                        <input type="number" class="form-control" id="guests" min="1" max="{{ property.capacity }}" value="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="specialRequests" class="form-label">Особые пожелания</label>
+                        <textarea class="form-control" id="specialRequests" rows="3"></textarea>
+                    </div>
+                </form>
+                <div class="alert alert-info">
+                    <h6>Итоговая стоимость:</h6>
+                    <h4 id="totalPrice">0 ₽</h4>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="submitBooking()">Забронировать</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Favorite button functionality
+        $('#favoriteBtn').click(function() {
+            const icon = $(this).find('i');
+            if (icon.hasClass('bi-heart')) {
+                icon.removeClass('bi-heart').addClass('bi-heart-fill');
+                $(this).removeClass('btn-outline-primary').addClass('btn-danger');
+                showToast('Добавлено в избранное!', 'success');
+            } else {
+                icon.removeClass('bi-heart-fill').addClass('bi-heart');
+                $(this).removeClass('btn-danger').addClass('btn-outline-primary');
+                showToast('Удалено из избранного!', 'info');
+            }
+        });
+
+        // Calculate booking price
+        function calculatePrice() {
+            const startTime = $('#startTime').val();
+            const endTime = $('#endTime').val();
+            const pricePerHour = {{ property.price_per_hour|default:0 }};
+
+            if (startTime && endTime) {
+                const start = new Date('2000-01-01T' + startTime);
+                const end = new Date('2000-01-01T' + endTime);
+                const hours = (end - start) / (1000 * 60 * 60);
+
+                if (hours > 0) {
+                    const total = hours * pricePerHour;
+                    $('#totalPrice').text(total.toFixed(2) + ' ₽');
+                }
+            }
+        }
+
+        $('#startTime, #endTime').change(calculatePrice);
+
+        // Set min date to today
+        const today = new Date().toISOString().split('T')[0];
+        $('#bookingDate').attr('min', today);
+    });
+
+    function submitBooking() {
+        // In a real app, this would send an AJAX request
+        showToast('Бронирование отправлено на подтверждение!', 'success');
+        $('#bookingModal').modal('hide');
+    }
+
+    function showToast(message, type = 'info') {
+        // Simple notification
+        alert(message);
+    }
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,185 @@
+# core/views.py - минимальная рабочая версия
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from django.utils import timezone
+from datetime import timedelta
+from .models import *
+from .forms import CustomUserCreationForm
+
+# ============================================================================
+# ПУБЛИЧНЫЕ СТРАНИЦЫ
+# ============================================================================
+
+def home(request):
+    """Главная страница"""
+    properties = Property.objects.filter(status='active').order_by('-created_at')[:6]
+    context = {
+        'properties': properties,
+    }
+    return render(request, 'core/home.html', context)
+
+
+def property_list(request):
+    """Список всех помещений"""
+    properties = Property.objects.filter(status='active')
+    context = {
+        'properties': properties,
+    }
+    return render(request, 'core/property_list.html', context)
+
+
+def property_detail(request, slug):
+    """Детальная страница помещения"""
+    property_obj = get_object_or_404(Property, slug=slug)
+    
+    # Простой календарь на 30 дней
+    today = timezone.now().date()
+    calendar_data = []
+    for i in range(30):
+        current_date = today + timedelta(days=i)
+        calendar_data.append({
+            'date': current_date,
+            'bookings': []  # Пока пусто
+        })
+    
+    context = {
+        'property': property_obj,
+        'calendar_data': calendar_data,
+    }
+    return render(request, 'core/property_detail.html', context)
+
+
+def register(request):
+    """Регистрация нового пользователя"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            
+            # Аутентификация и вход пользователя
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=password)
+            
+            if user is not None:
+                login(request, user)
+                messages.success(request, 'Регистрация успешно завершена!')
+                return redirect('dashboard')
+    else:
+        form = CustomUserCreationForm()
+    
+    return render(request, 'core/register.html', {'form': form})
+
+
+# ============================================================================
+# ЛИЧНЫЙ КАБИНЕТ
+# ============================================================================
+
+@login_required
+def dashboard(request):
+    """Личный кабинет"""
+    context = {}
+    
+    if request.user.user_type == 'tenant':
+        # Для арендатора
+        context['bookings'] = request.user.booking_set.all()[:5]
+        
+    elif request.user.user_type == 'landlord':
+        # Для арендодателя
+        context['properties'] = request.user.property_set.all()
+        
+    elif request.user.is_staff:
+        # Для администратора
+        context['is_admin'] = True
+    
+    return render(request, 'core/dashboard.html', context)
+
+
+@login_required
+def edit_profile(request):
+    """Редактирование профиля"""
+    return render(request, 'core/edit_profile.html')
+
+
+@login_required
+def my_bookings(request):
+    """Мои бронирования"""
+    bookings = request.user.booking_set.all()
+    return render(request, 'core/my_bookings.html', {'bookings': bookings})
+
+
+@login_required
+def my_favorites(request):
+    """Избранные помещения"""
+    favorites = request.user.favorites.all()
+    return render(request, 'core/my_favorites.html', {'favorites': favorites})
+
+
+@login_required
+def my_properties(request):
+    """Мои помещения"""
+    properties = request.user.property_set.all()
+    return render(request, 'core/my_properties.html', {'properties': properties})
+
+
+# ============================================================================
+# АДМИН-ПАНЕЛЬ (упрощенная)
+# ============================================================================
+
+@login_required
+def custom_admin_dashboard(request):
+    """Кастомная админ-панель"""
+    if not request.user.is_staff:
+        messages.error(request, 'У вас нет прав для доступа к этой странице.')
+        return redirect('dashboard')
+    
+    # Простая статистика
+    total_users = User.objects.count()
+    total_properties = Property.objects.count()
+    total_bookings = Booking.objects.count()
+    
+    context = {
+        'total_users': total_users,
+        'total_properties': total_properties,
+        'total_bookings': total_bookings,
+    }
+    return render(request, 'admin/dashboard.html', context)
+
+
+@login_required
+def admin_user_management(request):
+    """Управление пользователями"""
+    if not request.user.is_staff:
+        messages.error(request, 'У вас нет прав для доступа к этой странице.')
+        return redirect('dashboard')
+    
+    users = User.objects.all()
+    return render(request, 'admin/user_management.html', {'users': users})
+
+
+@login_required
+def admin_property_management(request):
+    """Управление помещениями"""
+    if not request.user.is_staff:
+        messages.error(request, 'У вас нет прав для доступа к этой странице.')
+        return redirect('dashboard')
+    
+    properties = Property.objects.all()
+    return render(request, 'admin/property_management.html', {'properties': properties})
+
+
+@login_required
+def admin_booking_management(request):
+    """Управление бронированиями"""
+    if not request.user.is_staff:
+        messages.error(request, 'У вас нет прав для доступа к этой странице.')
+        return redirect('dashboard')
+    
+    bookings = Booking.objects.all()
+    return render(request, 'admin/booking_management.html', {'bookings': bookings})
