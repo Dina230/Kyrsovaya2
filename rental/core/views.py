@@ -11,6 +11,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from decimal import Decimal  # Добавьте этот импорт
 
 from .models import *
 from .forms import *
@@ -103,7 +104,7 @@ def dashboard(request):
             'total_spent': Booking.objects.filter(
                 tenant=request.user,
                 status='completed'
-            ).aggregate(total=Sum('total_price'))['total'] or 0,
+            ).aggregate(total=Sum('total_price'))['total'] or Decimal('0'),
         }
 
         context.update({
@@ -148,7 +149,7 @@ def dashboard(request):
                 property__in=properties,
                 status='pending'
             ).count(),
-            'monthly_revenue': monthly_stats['total_revenue'] or 0,
+            'monthly_revenue': monthly_stats['total_revenue'] or Decimal('0'),
         }
 
         popular_properties = Property.objects.filter(
@@ -416,7 +417,8 @@ def create_booking(request, property_id):
             if conflicting_bookings.exists():
                 messages.error(request, 'Помещение уже забронировано на выбранные даты.')
             else:
-                duration_hours = (booking.end_datetime - booking.start_datetime).total_seconds() / 3600
+                # Исправлено: преобразуем timedelta в Decimal для умножения на Decimal
+                duration_hours = Decimal((booking.end_datetime - booking.start_datetime).total_seconds()) / Decimal('3600')
                 booking.total_price = property_obj.price_per_hour * duration_hours
                 booking.save()
                 messages.success(request, 'Бронирование создано! Ожидайте подтверждения от владельца.')
@@ -490,7 +492,9 @@ def ajax_create_booking(request, property_id):
                 'error': f'Максимальная вместимость: {property_obj.capacity} человек'
             }, status=400)
 
-        total_price = duration * property_obj.price_per_hour
+        # Исправлено: преобразуем duration в Decimal перед умножением
+        duration_decimal = Decimal(str(duration))
+        total_price = property_obj.price_per_hour * duration_decimal
 
         booking = Booking.objects.create(
             property=property_obj,

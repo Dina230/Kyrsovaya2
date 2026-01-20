@@ -775,46 +775,47 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
     $(document).ready(function() {
         const propertyId = {{ property.id }};
-        const pricePerHour = parseFloat({{ property.price_per_hour|default:"0" }});
+        const pricePerHour = parseFloat({{ property.price_per_hour|default:0 }});
         const capacity = {{ property.capacity }};
         const bookedDates = JSON.parse('{{ booked_dates_json|safe|default:"[]" }}');
         const csrfToken = '{{ csrf_token }}';
-        
+
         let isProcessing = false;
         let selectedDate = null;
-        
+
         // Инициализация датапикера
         const today = new Date().toISOString().split('T')[0];
         $('#bookingDate').val(today);
         selectedDate = today;
-        
+
         // Функция выбора даты из календаря
         window.selectDate = function(date) {
             $('#bookingDate').val(date);
             selectedDate = date;
             updateBookingSummary();
-            
+
             // Прокрутка к модальному окну
             $('#bookingModal').modal('show');
         };
-        
+
         // Функция изменения количества гостей
         window.changeGuests = function(delta) {
             const guestsInput = $('#guests');
             let current = parseInt(guestsInput.val());
             let newValue = current + delta;
-            
+
             if (newValue >= 1 && newValue <= capacity) {
                 guestsInput.val(newValue);
                 updateBookingSummary();
             }
         };
-        
+
         // Функция прокрутки к бронированию
         window.scrollToBooking = function() {
             const bookingCard = document.querySelector('.sticky-booking');
@@ -822,55 +823,57 @@
                 bookingCard.scrollIntoView({ behavior: 'smooth' });
             }
         };
-        
+
         // Функция расчета длительности
         function calculateDuration(startTime, endTime) {
             if (!startTime || !endTime) return 0;
-            
+
             const [startHour, startMin] = startTime.split(':').map(Number);
             const [endHour, endMin] = endTime.split(':').map(Number);
-            
+
             let duration = (endHour - startHour) + (endMin - startMin) / 60;
-            
+
             // Проверка на отрицательную длительность
             if (duration < 0) {
                 duration = (24 - startHour + endHour) + (endMin - startMin) / 60;
             }
-            
+
             return duration;
         }
-        
+
         // Функция расчета стоимости
         function calculateTotalPrice(duration) {
-            return (duration * pricePerHour).toFixed(2);
+            // Преобразуем цену в число и умножаем
+            const total = duration * pricePerHour;
+            return total.toFixed(2);
         }
-        
+
         // Функция форматирования времени
         function formatTimeDisplay(startTime, endTime) {
             if (!startTime || !endTime) return '';
             return `${startTime} - ${endTime}`;
         }
-        
+
         // Функция обновления итоговой стоимости
         function updateBookingSummary() {
             const date = $('#bookingDate').val();
             const startTime = $('#startTime').val();
             const endTime = $('#endTime').val();
             const guests = $('#guests').val();
-            
+
             // Сброс ошибок
             $('.is-invalid').removeClass('is-invalid');
             $('.invalid-feedback').text('');
             $('#submitBookingBtn').prop('disabled', true);
-            
+
             let isValid = true;
-            
+
             // Проверка даты
             if (date) {
                 selectedDate = date;
                 const dateStr = date;
                 const isBooked = bookedDates.includes(dateStr);
-                
+
                 if (isBooked) {
                     $('#bookingDate').addClass('is-invalid');
                     $('#dateError').text('Эта дата уже забронирована');
@@ -879,11 +882,11 @@
             } else {
                 isValid = false;
             }
-            
+
             // Проверка времени
             if (startTime && endTime) {
                 const duration = calculateDuration(startTime, endTime);
-                
+
                 if (duration <= 0) {
                     $('#startTime, #endTime').addClass('is-invalid');
                     $('#timeError').text('Время окончания должно быть позже времени начала');
@@ -900,7 +903,7 @@
                     // Обновление отображения
                     const hours = Math.floor(duration);
                     const minutes = Math.round((duration - hours) * 60);
-                    
+
                     let durationText = '';
                     if (hours > 0) {
                         durationText += hours + ' час' + (hours > 1 ? 'а' : '');
@@ -909,10 +912,10 @@
                         if (durationText) durationText += ' ';
                         durationText += minutes + ' минут';
                     }
-                    
+
                     $('#durationDisplay').text(durationText);
                     $('#timeRange').text(formatTimeDisplay(startTime, endTime));
-                    
+
                     const totalPrice = calculateTotalPrice(duration);
                     $('#totalPrice').text(`${totalPrice} ₽`);
                     $('#hourlyRate').text(`${pricePerHour} ₽/час × ${duration.toFixed(1)} ч`);
@@ -920,7 +923,7 @@
             } else {
                 isValid = false;
             }
-            
+
             // Проверка количества гостей
             if (guests) {
                 const guestsNum = parseInt(guests);
@@ -932,42 +935,42 @@
             } else {
                 isValid = false;
             }
-            
+
             // Проверка согласия с условиями
             if (!$('#termsAgree').is(':checked')) {
                 isValid = false;
             }
-            
+
             // Активация кнопки, если все условия выполнены
             if (isValid) {
                 $('#submitBookingBtn').prop('disabled', false);
             }
         }
-        
+
         // Слушатели событий
         $('#bookingDate, #startTime, #endTime, #guests, #termsAgree').on('change input', updateBookingSummary);
-        
+
         // Обработка отправки формы
         $('#submitBookingBtn').click(function() {
             if (isProcessing) return;
-            
+
             const date = $('#bookingDate').val();
             const startTime = $('#startTime').val();
             const endTime = $('#endTime').val();
             const guests = $('#guests').val();
             const specialRequests = $('#specialRequests').val();
-            
+
             if (!date || !startTime || !endTime || !guests) {
                 showToast('Заполните все обязательные поля', 'error');
                 return;
             }
-            
+
             // Начало процесса
             isProcessing = true;
             $('#submitBtnText').text('Отправка...');
             $('#submitBtnSpinner').removeClass('d-none');
             $('#submitBookingBtn').prop('disabled', true);
-            
+
             // Данные для отправки
             const bookingData = {
                 booking_date: date,
@@ -977,7 +980,7 @@
                 special_requests: specialRequests,
                 csrfmiddlewaretoken: csrfToken
             };
-            
+
             // AJAX запрос
             $.ajax({
                 url: `/api/properties/${propertyId}/book-ajax/`,
@@ -990,11 +993,11 @@
                         $('#bookingForm').addClass('d-none');
                         $('#bookingSuccess').removeClass('d-none');
                         $('#successMessage').text(response.message);
-                        
+
                         if (response.redirect_url) {
                             $('#bookingDetailLink').attr('href', response.redirect_url);
                         }
-                        
+
                         // Обновляем страницу через 5 секунд
                         setTimeout(function() {
                             if (response.redirect_url) {
@@ -1021,7 +1024,7 @@
                 }
             });
         });
-        
+
         // Функция сброса кнопки отправки
         function resetSubmitButton() {
             isProcessing = false;
@@ -1029,16 +1032,16 @@
             $('#submitBtnSpinner').addClass('d-none');
             updateBookingSummary(); // Пересчитываем состояние кнопки
         }
-        
+
         // Обработка кнопки "В избранное"
         $('#favoriteBtn').click(function() {
             if (isProcessing) return;
-            
+
             const button = $(this);
             const isFavorite = button.hasClass('btn-danger');
-            
+
             isProcessing = true;
-            
+
             $.ajax({
                 url: `/properties/${propertyId}/favorite/`,
                 type: 'POST',
@@ -1063,15 +1066,15 @@
                 }
             });
         });
-        
+
         // Функция показа уведомлений
         function showToast(message, type = 'info') {
             const toastId = 'toast-' + Date.now();
-            const bgClass = type === 'error' ? 'bg-danger' : 
+            const bgClass = type === 'error' ? 'bg-danger' :
                            type === 'success' ? 'bg-success' : 'bg-info';
             const icon = type === 'error' ? 'exclamation-triangle' :
                         type === 'success' ? 'check-circle' : 'info-circle';
-            
+
             const toastHtml = `
                 <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
                     <div class="d-flex">
@@ -1083,31 +1086,31 @@
                     </div>
                 </div>
             `;
-            
+
             // Создаем контейнер, если его нет
             if ($('.toast-container').length === 0) {
                 $('body').append('<div class="toast-container position-fixed top-0 end-0 p-3"></div>');
             }
-            
+
             $('.toast-container').append(toastHtml);
             const toastElement = document.getElementById(toastId);
-            const toast = new bootstrap.Toast(toastElement, { 
+            const toast = new bootstrap.Toast(toastElement, {
                 delay: 3000,
-                animation: true 
+                animation: true
             });
             toast.show();
-            
+
             // Удаляем после скрытия
             toastElement.addEventListener('hidden.bs.toast', function() {
                 $(this).remove();
             });
         }
-        
+
         // Инициализация при открытии модального окна
         $('#bookingModal').on('show.bs.modal', function() {
             updateBookingSummary();
         });
-        
+
         // Сброс формы при закрытии
         $('#bookingModal').on('hidden.bs.modal', function() {
             $('#bookingForm')[0].reset();
@@ -1119,19 +1122,18 @@
             resetSubmitButton();
             updateBookingSummary();
         });
-        
+
         // Инициализация при загрузке
         updateBookingSummary();
-        
+
         // Запрет выбора прошедших дат
         const todayDate = new Date();
         todayDate.setDate(todayDate.getDate() - 1);
         const maxDate = new Date();
         maxDate.setDate(maxDate.getDate() + 90); // 3 месяца вперед
-        
+
         $('#bookingDate').attr('min', today.toISOString().split('T')[0]);
         $('#bookingDate').attr('max', maxDate.toISOString().split('T')[0]);
     });
 </script>
-{% endblock %}
 {% endblock %}

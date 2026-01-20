@@ -89,8 +89,8 @@ class CustomAdminSite(admin.AdminSite):
     """
     Кастомный админ-сайт
     """
-    site_header = 'Администрирование SpaceRent'
-    site_title = 'SpaceRent Admin'
+    site_header = 'Администрирование Простор'
+    site_title = 'Простор Admin'
     index_title = 'Панель управления'
 
     def get_urls(self):

@@ -111,17 +111,11 @@
 <body>
     <!-- Navigation -->
     <!-- В шапке navigation добавьте: -->
-{% if user.is_staff %}
-<li class="nav-item">
-    <a class="nav-link" href="{% url 'custom_admin_dashboard' %}">
-        <i class="bi bi-speedometer2"></i> Админка
-    </a>
-</li>
-{% endif %}
+
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="bi bi-building"></i> SpaceRent
+                <i class="bi bi-building"></i> Простор
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -191,7 +185,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4">
-                    <h5>SpaceRent</h5>
+                    <h5>Простор</h5>
                     <p class="text-light">Платформа для аренды коммерческих помещений</p>
                 </div>
                 <div class="col-md-4">
@@ -199,7 +193,7 @@
                     <ul class="list-unstyled text-light">
                         <li><i class="bi bi-geo-alt"></i> Москва, ул. Примерная, 1</li>
                         <li><i class="bi bi-telephone"></i> +7 (999) 123-45-67</li>
-                        <li><i class="bi bi-envelope"></i> info@spacerent.ru</li>
+                        <li><i class="bi bi-envelope"></i> info@prostor.ru</li>
                     </ul>
                 </div>
                 <div class="col-md-4">
@@ -213,7 +207,7 @@
             </div>
             <hr class="my-4 text-light">
             <div class="text-center">
-                <p class="text-light mb-0">&copy; 2024 SpaceRent. Все права защищены.</p>
+                <p class="text-light mb-0">&copy; 2026 Простор. Все права защищены.</p>
             </div>
         </div>
     </footer>
