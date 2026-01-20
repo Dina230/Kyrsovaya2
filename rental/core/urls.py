@@ -1,3 +1,4 @@
+# core/urls.py (ваш текущий файл с префиксом admin-panel/)
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
@@ -19,7 +20,7 @@ urlpatterns = [
     # Для арендатора
     path('my-bookings/', views.my_bookings, name='my_bookings'),
     path('my-favorites/', views.my_favorites, name='my_favorites'),
-    path('bookings/<int:booking_id>/', views.booking_detail, name='booking_detail'),  # Добавьте эту строку
+    path('bookings/<int:booking_id>/', views.booking_detail, name='booking_detail'),
     path('bookings/<int:booking_id>/cancel/', views.cancel_booking, name='cancel_booking'),
     path('bookings/<int:booking_id>/review/', views.add_review, name='add_review'),
 
@@ -38,30 +39,20 @@ urlpatterns = [
     path('properties/<slug:slug>/', views.property_detail, name='property_detail'),
     path('properties/<int:property_id>/favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('properties/<int:property_id>/book/', views.create_booking, name='create_booking'),
-    path('api/properties/<int:property_id>/book-ajax/', views.ajax_create_booking, name='ajax_create_booking'),  # Добавьте эту строку
+    path('api/properties/<int:property_id>/book-ajax/', views.ajax_create_booking, name='ajax_create_booking'),
 
-    # Кастомная админка
-    path('admin/dashboard/', views.custom_admin_dashboard, name='custom_admin_dashboard'),
-
-    # Управление пользователями
-    path('admin/users/', views.admin_user_management, name='admin_user_management'),
-    path('admin/users/add/', views.admin_add_user, name='admin_add_user'),
-    path('admin/users/edit/<int:user_id>/', views.admin_edit_user, name='admin_edit_user'),
-
-    # Управление помещениями
-    path('admin/properties/', views.admin_property_management, name='admin_property_management'),
-    path('admin/properties/add/', views.admin_add_property, name='admin_add_property'),
-    path('admin/properties/edit/<int:property_id>/', views.admin_edit_property, name='admin_edit_property'),
-
-    # Управление бронированиями
-    path('admin/bookings/', views.admin_booking_management, name='admin_booking_management'),
-    path('admin/bookings/edit/<int:booking_id>/', views.admin_edit_booking, name='admin_edit_booking'),
-
-    # Управление отзывами
-    path('admin/reviews/', views.admin_review_management, name='admin_review_management'),
-
-    # Настройки системы
-    path('admin/settings/', views.admin_system_settings, name='admin_system_settings'),
+    # Кастомная админка (ПРЕФИКС admin-panel/)
+    path('admin-panel/dashboard/', views.custom_admin_dashboard, name='custom_admin_dashboard'),
+    path('admin-panel/users/', views.admin_user_management, name='admin_user_management'),
+    path('admin-panel/users/add/', views.admin_add_user, name='admin_add_user'),
+    path('admin-panel/users/edit/<int:user_id>/', views.admin_edit_user, name='admin_edit_user'),
+    path('admin-panel/properties/', views.admin_property_management, name='admin_property_management'),
+    path('admin-panel/properties/add/', views.admin_add_property, name='admin_add_property'),
+    path('admin-panel/properties/edit/<int:property_id>/', views.admin_edit_property, name='admin_edit_property'),
+    path('admin-panel/bookings/', views.admin_booking_management, name='admin_booking_management'),
+    path('admin-panel/bookings/edit/<int:booking_id>/', views.admin_edit_booking, name='admin_edit_booking'),
+    path('admin-panel/reviews/', views.admin_review_management, name='admin_review_management'),
+    path('admin-panel/settings/', views.admin_system_settings, name='admin_system_settings'),
 
     # Встроенные Django представления для сброса пароля
     path('password-reset/',
