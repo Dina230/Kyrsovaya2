@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'admin/base.html' %}
 
 {% block title %}Управление пользователями{% endblock %}
 
@@ -163,7 +163,7 @@
                         </table>
                     </div>
                     
-                    <!-- Pagination -->
+                    <!-- Пагинация (ИСПРАВЛЕННАЯ ВЕРСИЯ) -->
                     {% if users.has_other_pages %}
                     <nav aria-label="Page navigation" class="mt-4">
                         <ul class="pagination justify-content-center">
@@ -174,7 +174,7 @@
                                 </a>
                             </li>
                             {% endif %}
-                            
+
                             {% for i in users.paginator.page_range %}
                                 {% if users.number == i %}
                                 <li class="page-item active">
@@ -186,7 +186,20 @@
                                 </li>
                                 {% endif %}
                             {% endfor %}
-                            
+
                             {% if users.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ users.next_page_number }}{% for
+                                <a class="page-link" href="?page={{ users.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
