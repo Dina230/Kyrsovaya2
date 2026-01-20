@@ -15,6 +15,37 @@
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
     }
+
+    .search-summary {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .filter-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .pagination .page-link {
+        color: #495057;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .quick-filters .btn {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.75rem;
+    }
+
+    .stats-card {
+        border-left: 4px solid #0d6efd;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
 </style>
 {% endblock %}
 
@@ -24,42 +55,153 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Управление пользователями</h2>
-                <a href="{% url 'admin_add_user' %}" class="btn btn-primary">
-                    <i class="bi bi-person-plus"></i> Добавить пользователя
+                <div>
+                    <button id="exportBtn" class="btn btn-outline-success me-2">
+                        <i class="bi bi-download"></i> Экспорт
+                    </button>
+                    <a href="{% url 'admin_user_management' %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-clockwise"></i> Обновить
+                    </a>
+                    <a href="{% url 'admin_add_user' %}" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Добавить пользователя
+                    </a>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card stats-card">
+                        <div class="card-body py-3">
+                            <div class="row text-center">
+                                <div class="col">
+                                    <h4 class="mb-0">{{ total_users }}</h4>
+                                    <small class="text-muted">Всего пользователей</small>
+                                </div>
+                                <div class="col">
+                                    <h4 class="mb-0">{{ active_count }}</h4>
+                                    <small class="text-muted">Активных</small>
+                                </div>
+                                <div class="col">
+                                    <h4 class="mb-0">{{ admin_count }}</h4>
+                                    <small class="text-muted">Администраторов</small>
+                                </div>
+                                <div class="col">
+                                    <h4 class="mb-0">{{ landlord_count }}</h4>
+                                    <small class="text-muted">Арендодателей</small>
+                                </div>
+                                <div class="col">
+                                    <h4 class="mb-0">{{ tenant_count }}</h4>
+                                    <small class="text-muted">Арендаторов</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary of search filters -->
+            {% if search_query or user_type_filter or status_filter %}
+            <div class="search-summary d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted">Примененные фильтры:</small>
+                    {% if search_query %}
+                    <span class="badge bg-info filter-badge me-1">
+                        <i class="bi bi-search"></i> Поиск: "{{ search_query }}"
+                    </span>
+                    {% endif %}
+                    {% if user_type_filter %}
+                    <span class="badge bg-primary filter-badge me-1">
+                        <i class="bi bi-person-badge"></i>
+                        {% if user_type_filter == 'admin' %}Администраторы
+                        {% elif user_type_filter == 'landlord' %}Арендодатели
+                        {% elif user_type_filter == 'tenant' %}Арендаторы
+                        {% else %}{{ user_type_filter }}{% endif %}
+                    </span>
+                    {% endif %}
+                    {% if status_filter %}
+                    <span class="badge bg-warning filter-badge me-1">
+                        <i class="bi bi-circle-fill"></i>
+                        {% if status_filter == 'active' %}Активные
+                        {% elif status_filter == 'inactive' %}Неактивные
+                        {% else %}{{ status_filter }}{% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'admin_user_management' %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-circle"></i> Сбросить фильтры
                 </a>
             </div>
-            
+            {% endif %}
+
+            <!-- Быстрые фильтры -->
+            <div class="quick-filters mb-3">
+                <small class="text-muted d-block mb-2">Быстрые фильтры:</small>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="?status=active" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-check-circle"></i> Активные ({{ active_count }})
+                    </a>
+                    <a href="?status=inactive" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Неактивные ({{ inactive_count }})
+                    </a>
+                    <a href="?user_type=admin" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-shield-check"></i> Администраторы ({{ admin_count }})
+                    </a>
+                    <a href="?user_type=landlord" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-building"></i> Арендодатели ({{ landlord_count }})
+                    </a>
+                    <a href="?user_type=tenant" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-person"></i> Арендаторы ({{ tenant_count }})
+                    </a>
+                </div>
+            </div>
+
             <div class="card shadow">
                 <div class="card-body">
                     <!-- Search Form -->
                     <form method="get" class="row g-3 mb-4">
                         <div class="col-md-4">
-                            <input type="text" name="search" class="form-control" placeholder="Поиск по имени или email" value="{{ request.GET.search }}">
-                        </div>
-                        <div class="col-md-3">
-                            <select name="user_type" class="form-control">
-                                <option value="">Все типы</option>
-                                <option value="admin" {% if request.GET.user_type == 'admin' %}selected{% endif %}>Администраторы</option>
-                                <option value="landlord" {% if request.GET.user_type == 'landlord' %}selected{% endif %}>Арендодатели</option>
-                                <option value="tenant" {% if request.GET.user_type == 'tenant' %}selected{% endif %}>Арендаторы</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select name="status" class="form-control">
-                                <option value="">Все статусы</option>
-                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Активные</option>
-                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Неактивные</option>
-                            </select>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text"
+                                       name="search"
+                                       class="form-control"
+                                       placeholder="Поиск по имени, email или телефону"
+                                       value="{{ search_query }}">
+                                {% if search_query %}
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        onclick="this.form.search.value=''; this.form.submit()">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">Поиск</button>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-funnel"></i> Фильтровать
+                            </button>
                         </div>
                     </form>
-                    
+
+                    <!-- Users Count -->
+                    <div class="mb-3">
+                        <span class="badge bg-secondary">
+                            Найдено пользователей: {{ users.paginator.count }}
+                        </span>
+                        {% if search_query or user_type_filter or status_filter %}
+                        <small class="text-muted ms-2">
+                            (без фильтров: {{ total_users }})
+                        </small>
+                        {% endif %}
+                    </div>
+
                     <!-- Users Table -->
                     <div class="table-responsive">
-                        <table class="table table-hover user-table">
-                            <thead>
+                        <table class="table table-hover user-table align-middle">
+                            <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
                                     <th>Пользователь</th>
@@ -73,24 +215,33 @@
                             <tbody>
                                 {% for user in users %}
                                 <tr>
-                                    <td>{{ user.id }}</td>
+                                    <td>
+                                        <span class="badge bg-dark">{{ user.id }}</span>
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             {% if user.avatar %}
-                                            <img src="{{ user.avatar.url }}" class="me-2">
+                                            <img src="{{ user.avatar.url }}" class="me-2" alt="{{ user.username }}">
                                             {% else %}
-                                            <div class="bg-secondary text-white rounded-circle me-2 d-flex align-items-center justify-content-center" 
+                                            <div class="bg-secondary text-white rounded-circle me-2 d-flex align-items-center justify-content-center"
                                                  style="width: 40px; height: 40px;">
                                                 {{ user.username|first|upper }}
                                             </div>
                                             {% endif %}
                                             <div>
                                                 <strong>{{ user.get_full_name|default:user.username }}</strong><br>
-                                                <small class="text-muted">{{ user.phone|default:"Без телефона" }}</small>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-telephone"></i>
+                                                    {{ user.phone|default:"Без телефона" }}
+                                                </small>
                                             </div>
                                         </div>
                                     </td>
-                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <a href="mailto:{{ user.email }}" class="text-decoration-none">
+                                            {{ user.email }}
+                                        </a>
+                                    </td>
                                     <td>
                                         <span class="badge bg-{% if user.user_type == 'admin' %}danger{% elif user.user_type == 'landlord' %}success{% else %}info{% endif %}">
                                             {{ user.get_user_type_display }}
@@ -98,53 +249,110 @@
                                     </td>
                                     <td>
                                         {% if user.is_active %}
-                                        <span class="badge bg-success">Активен</span>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Активен
+                                        </span>
                                         {% else %}
-                                        <span class="badge bg-secondary">Неактивен</span>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-x-circle"></i> Неактивен
+                                        </span>
                                         {% endif %}
+                                        <br>
                                         {% if user.is_staff %}
-                                        <span class="badge bg-primary">Админ</span>
+                                        <span class="badge bg-primary mt-1">
+                                            <i class="bi bi-shield-check"></i> Админ
+                                        </span>
+                                        {% endif %}
+                                        {% if user.is_verified %}
+                                        <span class="badge bg-warning mt-1">
+                                            <i class="bi bi-patch-check"></i> Верифицирован
+                                        </span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ user.date_joined|date:"d.m.Y H:i" }}</td>
                                     <td>
-                                        <div class="action-buttons">
-                                            <a href="{% url 'admin_edit_user' user.id %}" class="btn btn-sm btn-outline-primary" title="Редактировать">
+                                        <small>{{ user.date_joined|date:"d.m.Y" }}</small><br>
+                                        <small class="text-muted">{{ user.date_joined|date:"H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons d-flex flex-wrap gap-1">
+                                            <a href="{% url 'admin_edit_user' user.id %}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Редактировать"
+                                               data-bs-toggle="tooltip">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            
+
                                             <form method="post" class="d-inline">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="user_id" value="{{ user.id }}">
-                                                
+
                                                 {% if user.is_active %}
-                                                <button type="submit" name="action" value="toggle_active" 
-                                                        class="btn btn-sm btn-outline-warning" title="Деактивировать">
+                                                <button type="submit"
+                                                        name="action"
+                                                        value="toggle_active"
+                                                        class="btn btn-sm btn-outline-warning"
+                                                        title="Деактивировать"
+                                                        data-bs-toggle="tooltip">
                                                     <i class="bi bi-person-x"></i>
                                                 </button>
                                                 {% else %}
-                                                <button type="submit" name="action" value="toggle_active" 
-                                                        class="btn btn-sm btn-outline-success" title="Активировать">
+                                                <button type="submit"
+                                                        name="action"
+                                                        value="toggle_active"
+                                                        class="btn btn-sm btn-outline-success"
+                                                        title="Активировать"
+                                                        data-bs-toggle="tooltip">
                                                     <i class="bi bi-person-check"></i>
                                                 </button>
                                                 {% endif %}
-                                                
+
                                                 {% if not user.is_staff %}
-                                                <button type="submit" name="action" value="toggle_staff" 
-                                                        class="btn btn-sm btn-outline-info" title="Сделать администратором">
-                                                    <i class="bi bi-shield"></i>
+                                                <button type="submit"
+                                                        name="action"
+                                                        value="toggle_staff"
+                                                        class="btn btn-sm btn-outline-info"
+                                                        title="Сделать администратором"
+                                                        data-bs-toggle="tooltip">
+                                                    <i class="bi bi-shield-plus"></i>
                                                 </button>
                                                 {% else %}
-                                                <button type="submit" name="action" value="toggle_staff" 
-                                                        class="btn btn-sm btn-outline-secondary" title="Убрать из администраторов">
+                                                <button type="submit"
+                                                        name="action"
+                                                        value="toggle_staff"
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                        title="Убрать из администраторов"
+                                                        data-bs-toggle="tooltip">
                                                     <i class="bi bi-shield-slash"></i>
                                                 </button>
                                                 {% endif %}
-                                                
-                                                <button type="submit" name="action" value="delete" 
-                                                        class="btn btn-sm btn-outline-danger" 
-                                                        onclick="return confirm('Удалить пользователя {{ user.username }}?')" 
-                                                        title="Удалить">
+
+                                                {% if user.is_verified %}
+                                                <button type="submit"
+                                                        name="action"
+                                                        value="toggle_verified"
+                                                        class="btn btn-sm btn-outline-warning"
+                                                        title="Снять верификацию"
+                                                        data-bs-toggle="tooltip">
+                                                    <i class="bi bi-patch-check"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="submit"
+                                                        name="action"
+                                                        value="toggle_verified"
+                                                        class="btn btn-sm btn-outline-success"
+                                                        title="Верифицировать"
+                                                        data-bs-toggle="tooltip">
+                                                    <i class="bi bi-patch-plus"></i>
+                                                </button>
+                                                {% endif %}
+
+                                                <button type="submit"
+                                                        name="action"
+                                                        value="delete"
+                                                        class="btn btn-sm btn-outline-danger delete-user-btn"
+                                                        title="Удалить"
+                                                        data-bs-toggle="tooltip"
+                                                        data-username="{{ user.username }}">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -153,25 +361,38 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
-                                        <i class="bi bi-people display-4 text-muted"></i>
-                                        <h5 class="mt-3">Пользователи не найдены</h5>
+                                    <td colspan="7" class="text-center py-5">
+                                        <i class="bi bi-people display-4 text-muted mb-3"></i>
+                                        <h5 class="text-muted">Пользователи не найдены</h5>
+                                        {% if search_query or user_type_filter or status_filter %}
+                                        <p class="text-muted">Попробуйте изменить параметры поиска</p>
+                                        <a href="{% url 'admin_user_management' %}" class="btn btn-outline-primary">
+                                            <i class="bi bi-arrow-clockwise"></i> Сбросить фильтры
+                                        </a>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                    
-                    <!-- Пагинация (ИСПРАВЛЕННАЯ ВЕРСИЯ) -->
-                    {% if users.has_other_pages %}
-                    <nav aria-label="Page navigation" class="mt-4">
+
+                    <!-- Пагинация -->
+                    {% if users.paginator.num_pages > 1 %}
+                    <nav aria-label="Навигация по страницам" class="mt-4">
                         <ul class="pagination justify-content-center">
                             {% if users.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ users.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <a class="page-link"
+                                   href="?page={{ users.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type_filter %}&user_type={{ user_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
                                     <i class="bi bi-chevron-left"></i>
                                 </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">
+                                    <i class="bi bi-chevron-left"></i>
+                                </span>
                             </li>
                             {% endif %}
 
@@ -182,19 +403,38 @@
                                 </li>
                                 {% elif i > users.number|add:'-3' and i < users.number|add:'3' %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                    <a class="page-link"
+                                       href="?page={{ i }}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type_filter %}&user_type={{ user_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                                        {{ i }}
+                                    </a>
                                 </li>
                                 {% endif %}
                             {% endfor %}
 
                             {% if users.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ users.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <a class="page-link"
+                                   href="?page={{ users.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if user_type_filter %}&user_type={{ user_type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
                                     <i class="bi bi-chevron-right"></i>
                                 </a>
                             </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">
+                                    <i class="bi bi-chevron-right"></i>
+                                </span>
+                            </li>
                             {% endif %}
                         </ul>
+
+                        <div class="text-center text-muted mt-2">
+                            <small>
+                                Страница {{ users.number }} из {{ users.paginator.num_pages }}
+                                {% if users.paginator.count > 0 %}
+                                | Показано {{ users.start_index }}–{{ users.end_index }} из {{ users.paginator.count }}
+                                {% endif %}
+                            </small>
+                        </div>
                     </nav>
                     {% endif %}
                 </div>
@@ -202,4 +442,112 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Инициализация tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+        // Автофокус на поле поиска
+        $('input[name="search"]').focus();
+
+        // Кнопка очистки поиска
+        $('.input-group .btn-outline-secondary').click(function() {
+            $(this).siblings('input[name="search"]').val('');
+            $(this).closest('form').submit();
+        });
+
+        // Подтверждение удаления пользователя
+        $('.delete-user-btn').click(function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const username = $(this).data('username');
+            const form = $(this).closest('form');
+
+            Swal.fire({
+                title: 'Удалить пользователя?',
+                html: `Вы уверены, что хотите удалить пользователя <strong>${username}</strong>?<br><br>
+                      <small class="text-danger">Это действие нельзя отменить. Все связанные данные (бронирования, отзывы и т.д.) также будут удалены.</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Да, удалить!',
+                cancelButtonText: 'Отмена',
+                width: '500px'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Добавляем скрытое поле с action='delete'
+                    form.append('<input type="hidden" name="action" value="delete">');
+                    form.submit();
+                }
+            });
+
+            return false;
+        });
+
+        // Экспорт результатов поиска
+        $('#exportBtn').click(function() {
+            // Собираем параметры текущего фильтра
+            const params = new URLSearchParams(window.location.search);
+            params.set('export', 'csv');  // Добавляем параметр экспорта
+
+            // Отправляем запрос на экспорт
+            window.location.href = '{% url "admin_user_management" %}?' + params.toString();
+        });
+
+        // Обработка других действий (активация/деактивация и т.д.)
+        $('form button:not(.delete-user-btn)').click(function() {
+            const form = $(this).closest('form');
+            const action = $(this).val();
+            const username = $(this).closest('tr').find('strong').text();
+
+            // Для простых действий (не удаление) можно сразу отправлять форму
+            // Или добавить подтверждение для некоторых действий
+
+            if (action === 'toggle_active') {
+                const isActive = $(this).hasClass('btn-outline-warning'); // если кнопка желтая, значит сейчас активен
+                const message = isActive
+                    ? `Деактивировать пользователя ${username}?`
+                    : `Активировать пользователя ${username}?`;
+
+                if (!confirm(message)) {
+                    return false;
+                }
+            }
+
+            if (action === 'toggle_staff') {
+                const isStaff = $(this).hasClass('btn-outline-secondary'); // если кнопка серая, значит сейчас админ
+                const message = isStaff
+                    ? `Убрать пользователя ${username} из администраторов?`
+                    : `Сделать пользователя ${username} администратором?`;
+
+                if (!confirm(message)) {
+                    return false;
+                }
+            }
+
+            form.append(`<input type="hidden" name="action" value="${action}">`);
+            return true;
+        });
+
+        // Сохранение параметров поиска при отправке форм с действиями
+        $('form').submit(function() {
+            const searchParams = new URLSearchParams(window.location.search);
+
+            // Добавляем скрытые поля с параметрами поиска
+            searchParams.forEach((value, key) => {
+                if (key !== 'page' && key !== 'action' && key !== 'user_id') {
+                    $(this).append(`<input type="hidden" name="${key}" value="${value}">`);
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

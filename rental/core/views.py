@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, update_session_auth_hash
 from django.contrib import messages
-from django.db.models import Count, Sum, Avg
+from django.db.models import Count, Sum, Avg, Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -11,7 +11,9 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from decimal import Decimal  # Добавьте этот импорт
+from decimal import Decimal
+from urllib.parse import urlencode
+from django.urls import reverse
 
 from .models import *
 from .forms import *
@@ -418,7 +420,8 @@ def create_booking(request, property_id):
                 messages.error(request, 'Помещение уже забронировано на выбранные даты.')
             else:
                 # Исправлено: преобразуем timedelta в Decimal для умножения на Decimal
-                duration_hours = Decimal((booking.end_datetime - booking.start_datetime).total_seconds()) / Decimal('3600')
+                duration_hours = Decimal((booking.end_datetime - booking.start_datetime).total_seconds()) / Decimal(
+                    '3600')
                 booking.total_price = property_obj.price_per_hour * duration_hours
                 booking.save()
                 messages.success(request, 'Бронирование создано! Ожидайте подтверждения от владельца.')
@@ -686,6 +689,54 @@ def admin_user_management(request):
     """Управление пользователями"""
     users = User.objects.all().order_by('-date_joined')
 
+    # Обработка поиска
+    search_query = request.GET.get('search', '')
+    user_type_filter = request.GET.get('user_type', '')
+    status_filter = request.GET.get('status', '')
+
+    # Статистика для быстрых фильтров
+    active_count = User.objects.filter(is_active=True).count()
+    inactive_count = User.objects.filter(is_active=False).count()
+    admin_count = User.objects.filter(user_type='admin').count()
+    landlord_count = User.objects.filter(user_type='landlord').count()
+    tenant_count = User.objects.filter(user_type='tenant').count()
+    total_users = User.objects.count()
+
+    # Сохраняем параметры поиска для пагинации
+    query_params = {}
+
+    if search_query:
+        users = users.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(phone__icontains=search_query)
+        )
+        query_params['search'] = search_query
+
+    if user_type_filter:
+        users = users.filter(user_type=user_type_filter)
+        query_params['user_type'] = user_type_filter
+
+    if status_filter:
+        if status_filter == 'active':
+            users = users.filter(is_active=True)
+        elif status_filter == 'inactive':
+            users = users.filter(is_active=False)
+        query_params['status'] = status_filter
+
+    # Пагинация
+    paginator = Paginator(users, 20)  # 20 пользователей на страницу
+    page_number = request.GET.get('page')
+
+    try:
+        users_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        users_page = paginator.page(1)
+    except EmptyPage:
+        users_page = paginator.page(paginator.num_pages)
+
     if request.method == 'POST':
         user_id = request.POST.get('user_id')
         action = request.POST.get('action')
@@ -712,7 +763,26 @@ def admin_user_management(request):
                 status = 'верифицирован' if user.is_verified else 'снята верификация'
                 messages.success(request, f'Пользователь {user.username} {status}.')
 
-    return render(request, 'admin/user_management.html', {'users': users})
+            # Редирект с сохранением параметров поиска
+            if query_params:
+                return redirect(f"{reverse('admin_user_management')}?{urlencode(query_params)}")
+            return redirect('admin_user_management')
+
+    context = {
+        'users': users_page,
+        'search_query': search_query,
+        'user_type_filter': user_type_filter,
+        'status_filter': status_filter,
+        'active_count': active_count,
+        'inactive_count': inactive_count,
+        'admin_count': admin_count,
+        'landlord_count': landlord_count,
+        'tenant_count': tenant_count,
+        'total_users': total_users,
+        'query_params': query_params,
+    }
+
+    return render(request, 'admin/user_management.html', context)
 
 
 @login_required
