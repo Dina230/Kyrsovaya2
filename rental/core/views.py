@@ -1,8 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, update_session_auth_hash
 from django.contrib import messages
-from django.db.models import Count, Sum, Avg, Q
+from django.db.models import Count, Sum, Avg
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -30,18 +30,15 @@ def admin_required(view_func):
 
 def home(request):
     """Главная страница сайта"""
-    # Получаем рекомендуемые помещения
     featured_properties = Property.objects.filter(
         is_featured=True,
         status='active'
     ).select_related('landlord', 'category')[:6]
 
-    # Получаем последние добавленные помещения
     recent_properties = Property.objects.filter(
         status='active'
     ).select_related('landlord', 'category').order_by('-created_at')[:6]
 
-    # Статистика для главной страницы
     stats = {
         'total_properties': Property.objects.filter(status='active').count(),
         'total_bookings': Booking.objects.filter(status='completed').count(),
@@ -53,7 +50,6 @@ def home(request):
         'recent_properties': recent_properties,
         'stats': stats,
     }
-
     return render(request, 'core/home.html', context)
 
 
@@ -63,19 +59,11 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-
-            # Дополнительная проверка
-            if user.user_type != 'admin':
-                user.is_staff = False
-                user.is_superuser = False
-                user.save()
-
             login(request, user)
             messages.success(request, f'Добро пожаловать, {user.username}! Регистрация успешна.')
             return redirect('dashboard')
     else:
         form = CustomUserCreationForm()
-
     return render(request, 'core/register.html', {'form': form})
 
 
@@ -86,28 +74,28 @@ def dashboard(request):
 
     if request.user.user_type == 'tenant':
         # Для арендатора
-        # Активные бронирования
         active_bookings = Booking.objects.filter(
             tenant=request.user,
             status__in=['pending', 'confirmed'],
             end_datetime__gte=timezone.now()
-        ).select_related('property').order_by('start_datetime')
+        ).select_related('property').order_by('start_datetime')[:5]
 
-        # История бронирований
         booking_history = Booking.objects.filter(
             tenant=request.user
-        ).exclude(status__in=['pending', 'confirmed']).select_related('property').order_by('-created_at')[:10]
+        ).exclude(status__in=['pending', 'confirmed']).select_related('property').order_by('-created_at')[:5]
 
-        # Избранные помещения
         favorites = Favorite.objects.filter(
             user=request.user
-        ).select_related('property')[:10]
+        ).select_related('property')[:4]
         favorite_properties = [fav.property for fav in favorites]
 
-        # Статистика арендатора
         stats = {
             'total_bookings': Booking.objects.filter(tenant=request.user).count(),
-            'active_bookings': active_bookings.count(),
+            'active_bookings': Booking.objects.filter(
+                tenant=request.user,
+                status__in=['pending', 'confirmed'],
+                end_datetime__gte=timezone.now()
+            ).count(),
             'completed_bookings': Booking.objects.filter(
                 tenant=request.user,
                 status='completed'
@@ -125,26 +113,21 @@ def dashboard(request):
             'stats': stats,
         })
 
-        return render(request, 'core/tenant_dashboard.html', context)
-
     elif request.user.user_type == 'landlord':
         # Для арендодателя
         properties = Property.objects.filter(landlord=request.user)
 
-        # Активные бронирования
         active_bookings = Booking.objects.filter(
             property__in=properties,
             status__in=['pending', 'confirmed'],
             end_datetime__gte=timezone.now()
-        ).select_related('property', 'tenant').order_by('start_datetime')
+        ).select_related('property', 'tenant').order_by('start_datetime')[:5]
 
-        # Новые запросы на бронирование
         new_bookings = Booking.objects.filter(
             property__in=properties,
             status='pending'
-        ).select_related('property', 'tenant').order_by('-created_at')
+        ).select_related('property', 'tenant').order_by('-created_at')[:5]
 
-        # Статистика за последние 30 дней
         thirty_days_ago = timezone.now() - timedelta(days=30)
 
         monthly_stats = Booking.objects.filter(
@@ -157,7 +140,6 @@ def dashboard(request):
             avg_booking=Avg('total_price')
         )
 
-        # Общая статистика
         stats = {
             'total_properties': properties.count(),
             'active_properties': properties.filter(status='active').count(),
@@ -169,24 +151,20 @@ def dashboard(request):
             'monthly_revenue': monthly_stats['total_revenue'] or 0,
         }
 
-        # Популярные помещения
         popular_properties = Property.objects.filter(
             landlord=request.user
         ).annotate(
-            booking_count=Count('bookings'),
-            avg_rating=Avg('reviews__rating')
-        ).order_by('-booking_count')[:5]
+            booking_count=Count('bookings')
+        ).order_by('-booking_count')[:4]
 
         context.update({
-            'properties': properties[:5],  # Последние 5 помещений
+            'properties': properties[:5],
             'active_bookings': active_bookings,
             'new_bookings': new_bookings,
             'stats': stats,
             'monthly_stats': monthly_stats,
             'popular_properties': popular_properties,
         })
-
-        return render(request, 'core/landlord_dashboard.html', context)
 
     elif request.user.is_staff:
         # Для администратора - редирект в кастомную админку
@@ -206,7 +184,6 @@ def edit_profile(request):
             return redirect('dashboard')
     else:
         form = ProfileEditForm(instance=request.user)
-
     return render(request, 'core/edit_profile.html', {'form': form})
 
 
@@ -217,12 +194,11 @@ def change_password(request):
         form = PasswordChangeFormCustom(request.user, request.POST)
         if form.is_valid():
             form.save()
-            update_session_auth_hash(request, form.user)  # Важно для сохранения сессии
+            update_session_auth_hash(request, form.user)
             messages.success(request, 'Пароль успешно изменен.')
             return redirect('dashboard')
     else:
         form = PasswordChangeFormCustom(request.user)
-
     return render(request, 'core/change_password.html', {'form': form})
 
 
@@ -237,12 +213,10 @@ def my_bookings(request):
         tenant=request.user
     ).select_related('property').order_by('-created_at')
 
-    # Фильтрация по статусу
     status_filter = request.GET.get('status')
     if status_filter:
         bookings = bookings.filter(status=status_filter)
 
-    # Пагинация
     paginator = Paginator(bookings, 10)
     page = request.GET.get('page')
     try:
@@ -265,7 +239,6 @@ def my_favorites(request):
     favorites = Favorite.objects.filter(user=request.user).select_related('property')
     properties = [favorite.property for favorite in favorites]
 
-    # Пагинация
     paginator = Paginator(properties, 12)
     page = request.GET.get('page')
     try:
@@ -287,12 +260,10 @@ def my_properties(request):
 
     properties = Property.objects.filter(landlord=request.user).order_by('-created_at')
 
-    # Фильтрация по статусу
     status_filter = request.GET.get('status')
     if status_filter:
         properties = properties.filter(status=status_filter)
 
-    # Пагинация
     paginator = Paginator(properties, 10)
     page = request.GET.get('page')
     try:
@@ -309,7 +280,6 @@ def property_list(request):
     """Список всех помещений"""
     properties = Property.objects.filter(status='active').select_related('landlord', 'category')
 
-    # Фильтрация
     property_type = request.GET.get('type')
     category_id = request.GET.get('category')
     city = request.GET.get('city')
@@ -327,7 +297,6 @@ def property_list(request):
     if max_price:
         properties = properties.filter(price_per_hour__lte=max_price)
 
-    # Пагинация
     paginator = Paginator(properties, 12)
     page = request.GET.get('page')
     try:
@@ -337,7 +306,6 @@ def property_list(request):
     except EmptyPage:
         properties = paginator.page(paginator.num_pages)
 
-    # Получаем категории для фильтра
     categories = PropertyCategory.objects.all()
 
     context = {
@@ -345,7 +313,6 @@ def property_list(request):
         'categories': categories,
         'property_types': Property.PROPERTY_TYPE_CHOICES,
     }
-
     return render(request, 'core/property_list.html', context)
 
 
@@ -358,7 +325,6 @@ def property_detail(request, slug):
         status='active'
     )
 
-    # Проверяем, есть ли помещение в избранном у пользователя
     is_favorite = False
     if request.user.is_authenticated:
         is_favorite = Favorite.objects.filter(
@@ -366,16 +332,13 @@ def property_detail(request, slug):
             property=property_obj
         ).exists()
 
-    # Получаем отзывы
     reviews = property_obj.reviews.all()
 
-    # Получаем похожие помещения
     similar_properties = Property.objects.filter(
         category=property_obj.category,
         status='active'
     ).exclude(id=property_obj.id)[:4]
 
-    # Для календаря - получаем забронированные даты на ближайшие 30 дней
     today = datetime.now().date()
     next_month = today + timedelta(days=30)
 
@@ -386,13 +349,10 @@ def property_detail(request, slug):
         status__in=['confirmed', 'pending']
     ).values_list('start_datetime__date', flat=True).distinct()
 
-    # Преобразуем в JSON
     booked_dates_json = json.dumps([date.strftime('%Y-%m-%d') for date in booked_dates])
 
-    # Для времени - создаем список часов
-    hours_range = list(range(9, 23))  # с 9 утра до 22 вечера
+    hours_range = list(range(9, 23))
 
-    # Создаем данные для календаря
     calendar_data = []
     for i in range(30):
         date = today + timedelta(days=i)
@@ -412,7 +372,6 @@ def property_detail(request, slug):
         'hours_range': hours_range,
         'calendar_data': calendar_data,
     }
-
     return render(request, 'core/property_detail.html', context)
 
 
@@ -447,7 +406,6 @@ def create_booking(request, property_id):
             booking.property = property_obj
             booking.tenant = request.user
 
-            # Проверка доступности помещения на выбранные даты
             conflicting_bookings = Booking.objects.filter(
                 property=property_obj,
                 status__in=['pending', 'confirmed'],
@@ -458,10 +416,8 @@ def create_booking(request, property_id):
             if conflicting_bookings.exists():
                 messages.error(request, 'Помещение уже забронировано на выбранные даты.')
             else:
-                # Расчет стоимости
                 duration_hours = (booking.end_datetime - booking.start_datetime).total_seconds() / 3600
                 booking.total_price = property_obj.price_per_hour * duration_hours
-
                 booking.save()
                 messages.success(request, 'Бронирование создано! Ожидайте подтверждения от владельца.')
                 return redirect('my_bookings')
@@ -490,13 +446,11 @@ def ajax_create_booking(request, property_id):
 
         data = json.loads(request.body)
 
-        # Проверяем данные
         booking_date = datetime.strptime(data['booking_date'], '%Y-%m-%d').date()
         start_time = data['start_time']
         end_time = data['end_time']
         guests = int(data['guests'])
 
-        # Создаем datetime объекты
         start_datetime = timezone.make_aware(
             datetime.combine(booking_date, datetime.strptime(start_time, '%H:%M').time())
         )
@@ -504,14 +458,12 @@ def ajax_create_booking(request, property_id):
             datetime.combine(booking_date, datetime.strptime(end_time, '%H:%M').time())
         )
 
-        # Проверка на корректность времени
         if end_datetime <= start_datetime:
             return JsonResponse({
                 'success': False,
                 'error': 'Время окончания должно быть позже времени начала'
             }, status=400)
 
-        # Проверка на минимальную длительность (1 час)
         duration = (end_datetime - start_datetime).total_seconds() / 3600
         if duration < 1:
             return JsonResponse({
@@ -519,7 +471,6 @@ def ajax_create_booking(request, property_id):
                 'error': 'Минимальное время бронирования - 1 час'
             }, status=400)
 
-        # Проверка доступности помещения
         conflicting_bookings = Booking.objects.filter(
             property=property_obj,
             status__in=['confirmed', 'pending'],
@@ -533,17 +484,14 @@ def ajax_create_booking(request, property_id):
                 'error': 'Помещение уже забронировано на выбранное время'
             }, status=400)
 
-        # Проверка количества гостей
         if guests > property_obj.capacity:
             return JsonResponse({
                 'success': False,
                 'error': f'Максимальная вместимость: {property_obj.capacity} человек'
             }, status=400)
 
-        # Расчет стоимости
         total_price = duration * property_obj.price_per_hour
 
-        # Создание бронирования
         booking = Booking.objects.create(
             property=property_obj,
             tenant=request.user,
@@ -583,7 +531,6 @@ def booking_detail(request, booking_id):
         id=booking_id
     )
 
-    # Проверяем права доступа
     if request.user != booking.tenant and request.user != booking.property.landlord:
         if not request.user.is_staff:
             messages.error(request, 'У вас нет прав для просмотра этого бронирования.')
@@ -595,7 +542,6 @@ def booking_detail(request, booking_id):
         'can_review': booking.status == 'completed' and request.user == booking.tenant and not hasattr(booking,
                                                                                                        'review'),
     }
-
     return render(request, 'core/booking_detail.html', context)
 
 
@@ -611,19 +557,14 @@ def add_property(request):
         if form.is_valid():
             property_obj = form.save(commit=False)
             property_obj.landlord = request.user
-
-            # Генерация slug
             from django.utils.text import slugify
             property_obj.slug = slugify(property_obj.title)
-
             property_obj.save()
-            form.save_m2m()  # Сохраняем ManyToMany отношения
-
+            form.save_m2m()
             messages.success(request, 'Помещение успешно добавлено!')
             return redirect('my_properties')
     else:
         form = PropertyForm()
-
     return render(request, 'core/add_property.html', {'form': form})
 
 
@@ -640,7 +581,6 @@ def edit_property(request, property_id):
             return redirect('my_properties')
     else:
         form = PropertyForm(instance=property_obj)
-
     return render(request, 'core/edit_property.html', {'form': form, 'property': property_obj})
 
 
@@ -665,12 +605,10 @@ def add_review(request, booking_id):
     """Добавление отзыва"""
     booking = get_object_or_404(Booking, id=booking_id, tenant=request.user)
 
-    # Проверяем, можно ли оставить отзыв
     if booking.status != 'completed':
         messages.error(request, 'Отзыв можно оставить только после завершения бронирования.')
         return redirect('my_bookings')
 
-    # Проверяем, не оставлял ли уже пользователь отзыв на это бронирование
     if hasattr(booking, 'review'):
         messages.error(request, 'Вы уже оставили отзыв на это бронирование.')
         return redirect('my_bookings')
@@ -683,56 +621,37 @@ def add_review(request, booking_id):
             review.user = request.user
             review.booking = booking
             review.save()
-
             messages.success(request, 'Спасибо за ваш отзыв!')
             return redirect('my_bookings')
     else:
         form = ReviewForm()
-
     return render(request, 'core/add_review.html', {'form': form, 'booking': booking})
 
 
 # --- АДМИН-ПАНЕЛЬ ---
-
 @login_required
 @admin_required
 def custom_admin_dashboard(request):
     """Кастомная админ-панель"""
-    # Общая статистика
     total_users = User.objects.count()
     total_properties = Property.objects.count()
     total_bookings = Booking.objects.count()
 
-    # Активные бронирования
     active_bookings = Booking.objects.filter(
         status__in=['pending', 'confirmed'],
         end_datetime__gte=timezone.now()
     ).count()
 
-    # Статистика за последние 30 дней
     thirty_days_ago = timezone.now() - timedelta(days=30)
 
-    # Пользователи по типам
-    user_stats = User.objects.values('user_type').annotate(
-        count=Count('id')
-    )
+    user_stats = User.objects.values('user_type').annotate(count=Count('id'))
+    property_stats = Property.objects.values('property_type').annotate(count=Count('id'))
+    booking_stats = Booking.objects.values('status').annotate(count=Count('id'))
 
-    # Распределение помещений по типам
-    property_stats = Property.objects.values('property_type').annotate(
-        count=Count('id')
-    )
-
-    # Бронирования по статусам
-    booking_stats = Booking.objects.values('status').annotate(
-        count=Count('id')
-    )
-
-    # Недавние действия
     recent_users = User.objects.order_by('-date_joined')[:5]
     recent_bookings = Booking.objects.select_related('property', 'tenant').order_by('-created_at')[:5]
     recent_reviews = Review.objects.select_related('property', 'user').order_by('-created_at')[:5]
 
-    # Выручка за последние 30 дней
     revenue_stats = Booking.objects.filter(
         status='completed',
         created_at__gte=thirty_days_ago
@@ -754,7 +673,6 @@ def custom_admin_dashboard(request):
         'recent_reviews': recent_reviews,
         'revenue_stats': revenue_stats,
     }
-
     return render(request, 'admin/dashboard.html', context)
 
 
@@ -969,7 +887,6 @@ def admin_add_user(request):
 def admin_system_settings(request):
     """Настройки системы"""
     if request.method == 'POST':
-        # Здесь можно добавить логику сохранения настроек
         messages.success(request, 'Настройки системы обновлены.')
         return redirect('admin_system_settings')
 
@@ -989,12 +906,10 @@ def landlord_bookings(request):
         property__in=properties
     ).select_related('property', 'tenant').order_by('-created_at')
 
-    # Фильтрация по статусу
     status_filter = request.GET.get('status')
     if status_filter:
         bookings = bookings.filter(status=status_filter)
 
-    # Пагинация
     paginator = Paginator(bookings, 10)
     page = request.GET.get('page')
     try:
@@ -1052,7 +967,6 @@ def add_property_image(request, property_id):
             image.property = property_obj
             image.save()
 
-            # Если это главное изображение, снимаем главный статус у других
             if image.is_main:
                 PropertyImage.objects.filter(property=property_obj).exclude(id=image.id).update(is_main=False)
 

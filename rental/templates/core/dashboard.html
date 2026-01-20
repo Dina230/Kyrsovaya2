@@ -1,369 +1,461 @@
 {% extends 'base.html' %}
 
-{% block title %}Админ-панель{% endblock %}
+{% block title %}Личный кабинет{% endblock %}
 
 {% block extra_css %}
 <style>
-    .admin-card {
-        border: none;
-        border-radius: 10px;
-        transition: transform 0.2s;
-        height: 100%;
+    .dashboard-stats .stat-card {
+        border-left: 4px solid;
+        padding-left: 15px;
     }
 
-    .admin-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .stats-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    .stats-card-2 {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-    }
-
-    .stats-card-3 {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        color: white;
-    }
-
-    .stats-card-4 {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        color: white;
-    }
-
-    .admin-table th {
-        background-color: #f8f9fa;
-        border-bottom: 2px solid #dee2e6;
-    }
+    .stat-card-1 { border-left-color: #3a57e8; }
+    .stat-card-2 { border-left-color: #1abc9c; }
+    .stat-card-3 { border-left-color: #f39c12; }
+    .stat-card-4 { border-left-color: #e74c3c; }
 
     .quick-actions .btn {
         margin-bottom: 10px;
     }
 
-    .badge-admin {
-        background-color: #6f42c1;
-    }
-
-    .badge-landlord {
-        background-color: #20c997;
-    }
-
-    .badge-tenant {
-        background-color: #17a2b8;
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="col-lg-3 mb-4">
-            <div class="card admin-card shadow">
+<div class="container py-4">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item active">Личный кабинет</li>
+        </ol>
+    </nav>
+
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" class="profile-avatar" alt="{{ user.get_full_name }}">
+                    {% else %}
+                    <div class="profile-avatar bg-primary text-white d-flex align-items-center justify-content-center">
+                        <i class="bi bi-person fs-1"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1 ms-4">
+                    <h1 class="h3 mb-1">Добро пожаловать, {{ user.get_full_name|default:user.username }}!</h1>
+                    <p class="text-muted mb-2">
+                        <i class="bi bi-person-badge"></i> {{ user.get_user_type_display }}
+                        {% if user.company_name %}
+                        • {{ user.company_name }}
+                        {% endif %}
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-{% if user.is_verified %}success{% else %}secondary{% endif %}">
+                            {% if user.is_verified %}✓ Верифицирован{% else %}Не верифицирован{% endif %}
+                        </span>
+                        <span class="badge bg-info">
+                            Зарегистрирован: {{ user.date_joined|date:"d.m.Y" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="btn-group-vertical w-100">
+                <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Редактировать профиль
+                </a>
+                <a href="{% url 'change_password' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-key"></i> Сменить пароль
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats for Tenant -->
+    {% if user.user_type == 'tenant' %}
+    <div class="row dashboard-stats mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body stat-card stat-card-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Активные бронирования</h6>
+                            <h2 class="mb-0">{{ stats.active_bookings }}</h2>
+                        </div>
+                        <i class="bi bi-calendar-check fs-1 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body stat-card stat-card-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Всего бронирований</h6>
+                            <h2 class="mb-0">{{ stats.total_bookings }}</h2>
+                        </div>
+                        <i class="bi bi-calendar-week fs-1 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body stat-card stat-card-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Завершенные</h6>
+                            <h2 class="mb-0">{{ stats.completed_bookings }}</h2>
+                        </div>
+                        <i class="bi bi-check-circle fs-1 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body stat-card stat-card-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Общие расходы</h6>
+                            <h2 class="mb-0">{{ stats.total_spent|floatformat:0 }} ₽</h2>
+                        </div>
+                        <i class="bi bi-cash-coin fs-1 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Bookings -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Активные бронирования</h5>
+                    <a href="{% url 'my_bookings' %}" class="btn btn-sm btn-outline-primary">Все бронирования</a>
+                </div>
                 <div class="card-body">
-                    <div class="text-center mb-4">
-                        <div class="avatar-circle bg-primary text-white d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-                             style="width: 80px; height: 80px; font-size: 2rem;">
-                            {{ user.username|first|upper }}
-                        </div>
-                        <h5>{{ user.get_full_name|default:user.username }}</h5>
-                        <span class="badge badge-admin">Администратор</span>
+                    {% if active_bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Помещение</th>
+                                    <th>Дата и время</th>
+                                    <th>Сумма</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in active_bookings|slice:":5" %}
+                                <tr>
+                                    <td><small>{{ booking.booking_id|truncatechars:8 }}</small></td>
+                                    <td>
+                                        <a href="{% url 'property_detail' booking.property.slug %}" class="text-decoration-none">
+                                            {{ booking.property.title|truncatechars:30 }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {{ booking.start_datetime|date:"d.m.Y H:i" }}<br>
+                                        <small class="text-muted">{{ booking.get_duration_hours|floatformat:1 }} ч.</small>
+                                    </td>
+                                    <td>{{ booking.total_price }} ₽</td>
+                                    <td>
+                                        {% if booking.status == 'pending' %}
+                                        <span class="badge bg-warning">Ожидание</span>
+                                        {% elif booking.status == 'confirmed' %}
+                                        <span class="badge bg-success">Подтверждено</span>
+                                        {% elif booking.status == 'completed' %}
+                                        <span class="badge bg-info">Завершено</span>
+                                        {% elif booking.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Отменено</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ booking.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if booking.status == 'pending' or booking.status == 'confirmed' %}
+                                        <form method="post" action="{% url 'cancel_booking' booking.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    onclick="return confirm('Отменить бронирование?')">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-
-                    <nav class="nav flex-column">
-                        <a class="nav-link active" href="{% url 'custom_admin_dashboard' %}">
-                            <i class="bi bi-speedometer2 me-2"></i>Дашборд
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-x display-4 text-muted"></i>
+                        <h5 class="mt-3">Нет активных бронирований</h5>
+                        <p class="text-muted">У вас пока нет активных бронирований</p>
+                        <a href="{% url 'property_list' %}" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Найти помещение
                         </a>
-                        <a class="nav-link" href="{% url 'admin_user_management' %}">
-                            <i class="bi bi-people me-2"></i>Пользователи
-                        </a>
-                        <a class="nav-link" href="{% url 'admin_property_management' %}">
-                            <i class="bi bi-buildings me-2"></i>Помещения
-                        </a>
-                        <a class="nav-link" href="{% url 'admin_booking_management' %}">
-                            <i class="bi bi-calendar-check me-2"></i>Бронирования
-                        </a>
-                        <a class="nav-link" href="{% url 'admin_review_management' %}">
-                            <i class="bi bi-star me-2"></i>Отзывы
-                        </a>
-                        <a class="nav-link" href="{% url 'admin_system_settings' %}">
-                            <i class="bi bi-gear me-2"></i>Настройки
-                        </a>
-                        <hr>
-                        <a class="nav-link" href="/admin/" target="_blank">
-                            <i class="bi bi-box-arrow-up-right me-2"></i>Django Admin
-                        </a>
-                        <a class="nav-link" href="{% url 'dashboard' %}">
-                            <i class="bi bi-person-circle me-2"></i>Мой профиль
-                        </a>
-                    </nav>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Main Content -->
-        <div class="col-lg-9">
-            <!-- Stats Cards -->
-            <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card admin-card stats-card shadow">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-white-50">Пользователи</h6>
-                                    <h2 class="mb-0 text-white">{{ total_users }}</h2>
-                                </div>
-                                <i class="bi bi-people display-4 text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Favorite Properties -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Избранные помещения</h5>
+                    <a href="{% url 'my_favorites' %}" class="btn btn-sm btn-outline-primary">Все избранное</a>
                 </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card admin-card stats-card-2 shadow">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-white-50">Помещения</h6>
-                                    <h2 class="mb-0 text-white">{{ total_properties }}</h2>
-                                </div>
-                                <i class="bi bi-buildings display-4 text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card admin-card stats-card-3 shadow">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-white-50">Бронирования</h6>
-                                    <h2 class="mb-0 text-white">{{ total_bookings }}</h2>
-                                </div>
-                                <i class="bi bi-calendar-check display-4 text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card admin-card stats-card-4 shadow">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-white-50">Активные</h6>
-                                    <h2 class="mb-0 text-white">{{ active_bookings }}</h2>
-                                </div>
-                                <i class="bi bi-clock-history display-4 text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Revenue Card -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card admin-card shadow">
-                        <div class="card-body">
-                            <h5 class="card-title mb-4">Финансовая статистика (30 дней)</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="bg-primary rounded p-3 me-3">
-                                            <i class="bi bi-cash-coin text-white"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1">Общая выручка</h6>
-                                            <h3 class="mb-0">
-                                                {{ revenue_stats.total_revenue|default:"0"|floatformat:2 }} ₽
-                                            </h3>
-                                        </div>
+                <div class="card-body">
+                    {% if favorite_properties %}
+                    <div class="row">
+                        {% for property in favorite_properties|slice:":4" %}
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card property-card h-100">
+                                <a href="{% url 'property_detail' property.slug %}">
+                                    {% if property.get_main_image %}
+                                    <img src="{{ property.get_main_image.image.url }}"
+                                         class="card-img-top"
+                                         alt="{{ property.title }}"
+                                         style="height: 150px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                                         style="height: 150px;">
+                                        <i class="bi bi-building text-muted fs-1"></i>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <div class="bg-success rounded p-3 me-3">
-                                            <i class="bi bi-graph-up text-white"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1">Средний чек</h6>
-                                            <h3 class="mb-0">
-                                                {{ revenue_stats.avg_booking|default:"0"|floatformat:2 }} ₽
-                                            </h3>
-                                        </div>
-                                    </div>
+                                    {% endif %}
+                                </a>
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <a href="{% url 'property_detail' property.slug %}" class="text-decoration-none">
+                                            {{ property.title|truncatechars:25 }}
+                                        </a>
+                                    </h6>
+                                    <p class="card-text mb-1">
+                                        <small class="text-muted">{{ property.city }}</small>
+                                    </p>
+                                    <p class="card-text mb-0">
+                                        <strong>{{ property.price_per_hour }} ₽/час</strong>
+                                    </p>
                                 </div>
                             </div>
                         </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-heart display-4 text-muted"></i>
+                        <h5 class="mt-3">Нет избранных помещений</h5>
+                        <p class="text-muted">Добавьте помещения в избранное, чтобы быстро к ним вернуться</p>
+                        <a href="{% url 'property_list' %}" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Найти помещение
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Stats for Landlord -->
+    {% if user.user_type == 'landlord' %}
+    <div class="row dashboard-stats mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body stat-card stat-card-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Мои помещения</h6>
+                            <h2 class="mb-0">{{ stats.total_properties }}</h2>
+                            <small class="text-success">
+                                {{ stats.active_properties }} активных
+                            </small>
+                        </div>
+                        <i class="bi bi-buildings fs-1 text-primary"></i>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Recent Activity -->
-            <div class="row">
-                <!-- Recent Users -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card admin-card shadow">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Новые пользователи</h6>
-                            <a href="{% url 'admin_user_management' %}" class="btn btn-sm btn-outline-primary">Все</a>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body stat-card stat-card-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Всего бронирований</h6>
+                            <h2 class="mb-0">{{ stats.total_bookings }}</h2>
+                            <small class="text-warning">
+                                {{ stats.pending_bookings }} ожидают
+                            </small>
                         </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-sm admin-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Имя</th>
-                                            <th>Email</th>
-                                            <th>Тип</th>
-                                            <th>Дата</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for user in recent_users %}
-                                        <tr>
-                                            <td>{{ user.get_full_name|default:user.username }}</td>
-                                            <td>{{ user.email|truncatechars:15 }}</td>
-                                            <td>
-                                                <span class="badge badge-{{ user.user_type }}">
-                                                    {{ user.get_user_type_display }}
-                                                </span>
-                                            </td>
-                                            <td>{{ user.date_joined|date:"d.m.Y" }}</td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted">Нет пользователей</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Bookings -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card admin-card shadow">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Последние бронирования</h6>
-                            <a href="{% url 'admin_booking_management' %}" class="btn btn-sm btn-outline-primary">Все</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-sm admin-table">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Помещение</th>
-                                            <th>Статус</th>
-                                            <th>Сумма</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for booking in recent_bookings %}
-                                        <tr>
-                                            <td><small>{{ booking.booking_id|truncatechars:8 }}</small></td>
-                                            <td>{{ booking.property.title|truncatechars:15 }}</td>
-                                            <td>
-                                                <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% else %}secondary{% endif %}">
-                                                    {{ booking.get_status_display }}
-                                                </span>
-                                            </td>
-                                            <td>{{ booking.total_price }} ₽</td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted">Нет бронирований</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <i class="bi bi-calendar-week fs-1 text-success"></i>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Quick Actions -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card admin-card shadow">
-                        <div class="card-header">
-                            <h6 class="mb-0">Быстрые действия</h6>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body stat-card stat-card-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Выручка (30 дней)</h6>
+                            <h2 class="mb-0">{{ stats.monthly_revenue|floatformat:0 }} ₽</h2>
+                            <small class="text-success">
+                                {{ stats.avg_booking|default:0|floatformat:0 }} ₽ средний чек
+                            </small>
                         </div>
-                        <div class="card-body">
-                            <div class="row quick-actions">
-                                <div class="col-md-3">
-                                    <a href="{% url 'admin_add_user' %}" class="btn btn-primary w-100">
-                                        <i class="bi bi-person-plus"></i> Добавить пользователя
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="{% url 'admin_add_property' %}" class="btn btn-success w-100">
-                                        <i class="bi bi-building-add"></i> Добавить помещение
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="{% url 'admin_property_management' %}" class="btn btn-info w-100">
-                                        <i class="bi bi-eye"></i> Просмотр помещений
-                                    </a>
-                                </div>
-                                <div class="col-md-3">
-                                    <a href="{% url 'admin_system_settings' %}" class="btn btn-secondary w-100">
-                                        <i class="bi bi-gear"></i> Настройки системы
-                                    </a>
-                                </div>
-                            </div>
+                        <i class="bi bi-cash-coin fs-1 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body stat-card stat-card-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Новые запросы</h6>
+                            <h2 class="mb-0">{{ stats.new_requests|default:0 }}</h2>
+                            <small class="text-danger">
+                                Требуют внимания
+                            </small>
+                        </div>
+                        <i class="bi bi-bell fs-1 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties for Landlord -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Мои помещения</h5>
+                    <a href="{% url 'my_properties' %}" class="btn btn-sm btn-outline-primary">Все помещения</a>
+                </div>
+                <div class="card-body">
+                    {% if properties %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Город</th>
+                                    <th>Тип</th>
+                                    <th>Цена</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for property in properties %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'property_detail' property.slug %}" class="text-decoration-none">
+                                            {{ property.title|truncatechars:30 }}
+                                        </a>
+                                    </td>
+                                    <td>{{ property.city }}</td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ property.get_property_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ property.price_per_hour }} ₽/час</td>
+                                    <td>
+                                        {% if property.status == 'active' %}
+                                        <span class="badge bg-success">Активно</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Неактивно</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'edit_property' property.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'property_detail' property.slug %}" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-building display-4 text-muted"></i>
+                        <h5 class="mt-3">Нет добавленных помещений</h5>
+                        <p class="text-muted">Добавьте свое первое помещение для аренды</p>
+                        <a href="{% url 'add_property' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Добавить помещение
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- For Admin users - link to admin panel -->
+    {% if user.is_staff %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Административная панель</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'custom_admin_dashboard' %}" class="btn btn-dark w-100">
+                                <i class="bi bi-speedometer2"></i> Кастомная админка
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="/admin/" class="btn btn-outline-dark w-100">
+                                <i class="bi bi-box-arrow-up-right"></i> Django Admin
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
-
-<script>
-    // Статусы пользователей
-    document.querySelectorAll('.badge-admin').forEach(el => {
-        el.style.backgroundColor = '#6f42c1';
-    });
-
-    document.querySelectorAll('.badge-landlord').forEach(el => {
-        el.style.backgroundColor = '#20c997';
-    });
-
-    document.querySelectorAll('.badge-tenant').forEach(el => {
-        el.style.backgroundColor = '#17a2b8';
-    });
-</script>
-<!-- В templates/core/dashboard.html добавьте в конец: -->
-{% if user.is_staff %}
-<div class="card mt-4">
-    <div class="card-header bg-dark text-white">
-        <h5 class="mb-0">Административная панель</h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <a href="{% url 'custom_admin_dashboard' %}" class="btn btn-dark w-100">
-                    <i class="bi bi-speedometer2"></i> Кастомная админка
-                </a>
-            </div>
-            <div class="col-md-6 mb-3">
-                <a href="/admin/" class="btn btn-outline-dark w-100">
-                    <i class="bi bi-box-arrow-up-right"></i> Django Admin
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %}

@@ -30,13 +30,16 @@ class User(AbstractUser):
         return f'{self.get_full_name()} ({self.get_user_type_display()})'
 
     def save(self, *args, **kwargs):
-        # Если это новый пользователь и он не администратор - снимаем права администратора
-        if not self.pk:  # Новый пользователь
-            if self.user_type != 'admin':
-                self.is_staff = False
-                self.is_superuser = False
-        # Если пользователь меняет тип на не-админ - снимаем права
-        elif self.user_type != 'admin':
+        # ВАЖНО: Удаляем или комментируем старую логику!
+        # Эта логика была неверной и сбрасывала права администратора
+
+        # Новая правильная логика:
+        # Если пользователь - администратор, даем ему все права
+        if self.user_type == 'admin':
+            self.is_staff = True
+            self.is_superuser = True
+        else:
+            # Для обычных пользователей снимаем права администратора
             self.is_staff = False
             self.is_superuser = False
 

@@ -24,9 +24,9 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
 
     # Third party
-    'crispy_forms',
-    'crispy_bootstrap5',
-    'django_filters',
+    # 'crispy_forms',
+    # 'crispy_bootstrap5',
+    # 'django_filters',
 
     # Local
     'core',
