@@ -44,6 +44,7 @@ urlpatterns = [
     # Кастомная админка (ПРЕФИКС admin-panel/)
     path('admin-panel/dashboard/', views.custom_admin_dashboard, name='custom_admin_dashboard'),
     path('admin-panel/users/', views.admin_user_management, name='admin_user_management'),
+    path('admin-panel/users/export/', views.export_users_csv, name='export_users_csv'),
     path('admin-panel/users/add/', views.admin_add_user, name='admin_add_user'),
     path('admin-panel/users/edit/<int:user_id>/', views.admin_edit_user, name='admin_edit_user'),
     path('admin-panel/properties/', views.admin_property_management, name='admin_property_management'),

@@ -8,12 +8,13 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from functools import wraps
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from decimal import Decimal
 from urllib.parse import urlencode
 from django.urls import reverse
+import csv
 
 from .models import *
 from .forms import *
@@ -727,7 +728,7 @@ def admin_user_management(request):
         query_params['status'] = status_filter
 
     # Пагинация
-    paginator = Paginator(users, 20)  # 20 пользователей на страницу
+    paginator = Paginator(users, 5)  # 5 пользователей на страницу
     page_number = request.GET.get('page')
 
     try:
@@ -737,36 +738,48 @@ def admin_user_management(request):
     except EmptyPage:
         users_page = paginator.page(paginator.num_pages)
 
+    # Обработка POST запросов для действий
     if request.method == 'POST':
         user_id = request.POST.get('user_id')
         action = request.POST.get('action')
 
         if user_id and action:
-            user = get_object_or_404(User, id=user_id)
+            try:
+                user = get_object_or_404(User, id=user_id)
 
-            if action == 'delete':
-                user.delete()
-                messages.success(request, f'Пользователь {user.username} удален.')
-            elif action == 'toggle_active':
-                user.is_active = not user.is_active
-                user.save()
-                status = 'активирован' if user.is_active else 'деактивирован'
-                messages.success(request, f'Пользователь {user.username} {status}.')
-            elif action == 'toggle_staff':
-                user.is_staff = not user.is_staff
-                user.save()
-                status = 'назначен администратором' if user.is_staff else 'снят с администратора'
-                messages.success(request, f'Пользователь {user.username} {status}.')
-            elif action == 'toggle_verified':
-                user.is_verified = not user.is_verified
-                user.save()
-                status = 'верифицирован' if user.is_verified else 'снята верификация'
-                messages.success(request, f'Пользователь {user.username} {status}.')
+                if action == 'delete':
+                    user.delete()
+                    messages.success(request, f'Пользователь {user.username} удален.')
+                elif action == 'toggle_active':
+                    user.is_active = not user.is_active
+                    user.save()
+                    status = 'активирован' if user.is_active else 'деактивирован'
+                    messages.success(request, f'Пользователь {user.username} {status}.')
+                elif action == 'toggle_staff':
+                    user.is_staff = not user.is_staff
+                    user.save()
+                    status = 'назначен администратором' if user.is_staff else 'снят с администратора'
+                    messages.success(request, f'Пользователь {user.username} {status}.')
 
-            # Редирект с сохранением параметров поиска
-            if query_params:
-                return redirect(f"{reverse('admin_user_management')}?{urlencode(query_params)}")
-            return redirect('admin_user_management')
+                # Редирект с сохранением параметров поиска
+                redirect_url = reverse('admin_user_management')
+                if query_params:
+                    params = urlencode(query_params)
+                    redirect_url = f"{redirect_url}?{params}"
+
+                # Добавляем параметр страницы, если он был
+                if page_number and page_number != '1':
+                    redirect_url += f"&page={page_number}" if '?' in redirect_url else f"?page={page_number}"
+
+                return redirect(redirect_url)
+
+            except Exception as e:
+                messages.error(request, f'Ошибка при выполнении действия: {str(e)}')
+                redirect_url = reverse('admin_user_management')
+                if query_params:
+                    params = urlencode(query_params)
+                    redirect_url = f"{redirect_url}?{params}"
+                return redirect(redirect_url)
 
     context = {
         'users': users_page,
@@ -783,6 +796,72 @@ def admin_user_management(request):
     }
 
     return render(request, 'admin/user_management.html', context)
+
+
+def export_users_csv(request):
+    """Экспорт пользователей в CSV"""
+    # Проверяем, авторизован ли пользователь и является ли администратором
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return HttpResponse('Доступ запрещен', status=403)
+
+    users = User.objects.all().order_by('-date_joined')
+
+    # Применяем те же фильтры, что и в основном представлении
+    search_query = request.GET.get('search', '')
+    user_type_filter = request.GET.get('user_type', '')
+    status_filter = request.GET.get('status', '')
+
+    if search_query:
+        users = users.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(phone__icontains=search_query)
+        )
+
+    if user_type_filter:
+        users = users.filter(user_type=user_type_filter)
+
+    if status_filter:
+        if status_filter == 'active':
+            users = users.filter(is_active=True)
+        elif status_filter == 'inactive':
+            users = users.filter(is_active=False)
+
+    # Создаем HTTP ответ с CSV заголовками
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response[
+        'Content-Disposition'] = f'attachment; filename="users_export_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+
+    # Создаем CSV writer с правильной кодировкой
+    writer = csv.writer(response, delimiter=';')
+
+    # Заголовки CSV
+    writer.writerow([
+        'ID', 'Логин', 'Email', 'Имя', 'Фамилия', 'Телефон',
+        'Тип пользователя', 'Активен', 'Администратор', 'Подтвержден',
+        'Дата регистрации', 'Последний вход'
+    ])
+
+    # Данные
+    for user in users:
+        writer.writerow([
+            user.id,
+            user.username,
+            user.email,
+            user.first_name or '',
+            user.last_name or '',
+            user.phone or '',
+            user.get_user_type_display(),
+            'Да' if user.is_active else 'Нет',
+            'Да' if user.is_staff else 'Нет',
+            'Да' if user.is_verified else 'Нет',
+            user.date_joined.strftime('%d.%m.%Y %H:%M') if user.date_joined else '',
+            user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else ''
+        ])
+
+    return response
 
 
 @login_required

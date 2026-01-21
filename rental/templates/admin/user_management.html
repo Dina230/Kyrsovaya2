@@ -46,6 +46,13 @@
         border-left: 4px solid #0d6efd;
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     }
+
+    /* Добавим стили для форм */
+    .action-form {
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+    }
 </style>
 {% endblock %}
 
@@ -56,8 +63,8 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Управление пользователями</h2>
                 <div>
-                    <button id="exportBtn" class="btn btn-outline-success me-2">
-                        <i class="bi bi-download"></i> Экспорт
+                    <button type="button" class="btn btn-outline-success me-2" id="exportBtn">
+                        <i class="bi bi-download"></i> Экспорт CSV
                     </button>
                     <a href="{% url 'admin_user_management' %}" class="btn btn-outline-secondary me-2">
                         <i class="bi bi-arrow-clockwise"></i> Обновить
@@ -263,11 +270,6 @@
                                             <i class="bi bi-shield-check"></i> Админ
                                         </span>
                                         {% endif %}
-                                        {% if user.is_verified %}
-                                        <span class="badge bg-warning mt-1">
-                                            <i class="bi bi-patch-check"></i> Верифицирован
-                                        </span>
-                                        {% endif %}
                                     </td>
                                     <td>
                                         <small>{{ user.date_joined|date:"d.m.Y" }}</small><br>
@@ -282,77 +284,47 @@
                                                 <i class="bi bi-pencil"></i>
                                             </a>
 
-                                            <form method="post" class="d-inline">
+                                            <!-- Форма для активации/деактивации -->
+                                            <form method="post" action="{% url 'admin_user_management' %}" class="action-form" id="toggleActiveForm{{ user.id }}">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <input type="hidden" name="action" value="toggle_active">
+                                                <button type="button"
+                                                        class="btn btn-sm {% if user.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %} toggle-active-btn"
+                                                        title="{% if user.is_active %}Деактивировать{% else %}Активировать{% endif %}"
+                                                        data-bs-toggle="tooltip"
+                                                        data-username="{{ user.username }}"
+                                                        data-form-id="toggleActiveForm{{ user.id }}">
+                                                    <i class="bi {% if user.is_active %}bi-person-x{% else %}bi-person-check{% endif %}"></i>
+                                                </button>
+                                            </form>
 
-                                                {% if user.is_active %}
-                                                <button type="submit"
-                                                        name="action"
-                                                        value="toggle_active"
-                                                        class="btn btn-sm btn-outline-warning"
-                                                        title="Деактивировать"
-                                                        data-bs-toggle="tooltip">
-                                                    <i class="bi bi-person-x"></i>
+                                            <!-- Форма для назначения/снятия прав админа -->
+                                            <form method="post" action="{% url 'admin_user_management' %}" class="action-form" id="toggleStaffForm{{ user.id }}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <input type="hidden" name="action" value="toggle_staff">
+                                                <button type="button"
+                                                        class="btn btn-sm {% if user.is_staff %}btn-outline-secondary{% else %}btn-outline-info{% endif %} toggle-staff-btn"
+                                                        title="{% if user.is_staff %}Убрать из администраторов{% else %}Сделать администратором{% endif %}"
+                                                        data-bs-toggle="tooltip"
+                                                        data-username="{{ user.username }}"
+                                                        data-form-id="toggleStaffForm{{ user.id }}">
+                                                    <i class="bi {% if user.is_staff %}bi-shield-slash{% else %}bi-shield-plus{% endif %}"></i>
                                                 </button>
-                                                {% else %}
-                                                <button type="submit"
-                                                        name="action"
-                                                        value="toggle_active"
-                                                        class="btn btn-sm btn-outline-success"
-                                                        title="Активировать"
-                                                        data-bs-toggle="tooltip">
-                                                    <i class="bi bi-person-check"></i>
-                                                </button>
-                                                {% endif %}
+                                            </form>
 
-                                                {% if not user.is_staff %}
-                                                <button type="submit"
-                                                        name="action"
-                                                        value="toggle_staff"
-                                                        class="btn btn-sm btn-outline-info"
-                                                        title="Сделать администратором"
-                                                        data-bs-toggle="tooltip">
-                                                    <i class="bi bi-shield-plus"></i>
-                                                </button>
-                                                {% else %}
-                                                <button type="submit"
-                                                        name="action"
-                                                        value="toggle_staff"
-                                                        class="btn btn-sm btn-outline-secondary"
-                                                        title="Убрать из администраторов"
-                                                        data-bs-toggle="tooltip">
-                                                    <i class="bi bi-shield-slash"></i>
-                                                </button>
-                                                {% endif %}
-
-                                                {% if user.is_verified %}
-                                                <button type="submit"
-                                                        name="action"
-                                                        value="toggle_verified"
-                                                        class="btn btn-sm btn-outline-warning"
-                                                        title="Снять верификацию"
-                                                        data-bs-toggle="tooltip">
-                                                    <i class="bi bi-patch-check"></i>
-                                                </button>
-                                                {% else %}
-                                                <button type="submit"
-                                                        name="action"
-                                                        value="toggle_verified"
-                                                        class="btn btn-sm btn-outline-success"
-                                                        title="Верифицировать"
-                                                        data-bs-toggle="tooltip">
-                                                    <i class="bi bi-patch-plus"></i>
-                                                </button>
-                                                {% endif %}
-
-                                                <button type="submit"
-                                                        name="action"
-                                                        value="delete"
+                                            <!-- Форма для удаления -->
+                                            <form method="post" action="{% url 'admin_user_management' %}" class="action-form" id="deleteForm{{ user.id }}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <input type="hidden" name="action" value="delete">
+                                                <button type="button"
                                                         class="btn btn-sm btn-outline-danger delete-user-btn"
                                                         title="Удалить"
                                                         data-bs-toggle="tooltip"
-                                                        data-username="{{ user.username }}">
+                                                        data-username="{{ user.username }}"
+                                                        data-form-id="deleteForm{{ user.id }}">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -445,106 +417,150 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function() {
         // Инициализация tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
 
         // Автофокус на поле поиска
-        $('input[name="search"]').focus();
+        document.querySelector('input[name="search"]')?.focus();
 
         // Кнопка очистки поиска
-        $('.input-group .btn-outline-secondary').click(function() {
-            $(this).siblings('input[name="search"]').val('');
-            $(this).closest('form').submit();
+        document.querySelectorAll('.input-group .btn-outline-secondary').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const input = this.closest('.input-group').querySelector('input[name="search"]');
+                input.value = '';
+                this.closest('form').submit();
+            });
         });
 
         // Подтверждение удаления пользователя
-        $('.delete-user-btn').click(function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        document.querySelectorAll('.delete-user-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-            const username = $(this).data('username');
-            const form = $(this).closest('form');
+                const username = this.getAttribute('data-username');
+                const formId = this.getAttribute('data-form-id');
+                const form = document.getElementById(formId);
+
+                Swal.fire({
+                    title: 'Удалить пользователя?',
+                    html: `Вы уверены, что хотите удалить пользователя <strong>${username}</strong>?<br><br>
+                          <small class="text-danger">Это действие нельзя отменить. Все связанные данные (бронирования, отзывы и т.д.) также будут удалены.</small>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Да, удалить!',
+                    cancelButtonText: 'Отмена',
+                    width: '500px'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Подтверждение активации/деактивации
+        document.querySelectorAll('.toggle-active-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const username = this.getAttribute('data-username');
+                const formId = this.getAttribute('data-form-id');
+                const form = document.getElementById(formId);
+                const isActive = this.classList.contains('btn-outline-warning');
+
+                const title = isActive ? 'Деактивировать пользователя?' : 'Активировать пользователя?';
+                const message = isActive
+                    ? `Вы уверены, что хотите деактивировать пользователя "${username}"? Он не сможет войти в систему.`
+                    : `Вы уверены, что хотите активировать пользователя "${username}"?`;
+
+                Swal.fire({
+                    title: title,
+                    text: message,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Да',
+                    cancelButtonText: 'Отмена'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Подтверждение назначения/снятия прав админа
+        document.querySelectorAll('.toggle-staff-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const username = this.getAttribute('data-username');
+                const formId = this.getAttribute('data-form-id');
+                const form = document.getElementById(formId);
+                const isStaff = this.classList.contains('btn-outline-secondary');
+
+                const title = isStaff ? 'Убрать права администратора?' : 'Назначить администратором?';
+                const message = isStaff
+                    ? `Вы уверены, что хотите убрать права администратора у пользователя "${username}"?`
+                    : `Вы уверены, что хотите назначить пользователя "${username}" администратором? Он получит доступ ко всем функциям админ-панели.`;
+
+                Swal.fire({
+                    title: title,
+                    text: message,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Да',
+                    cancelButtonText: 'Отмена'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
+        // Обработка экспорта CSV
+        document.getElementById('exportBtn')?.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Получаем текущие параметры поиска
+            const urlParams = new URLSearchParams(window.location.search);
+            let exportUrl = "{% url 'export_users_csv' %}?";
+
+            if (urlParams.toString()) {
+                exportUrl += urlParams.toString();
+            }
 
             Swal.fire({
-                title: 'Удалить пользователя?',
-                html: `Вы уверены, что хотите удалить пользователя <strong>${username}</strong>?<br><br>
-                      <small class="text-danger">Это действие нельзя отменить. Все связанные данные (бронирования, отзывы и т.д.) также будут удалены.</small>`,
-                icon: 'warning',
+                title: 'Экспорт пользователей',
+                text: 'Файл CSV будет скачан автоматически. Продолжить?',
+                icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Да, удалить!',
-                cancelButtonText: 'Отмена',
-                width: '500px'
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Да, экспортировать',
+                cancelButtonText: 'Отмена'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Добавляем скрытое поле с action='delete'
-                    form.append('<input type="hidden" name="action" value="delete">');
-                    form.submit();
-                }
-            });
-
-            return false;
-        });
-
-        // Экспорт результатов поиска
-        $('#exportBtn').click(function() {
-            // Собираем параметры текущего фильтра
-            const params = new URLSearchParams(window.location.search);
-            params.set('export', 'csv');  // Добавляем параметр экспорта
-
-            // Отправляем запрос на экспорт
-            window.location.href = '{% url "admin_user_management" %}?' + params.toString();
-        });
-
-        // Обработка других действий (активация/деактивация и т.д.)
-        $('form button:not(.delete-user-btn)').click(function() {
-            const form = $(this).closest('form');
-            const action = $(this).val();
-            const username = $(this).closest('tr').find('strong').text();
-
-            // Для простых действий (не удаление) можно сразу отправлять форму
-            // Или добавить подтверждение для некоторых действий
-
-            if (action === 'toggle_active') {
-                const isActive = $(this).hasClass('btn-outline-warning'); // если кнопка желтая, значит сейчас активен
-                const message = isActive
-                    ? `Деактивировать пользователя ${username}?`
-                    : `Активировать пользователя ${username}?`;
-
-                if (!confirm(message)) {
-                    return false;
-                }
-            }
-
-            if (action === 'toggle_staff') {
-                const isStaff = $(this).hasClass('btn-outline-secondary'); // если кнопка серая, значит сейчас админ
-                const message = isStaff
-                    ? `Убрать пользователя ${username} из администраторов?`
-                    : `Сделать пользователя ${username} администратором?`;
-
-                if (!confirm(message)) {
-                    return false;
-                }
-            }
-
-            form.append(`<input type="hidden" name="action" value="${action}">`);
-            return true;
-        });
-
-        // Сохранение параметров поиска при отправке форм с действиями
-        $('form').submit(function() {
-            const searchParams = new URLSearchParams(window.location.search);
-
-            // Добавляем скрытые поля с параметрами поиска
-            searchParams.forEach((value, key) => {
-                if (key !== 'page' && key !== 'action' && key !== 'user_id') {
-                    $(this).append(`<input type="hidden" name="${key}" value="${value}">`);
+                    // Добавляем параметр экспорта
+                    if (!exportUrl.includes('export=')) {
+                        exportUrl += (exportUrl.includes('?') ? '&' : '?') + 'export=csv';
+                    }
+                    window.location.href = exportUrl;
                 }
             });
         });
