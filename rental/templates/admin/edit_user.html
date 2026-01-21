@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% load static %}
 
 {% block title %}Редактирование пользователя{% endblock %}
 
@@ -10,56 +10,120 @@
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">
-                        <i class="bi bi-person-gear"></i> Редактирование пользователя: {{ user.username }}
+                        <i class="bi bi-pencil"></i> Редактирование пользователя: {{ user.username }}
                     </h4>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Пожалуйста, исправьте ошибки:</strong>
+                            <ul class="mb-0 mt-2">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
                         <div class="row">
                             <div class="col-md-6">
-                                {{ form.username|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                                        Логин *
+                                    </label>
+                                    {{ form.username }}
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                {{ form.email|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        Email *
+                                    </label>
+                                    {{ form.email }}
+                                </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
-                                {{ form.first_name|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        Имя
+                                    </label>
+                                    {{ form.first_name }}
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                {{ form.last_name|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        Фамилия
+                                    </label>
+                                    {{ form.last_name }}
+                                </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
-                                {{ form.phone|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                        Телефон
+                                    </label>
+                                    {{ form.phone }}
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                {{ form.company_name|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label for="{{ form.company_name.id_for_label }}" class="form-label">
+                                        Название компании
+                                    </label>
+                                    {{ form.company_name }}
+                                </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-4">
-                                {{ form.user_type|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label for="{{ form.user_type.id_for_label }}" class="form-label">
+                                        Тип пользователя *
+                                    </label>
+                                    {{ form.user_type }}
+                                </div>
                             </div>
                             <div class="col-md-4">
-                                {{ form.is_active|as_crispy_field }}
+                                <div class="form-check mb-3">
+                                    {{ form.is_active }}
+                                    <label for="{{ form.is_active.id_for_label }}" class="form-check-label">
+                                        Активный
+                                    </label>
+                                </div>
                             </div>
                             <div class="col-md-4">
-                                {{ form.is_staff|as_crispy_field }}
+                                <div class="form-check mb-3">
+                                    {{ form.is_staff }}
+                                    <label for="{{ form.is_staff.id_for_label }}" class="form-check-label">
+                                        Администратор
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="mt-4">
-                            {{ form.is_superuser|as_crispy_field }}
+
+                        <div class="form-check mb-3">
+                            {{ form.is_superuser }}
+                            <label for="{{ form.is_superuser.id_for_label }}" class="form-check-label">
+                                Суперпользователь
+                            </label>
                         </div>
-                        
+
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{% url 'admin_user_management' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left"></i> Назад
@@ -69,28 +133,30 @@
                                     <i class="bi bi-arrow-counterclockwise"></i> Сбросить
                                 </button>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-circle"></i> Сохранить изменения
+                                    <i class="bi bi-save"></i> Сохранить изменения
                                 </button>
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
-            
-            <!-- Additional Info -->
+
+            <!-- Дополнительная информация о пользователе -->
             <div class="card shadow mt-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Дополнительная информация</h6>
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Информация о пользователе
+                    </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <p><strong>Дата регистрации:</strong> {{ user.date_joined|date:"d.m.Y H:i" }}</p>
-                            <p><strong>Последний вход:</strong> {{ user.last_login|date:"d.m.Y H:i"|default:"Никогда" }}</p>
+                            <p><strong>Последний вход:</strong> {% if user.last_login %}{{ user.last_login|date:"d.m.Y H:i" }}{% else %}Никогда{% endif %}</p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Всего бронирований:</strong> {{ user.booking_set.count }}</p>
-                            <p><strong>Всего отзывов:</strong> {{ user.review_set.count }}</p>
+                            <p><strong>ID пользователя:</strong> {{ user.id }}</p>
+                            <p><strong>Подтвержден:</strong> {% if user.is_verified %}Да{% else %}Нет{% endif %}</p>
                         </div>
                     </div>
                 </div>
@@ -98,4 +164,44 @@
         </div>
     </div>
 </div>
+
+<style>
+    .form-control {
+        padding: 0.5rem 0.75rem;
+        font-size: 1rem;
+        border-radius: 0.375rem;
+    }
+
+    .form-check-input {
+        margin-top: 0.25rem;
+    }
+
+    label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Добавляем стили Bootstrap к элементам формы
+        document.querySelectorAll('input, select, textarea').forEach(element => {
+            if (!element.classList.contains('form-check-input')) {
+                element.classList.add('form-control');
+            }
+        });
+
+        document.querySelectorAll('select').forEach(select => {
+            select.classList.add('form-select');
+        });
+
+        document.querySelectorAll('.form-check input[type="checkbox"]').forEach(checkbox => {
+            checkbox.classList.add('form-check-input');
+        });
+
+        document.querySelectorAll('.form-check label').forEach(label => {
+            label.classList.add('form-check-label');
+        });
+    });
+</script>
 {% endblock %}

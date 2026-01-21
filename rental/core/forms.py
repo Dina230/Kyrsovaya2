@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth import get_user_model
 from .models import Property, Booking, Review, PropertyCategory, Amenity, Favorite, User
 
 
@@ -46,6 +47,59 @@ class CustomUserCreationForm(UserCreationForm):
         return user
 
 
+class AdminUserCreationForm(UserCreationForm):
+    """Форма для создания пользователя администратором"""
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    first_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    last_name = forms.CharField(max_length=30, required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    phone = forms.CharField(max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    user_type = forms.ChoiceField(
+        choices=[('admin', 'Администратор'), ('tenant', 'Арендатор'), ('landlord', 'Арендодатель')],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    company_name = forms.CharField(max_length=200, required=False,
+                                   widget=forms.TextInput(attrs={'class': 'form-control'}))
+    address = forms.CharField(required=False, widget=forms.Textarea(attrs={
+        'class': 'form-control',
+        'rows': 2,
+        'placeholder': 'Введите адрес'
+    }))
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'password1', 'password2',
+                  'user_type', 'phone', 'company_name', 'address', 'is_active', 'is_staff', 'is_superuser')
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_superuser': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Добавляем подсказки для пароля
+        self.fields['password1'].help_text = """
+        <div class="form-text">
+            <small>• Пароль не должен быть слишком похож на другую вашу личную информацию.</small><br>
+            <small>• Пароль должен содержать как минимум 8 символов.</small><br>
+            <small>• Пароль не должен быть слишком простым и распространенным.</small><br>
+            <small>• Пароль не может состоять только из цифр.</small>
+        </div>
+        """
+
+        # Добавляем классы ко всем полям
+        for field_name, field in self.fields.items():
+            if field_name not in ['is_active', 'is_staff', 'is_superuser']:
+                if field_name not in ['password1', 'password2']:
+                    field.widget.attrs.update({'class': 'form-control'})
+                else:
+                    field.widget.attrs.update({'class': 'form-control'})
+            else:
+                field.widget.attrs.update({'class': 'form-check-input'})
+
+
 class ProfileEditForm(forms.ModelForm):
     class Meta:
         model = User
@@ -62,6 +116,22 @@ class ProfileEditForm(forms.ModelForm):
 
 
 class AdminUserEditForm(forms.ModelForm):
+    """Форма для редактирования пользователя администратором"""
+
+    # Поля пароля для изменения (необязательные)
+    password1 = forms.CharField(
+        label="Новый пароль",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False,
+        help_text="Оставьте пустым, если не хотите менять пароль."
+    )
+    password2 = forms.CharField(
+        label="Подтверждение пароля",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False,
+        help_text="Введите тот же пароль, что и выше, для проверки."
+    )
+
     class Meta:
         model = User
         fields = [
@@ -83,6 +153,29 @@ class AdminUserEditForm(forms.ModelForm):
             'is_superuser': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_verified': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 or password2:
+            if password1 != password2:
+                raise forms.ValidationError("Пароли не совпадают")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+
+        # Если указан новый пароль, устанавливаем его
+        password = self.cleaned_data.get("password1")
+        if password:
+            user.set_password(password)
+
+        if commit:
+            user.save()
+        return user
 
 
 class AdminPropertyEditForm(forms.ModelForm):
