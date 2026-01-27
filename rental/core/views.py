@@ -868,8 +868,36 @@ def export_users_csv(request):
 @admin_required
 def admin_property_management(request):
     """Управление помещениями"""
+    # Получаем все уникальные города для фильтра
+    unique_cities = Property.objects.values_list('city', flat=True).distinct().order_by('city')
+
+    # Начинаем с всех свойств
     properties = Property.objects.all().select_related('landlord', 'category').order_by('-created_at')
 
+    # Применяем фильтры
+    search_query = request.GET.get('search', '')
+    property_type = request.GET.get('property_type', '')
+    status = request.GET.get('status', '')
+    city = request.GET.get('city', '')
+
+    if search_query:
+        properties = properties.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(city__icontains=search_query) |
+            Q(address__icontains=search_query)
+        )
+
+    if property_type:
+        properties = properties.filter(property_type=property_type)
+
+    if status:
+        properties = properties.filter(status=status)
+
+    if city:
+        properties = properties.filter(city=city)
+
+    # Обработка POST запросов для действий
     if request.method == 'POST':
         property_id = request.POST.get('property_id')
         action = request.POST.get('action')
@@ -883,26 +911,129 @@ def admin_property_management(request):
             elif action == 'toggle_featured':
                 property_obj.is_featured = not property_obj.is_featured
                 property_obj.save()
-                status = 'добавлено в рекомендуемые' if property_obj.is_featured else 'убрано из рекомендуемых'
-                messages.success(request, f'Помещение "{property_obj.title}" {status}.')
+                status_msg = 'добавлено в рекомендуемые' if property_obj.is_featured else 'убрано из рекомендуемых'
+                messages.success(request, f'Помещение "{property_obj.title}" {status_msg}.')
             elif action == 'toggle_status':
                 if property_obj.status == 'active':
                     property_obj.status = 'inactive'
                 else:
                     property_obj.status = 'active'
                 property_obj.save()
-                status = 'активировано' if property_obj.status == 'active' else 'деактивировано'
-                messages.success(request, f'Помещение "{property_obj.title}" {status}.')
+                status_msg = 'активировано' if property_obj.status == 'active' else 'деактивировано'
+                messages.success(request, f'Помещение "{property_obj.title}" {status_msg}.')
 
-    return render(request, 'admin/property_management.html', {'properties': properties})
+            # Редирект с сохранением параметров фильтрации
+            query_params = {}
+            if search_query:
+                query_params['search'] = search_query
+            if property_type:
+                query_params['property_type'] = property_type
+            if status:
+                query_params['status'] = status
+            if city:
+                query_params['city'] = city
+
+            redirect_url = reverse('admin_property_management')
+            if query_params:
+                params = urlencode(query_params)
+                redirect_url = f"{redirect_url}?{params}"
+
+            # Добавляем номер страницы, если он был
+            page_number = request.GET.get('page')
+            if page_number and page_number != '1':
+                redirect_url += f"&page={page_number}" if '?' in redirect_url else f"?page={page_number}"
+
+            return redirect(redirect_url)
+
+    # Пагинация
+    paginator = Paginator(properties, 10)  # 10 элементов на странице
+    page_number = request.GET.get('page')
+
+    try:
+        properties_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        properties_page = paginator.page(1)
+    except EmptyPage:
+        properties_page = paginator.page(paginator.num_pages)
+
+    # Статистика для карточек
+    total_properties = Property.objects.count()
+    active_properties = Property.objects.filter(status='active').count()
+    featured_properties = Property.objects.filter(is_featured=True).count()
+
+    # Помещения с активными бронированиями
+    booked_properties = Property.objects.filter(
+        bookings__status__in=['confirmed', 'pending'],
+        bookings__start_datetime__gte=timezone.now()
+    ).distinct().count()
+
+    # Общая статистика для сайдбара
+    total_users = User.objects.count()
+    total_bookings = Booking.objects.count()
+
+    context = {
+        'properties': properties_page,
+        'cities': unique_cities,
+        'search_query': search_query,
+        'property_type_filter': property_type,
+        'status_filter': status,
+        'city_filter': city,
+        'total_properties': total_properties,
+        'active_properties': active_properties,
+        'featured_properties': featured_properties,
+        'booked_properties': booked_properties,
+        'total_users': total_users,
+        'total_bookings': total_bookings,
+    }
+
+    return render(request, 'admin/property_management.html', context)
 
 
 @login_required
 @admin_required
 def admin_booking_management(request):
     """Управление бронированиями"""
+    # Получаем все бронирования
     bookings = Booking.objects.all().select_related('property', 'tenant').order_by('-created_at')
 
+    # Применяем фильтры
+    search_query = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    date_filter = request.GET.get('date', '')
+
+    if search_query:
+        bookings = bookings.filter(
+            Q(booking_id__icontains=search_query) |
+            Q(property__title__icontains=search_query) |
+            Q(tenant__username__icontains=search_query) |
+            Q(tenant__email__icontains=search_query)
+        )
+
+    if status_filter:
+        bookings = bookings.filter(status=status_filter)
+
+    if date_filter:
+        try:
+            filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
+            bookings = bookings.filter(
+                start_datetime__date=filter_date
+            )
+        except ValueError:
+            pass
+
+    # Статистика для карточек
+    total_bookings = Booking.objects.count()
+    pending_bookings = Booking.objects.filter(status='pending').count()
+    confirmed_bookings = Booking.objects.filter(status='confirmed').count()
+    completed_bookings = Booking.objects.filter(status='completed').count()
+    cancelled_bookings = Booking.objects.filter(status='cancelled').count()
+
+    # Выручка
+    total_revenue = Booking.objects.filter(status='completed').aggregate(
+        total=Sum('total_price')
+    )['total'] or Decimal('0')
+
+    # Обработка POST запросов для действий
     if request.method == 'POST':
         booking_id = request.POST.get('booking_id')
         action = request.POST.get('action')
@@ -926,7 +1057,53 @@ def admin_booking_management(request):
                 booking.delete()
                 messages.success(request, f'Бронирование #{booking.booking_id} удалено.')
 
-    return render(request, 'admin/booking_management.html', {'bookings': bookings})
+            # Редирект с сохранением параметров фильтрации
+            query_params = {}
+            if search_query:
+                query_params['search'] = search_query
+            if status_filter:
+                query_params['status'] = status_filter
+            if date_filter:
+                query_params['date'] = date_filter
+
+            redirect_url = reverse('admin_booking_management')
+            if query_params:
+                params = urlencode(query_params)
+                redirect_url = f"{redirect_url}?{params}"
+
+            return redirect(redirect_url)
+
+    # Пагинация
+    paginator = Paginator(bookings, 10)  # 10 элементов на странице
+    page_number = request.GET.get('page')
+
+    try:
+        bookings_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        bookings_page = paginator.page(1)
+    except EmptyPage:
+        bookings_page = paginator.page(paginator.num_pages)
+
+    # Общая статистика для сайдбара
+    total_users = User.objects.count()
+    total_properties = Property.objects.count()
+
+    context = {
+        'bookings': bookings_page,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'date_filter': date_filter,
+        'total_bookings': total_bookings,
+        'pending_bookings': pending_bookings,
+        'confirmed_bookings': confirmed_bookings,
+        'completed_bookings': completed_bookings,
+        'cancelled_bookings': cancelled_bookings,
+        'total_revenue': total_revenue,
+        'total_users': total_users,
+        'total_properties': total_properties,
+    }
+
+    return render(request, 'admin/booking_management.html', context)
 
 
 @login_required

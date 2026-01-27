@@ -1,0 +1,693 @@
+<!-- templates/admin/add_property.html -->
+{% extends 'base.html' %}
+
+{% block title %}Добавить помещение - Админ-панель{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-wrapper {
+        display: flex;
+        min-height: calc(100vh - 76px);
+    }
+
+    .admin-sidebar {
+        width: 250px;
+        background-color: #2c3e50;
+        color: white;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+        top: 76px;
+    }
+
+    .admin-content {
+        margin-left: 250px;
+        padding: 20px;
+        margin-top: 20px;
+        flex: 1;
+    }
+
+    .sidebar-brand {
+        padding: 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-menu {
+        padding: 20px 0;
+    }
+
+    .sidebar-menu .nav-link {
+        color: rgba(255,255,255,0.8);
+        padding: 12px 25px;
+        margin: 2px 0;
+        border-left: 3px solid transparent;
+        transition: all 0.3s;
+    }
+
+    .sidebar-menu .nav-link:hover {
+        color: white;
+        background-color: rgba(255,255,255,0.1);
+        border-left-color: #3a57e8;
+    }
+
+    .sidebar-menu .nav-link.active {
+        color: white;
+        background-color: rgba(58, 87, 232, 0.2);
+        border-left-color: #3a57e8;
+    }
+
+    .admin-card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+
+    .admin-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .form-image-preview {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+        display: none;
+    }
+
+    .image-preview-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .image-preview-container:hover .remove-image-btn {
+        display: block;
+    }
+
+    .remove-image-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        display: none;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .image-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .image-upload-area:hover {
+        border-color: #3a57e8;
+        background-color: rgba(58, 87, 232, 0.05);
+    }
+
+    .image-upload-area i {
+        font-size: 48px;
+        color: #6c757d;
+        margin-bottom: 10px;
+    }
+
+    .amenities-checkboxes {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+    }
+
+    .map-container {
+        height: 300px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #dee2e6;
+    }
+
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-section h5 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- Проверка прав администратора -->
+    {% if user.is_authenticated and user.is_staff %}
+    <div class="admin-wrapper">
+        <!-- Admin Sidebar -->
+        <div class="admin-sidebar">
+            <div class="sidebar-brand">
+                <h4><i class="bi bi-speedometer2"></i> Админ-панель</h4>
+                <small class="text-muted">Commercial Rental</small>
+            </div>
+
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'custom_admin_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Дашборд
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_user_management' %}">
+                            <i class="bi bi-people"></i> Пользователи
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_property_management' %}">
+                            <i class="bi bi-buildings"></i> Помещения
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_booking_management' %}">
+                            <i class="bi bi-calendar-check"></i> Бронирования
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_review_management' %}">
+                            <i class="bi bi-star"></i> Отзывы
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_system_settings' %}">
+                            <i class="bi bi-gear"></i> Настройки
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="/admin/" target="_blank">
+                            <i class="bi bi-box-arrow-up-right"></i> Django Admin
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Admin Content -->
+        <div class="admin-content">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Добавить новое помещение</h2>
+                    <p class="text-muted mb-0">Заполните форму для добавления нового помещения в систему</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary">{{ user.get_user_type_display }}</span>
+                    <small class="text-muted d-block">{{ user.email }}</small>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card admin-card">
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data" id="propertyForm">
+                                {% csrf_token %}
+                                
+                                <!-- Основная информация -->
+                                <div class="form-section">
+                                    <h5><i class="bi bi-info-circle me-2"></i>Основная информация</h5>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.title.id_for_label }}" class="form-label">Название помещения *</label>
+                                            {{ form.title }}
+                                            {% if form.title.errors %}
+                                            <div class="text-danger small">{{ form.title.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.landlord.id_for_label }}" class="form-label">Владелец *</label>
+                                            {{ form.landlord }}
+                                            {% if form.landlord.errors %}
+                                            <div class="text-danger small">{{ form.landlord.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.property_type.id_for_label }}" class="form-label">Тип помещения *</label>
+                                            {{ form.property_type }}
+                                            {% if form.property_type.errors %}
+                                            <div class="text-danger small">{{ form.property_type.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.status.id_for_label }}" class="form-label">Статус *</label>
+                                            {{ form.status }}
+                                            {% if form.status.errors %}
+                                            <div class="text-danger small">{{ form.status.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label for="{{ form.description.id_for_label }}" class="form-label">Описание *</label>
+                                            {{ form.description }}
+                                            {% if form.description.errors %}
+                                            <div class="text-danger small">{{ form.description.errors }}</div>
+                                            {% endif %}
+                                            <small class="text-muted">Опишите помещение, его особенности и преимущества</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Характеристики -->
+                                <div class="form-section">
+                                    <h5><i class="bi bi-gear me-2"></i>Характеристики</h5>
+                                    <div class="row">
+                                        <div class="col-md-3 mb-3">
+                                            <label for="{{ form.area.id_for_label }}" class="form-label">Площадь (м²) *</label>
+                                            {{ form.area }}
+                                            {% if form.area.errors %}
+                                            <div class="text-danger small">{{ form.area.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label for="{{ form.capacity.id_for_label }}" class="form-label">Вместимость (чел.) *</label>
+                                            {{ form.capacity }}
+                                            {% if form.capacity.errors %}
+                                            <div class="text-danger small">{{ form.capacity.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label for="{{ form.price_per_hour.id_for_label }}" class="form-label">Цена за час (₽) *</label>
+                                            {{ form.price_per_hour }}
+                                            {% if form.price_per_hour.errors %}
+                                            <div class="text-danger small">{{ form.price_per_hour.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label for="{{ form.min_booking_hours.id_for_label }}" class="form-label">Мин. часов брони *</label>
+                                            {{ form.min_booking_hours }}
+                                            {% if form.min_booking_hours.errors %}
+                                            <div class="text-danger small">{{ form.min_booking_hours.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Удобства</label>
+                                            <div class="amenities-checkboxes">
+                                                {% for checkbox in form.amenities %}
+                                                <div class="form-check">
+                                                    {{ checkbox }}
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% if form.amenities.errors %}
+                                            <div class="text-danger small">{{ form.amenities.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Местоположение -->
+                                <div class="form-section">
+                                    <h5><i class="bi bi-geo-alt me-2"></i>Местоположение</h5>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="{{ form.city.id_for_label }}" class="form-label">Город *</label>
+                                            {{ form.city }}
+                                            {% if form.city.errors %}
+                                            <div class="text-danger small">{{ form.city.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="{{ form.address.id_for_label }}" class="form-label">Адрес *</label>
+                                            {{ form.address }}
+                                            {% if form.address.errors %}
+                                            <div class="text-danger small">{{ form.address.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="{{ form.zip_code.id_for_label }}" class="form-label">Индекс</label>
+                                            {{ form.zip_code }}
+                                            {% if form.zip_code.errors %}
+                                            <div class="text-danger small">{{ form.zip_code.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.latitude.id_for_label }}" class="form-label">Широта</label>
+                                            {{ form.latitude }}
+                                            {% if form.latitude.errors %}
+                                            <div class="text-danger small">{{ form.latitude.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.longitude.id_for_label }}" class="form-label">Долгота</label>
+                                            {{ form.longitude }}
+                                            {% if form.longitude.errors %}
+                                            <div class="text-danger small">{{ form.longitude.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <div class="map-container" id="map"></div>
+                                            <small class="text-muted">Кликните на карте, чтобы установить координаты</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Изображения -->
+                                <div class="form-section">
+                                    <h5><i class="bi bi-images me-2"></i>Изображения</h5>
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Загрузите изображения помещения</label>
+                                            <div class="image-upload-area" id="imageUploadArea">
+                                                <i class="bi bi-cloud-upload"></i>
+                                                <p>Перетащите изображения сюда или нажмите для выбора</p>
+                                                <small class="text-muted">Максимальный размер: 5MB. Поддерживаются JPG, PNG, WebP</small>
+                                            </div>
+                                            <input type="file" name="images" multiple accept="image/*" class="form-control d-none" id="imageInput">
+                                            <div class="mt-3" id="imagePreviewContainer"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Дополнительные настройки -->
+                                <div class="form-section">
+                                    <h5><i class="bi bi-sliders me-2"></i>Дополнительные настройки</h5>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <div class="form-check form-switch">
+                                                {{ form.is_featured }}
+                                                <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">Рекомендуемое помещение</label>
+                                            </div>
+                                            <small class="text-muted">Отображать в разделе рекомендуемых</small>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="form-check form-switch">
+                                                {{ form.has_parking }}
+                                                <label class="form-check-label" for="{{ form.has_parking.id_for_label }}">Есть парковка</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="form-check form-switch">
+                                                {{ form.has_kitchen }}
+                                                <label class="form-check-label" for="{{ form.has_kitchen.id_for_label }}">Есть кухня</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <div class="form-check form-switch">
+                                                {{ form.has_wifi }}
+                                                <label class="form-check-label" for="{{ form.has_wifi.id_for_label }}">Бесплатный Wi-Fi</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="form-check form-switch">
+                                                {{ form.has_projector }}
+                                                <label class="form-check-label" for="{{ form.has_projector.id_for_label }}">Проектор</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="form-check form-switch">
+                                                {{ form.has_whiteboard }}
+                                                <label class="form-check-label" for="{{ form.has_whiteboard.id_for_label }}">Маркерная доска</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Кнопки действий -->
+                                <div class="row mt-4">
+                                    <div class="col-md-12">
+                                        <div class="d-flex justify-content-between">
+                                            <a href="{% url 'admin_property_management' %}" class="btn btn-outline-secondary">
+                                                <i class="bi bi-arrow-left"></i> Назад к списку
+                                            </a>
+                                            <div class="btn-group">
+                                                <button type="submit" name="save" class="btn btn-primary">
+                                                    <i class="bi bi-save"></i> Сохранить помещение
+                                                </button>
+                                                <button type="submit" name="save_and_add" class="btn btn-success">
+                                                    <i class="bi bi-plus-circle"></i> Сохранить и добавить еще
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Если пользователь не администратор -->
+    <div class="container mt-5">
+        <div class="alert alert-danger">
+            <h4>Доступ запрещен</h4>
+            <p>У вас нет прав для доступа к админ-панели.</p>
+            <a href="{% url 'dashboard' %}" class="btn btn-primary">Вернуться в кабинет</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация карты
+        let map = null;
+        let marker = null;
+        
+        function initMap() {
+            // Центр по умолчанию (Москва)
+            const defaultLat = 55.7558;
+            const defaultLng = 37.6173;
+            
+            // Используем сохраненные значения или значения по умолчанию
+            const latInput = document.getElementById('id_latitude');
+            const lngInput = document.getElementById('id_longitude');
+            const initialLat = latInput.value ? parseFloat(latInput.value) : defaultLat;
+            const initialLng = lngInput.value ? parseFloat(lngInput.value) : defaultLng;
+            
+            map = L.map('map').setView([initialLat, initialLng], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Добавляем маркер если есть координаты
+            if (latInput.value && lngInput.value) {
+                marker = L.marker([initialLat, initialLng]).addTo(map);
+            }
+            
+            // Обработка клика по карте
+            map.on('click', function(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                
+                latInput.value = lat.toFixed(6);
+                lngInput.value = lng.toFixed(6);
+                
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                
+                marker = L.marker([lat, lng]).addTo(map);
+            });
+        }
+        
+        // Инициализируем карту когда DOM загружен
+        initMap();
+        
+        // Обработка загрузки изображений
+        const imageInput = document.getElementById('imageInput');
+        const imageUploadArea = document.getElementById('imageUploadArea');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        
+        imageUploadArea.addEventListener('click', function() {
+            imageInput.click();
+        });
+        
+        imageUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = '#3a57e8';
+            imageUploadArea.style.backgroundColor = 'rgba(58, 87, 232, 0.1)';
+        });
+        
+        imageUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = '#dee2e6';
+            imageUploadArea.style.backgroundColor = '';
+        });
+        
+        imageUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            imageUploadArea.style.borderColor = '#dee2e6';
+            imageUploadArea.style.backgroundColor = '';
+            
+            if (e.dataTransfer.files.length) {
+                imageInput.files = e.dataTransfer.files;
+                handleImageSelection(e.dataTransfer.files);
+            }
+        });
+        
+        imageInput.addEventListener('change', function(e) {
+            if (e.target.files.length) {
+                handleImageSelection(e.target.files);
+            }
+        });
+        
+        function handleImageSelection(files) {
+            imagePreviewContainer.innerHTML = '';
+            
+            Array.from(files).forEach((file, index) => {
+                if (!file.type.startsWith('image/')) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ошибка',
+                        text: 'Файл ' + file.name + ' не является изображением'
+                    });
+                    return;
+                }
+                
+                if (file.size > 5 * 1024 * 1024) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ошибка',
+                        text: 'Файл ' + file.name + ' превышает максимальный размер 5MB'
+                    });
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-container d-inline-block me-3 mb-3';
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'form-image-preview';
+                    img.style.display = 'block';
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'remove-image-btn';
+                    removeBtn.innerHTML = '×';
+                    removeBtn.onclick = function() {
+                        div.remove();
+                    };
+                    
+                    div.appendChild(img);
+                    div.appendChild(removeBtn);
+                    imagePreviewContainer.appendChild(div);
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Автоматическое заполнение координат по адресу
+        const addressInput = document.getElementById('id_address');
+        const cityInput = document.getElementById('id_city');
+        
+        function geocodeAddress() {
+            const address = `${addressInput.value}, ${cityInput.value}`;
+            
+            if (!address.trim()) {
+                return;
+            }
+            
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        
+                        document.getElementById('id_latitude').value = lat.toFixed(6);
+                        document.getElementById('id_longitude').value = lon.toFixed(6);
+                        
+                        // Обновляем карту
+                        map.setView([lat, lon], 13);
+                        
+                        if (marker) {
+                            map.removeLayer(marker);
+                        }
+                        
+                        marker = L.marker([lat, lon]).addTo(map);
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка геокодирования:', error);
+                });
+        }
+        
+        // Геокодирование при изменении адреса
+        addressInput.addEventListener('change', geocodeAddress);
+        cityInput.addEventListener('change', geocodeAddress);
+        
+        // Валидация формы
+        const form = document.getElementById('propertyForm');
+        form.addEventListener('submit', function(e) {
+            // Проверка обязательных полей
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Ошибка',
+                    text: 'Пожалуйста, заполните все обязательные поля'
+                });
+            }
+        });
+        
+        // Автофокус на первое поле
+        document.querySelector('#id_title')?.focus();
+    });
+</script>
+{% endblock %}
