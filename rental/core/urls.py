@@ -34,6 +34,7 @@ urlpatterns = [
     path('properties/<int:property_id>/images/add/', views.add_property_image, name='add_property_image'),
     path('images/<int:image_id>/delete/', views.delete_property_image, name='delete_property_image'),
 
+
     # Помещения
     path('properties/', views.property_list, name='property_list'),
     path('properties/<slug:slug>/', views.property_detail, name='property_detail'),

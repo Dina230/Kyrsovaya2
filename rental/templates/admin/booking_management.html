@@ -339,7 +339,7 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex flex-wrap gap-1">
-                                                    <form method="post" class="d-inline">
+                                                    <form method="post" class="d-inline" id="form-{{ booking.id }}">
                                                         {% csrf_token %}
                                                         <input type="hidden" name="booking_id" value="{{ booking.id }}">
 
@@ -370,9 +370,8 @@
                                                         </button>
                                                         {% endif %}
 
-                                                        <button type="submit" name="action" value="delete"
+                                                        <button type="button" onclick="confirmDelete('{{ booking.id }}', '{{ booking.booking_id }}')"
                                                                 class="btn btn-sm btn-outline-danger"
-                                                                onclick="return confirm('Удалить бронирование {{ booking.booking_id }}?')"
                                                                 data-bs-toggle="tooltip"
                                                                 title="Удалить бронирование">
                                                             <i class="bi bi-trash"></i>
@@ -485,86 +484,33 @@
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
 
-        // Подтверждение действий
-        document.querySelectorAll('button[name="action"]').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                const action = this.value;
-                const bookingId = this.closest('form').querySelector('input[name="booking_id"]').value;
-
-                if (action === 'delete') {
-                    e.preventDefault();
-
-                    Swal.fire({
-                        title: 'Удалить бронирование?',
-                        text: 'Вы уверены, что хотите удалить это бронирование? Это действие нельзя отменить.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Да, удалить!',
-                        cancelButtonText: 'Отмена'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            this.closest('form').submit();
-                        }
-                    });
-                } else if (action === 'cancel') {
-                    e.preventDefault();
-
-                    Swal.fire({
-                        title: 'Отменить бронирование?',
-                        text: 'Вы уверены, что хотите отменить это бронирование?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Да, отменить',
-                        cancelButtonText: 'Отмена'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            this.closest('form').submit();
-                        }
-                    });
-                } else if (action === 'confirm') {
-                    e.preventDefault();
-
-                    Swal.fire({
-                        title: 'Подтвердить бронирование?',
-                        text: 'Вы уверены, что хотите подтвердить это бронирование?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Да, подтвердить',
-                        cancelButtonText: 'Отмена'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            this.closest('form').submit();
-                        }
-                    });
-                } else if (action === 'complete') {
-                    e.preventDefault();
-
-                    Swal.fire({
-                        title: 'Завершить бронирование?',
-                        text: 'Отметить бронирование как завершенное?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Да, завершить',
-                        cancelButtonText: 'Отмена'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            this.closest('form').submit();
-                        }
-                    });
-                }
-            });
-        });
-
         // Автофокус на поле поиска
         document.querySelector('input[name="search"]')?.focus();
     });
+
+    // Функция подтверждения удаления
+    function confirmDelete(bookingId, bookingUuid) {
+        Swal.fire({
+            title: 'Удалить бронирование?',
+            text: `Вы уверены, что хотите удалить бронирование ${bookingUuid}? Это действие нельзя отменить.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Да, удалить!',
+            cancelButtonText: 'Отмена'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Создаем скрытую форму для удаления
+                const form = document.getElementById(`form-${bookingId}`);
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'delete';
+                form.appendChild(actionInput);
+                form.submit();
+            }
+        });
+    }
 </script>
 {% endblock %}

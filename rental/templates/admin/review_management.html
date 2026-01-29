@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+
+{% block title %}Управление отзывами{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-wrapper {
+        display: flex;
+        min-height: calc(100vh - 76px);
+    }
+
+    .admin-sidebar {
+        width: 250px;
+        background-color: #2c3e50;
+        color: white;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+        top: 76px;
+    }
+
+    .admin-content {
+        margin-left: 250px;
+        padding: 20px;
+        margin-top: 20px;
+        flex: 1;
+    }
+
+    .sidebar-brand {
+        padding: 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-menu {
+        padding: 20px 0;
+    }
+
+    .sidebar-menu .nav-link {
+        color: rgba(255,255,255,0.8);
+        padding: 12px 25px;
+        margin: 2px 0;
+        border-left: 3px solid transparent;
+        transition: all 0.3s;
+    }
+
+    .sidebar-menu .nav-link:hover {
+        color: white;
+        background-color: rgba(255,255,255,0.1);
+        border-left-color: #3a57e8;
+    }
+
+    .sidebar-menu .nav-link.active {
+        color: white;
+        background-color: rgba(58, 87, 232, 0.2);
+        border-left-color: #3a57e8;
+    }
+
+    .admin-card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+
+    .admin-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .review-card {
+        border-left: 4px solid;
+        margin-bottom: 15px;
+    }
+
+    .rating-5 { border-left-color: #28a745; }
+    .rating-4 { border-left-color: #20c997; }
+    .rating-3 { border-left-color: #ffc107; }
+    .rating-2 { border-left-color: #fd7e14; }
+    .rating-1 { border-left-color: #dc3545; }
+
+    .rating-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .stars {
+        color: #ffc107;
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- Проверка прав администратора -->
+    {% if user.is_authenticated and user.is_staff %}
+    <div class="admin-wrapper">
+        <!-- Admin Sidebar -->
+        <div class="admin-sidebar">
+            <div class="sidebar-brand">
+                <h4><i class="bi bi-speedometer2"></i> Админ-панель</h4>
+                <small class="text-muted">Commercial Rental</small>
+            </div>
+
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'custom_admin_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Дашборд
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_user_management' %}">
+                            <i class="bi bi-people"></i> Пользователи
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_property_management' %}">
+                            <i class="bi bi-buildings"></i> Помещения
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_booking_management' %}">
+                            <i class="bi bi-calendar-check"></i> Бронирования
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'admin_review_management' %}">
+                            <i class="bi bi-star"></i> Отзывы
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_system_settings' %}">
+                            <i class="bi bi-gear"></i> Настройки
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="/admin/" target="_blank">
+                            <i class="bi bi-box-arrow-up-right"></i> Django Admin
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Admin Content -->
+        <div class="admin-content">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Управление отзывами</h2>
+                    <p class="text-muted mb-0">Просмотр и управление отзывами пользователей</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary">{{ user.get_user_type_display }}</span>
+                    <small class="text-muted d-block">{{ user.email }}</small>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <!-- Статистика отзывов -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card admin-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-muted mb-2">Всего отзывов</h6>
+                                            <h3 class="mb-0">{{ total_reviews|default:"0" }}</h3>
+                                        </div>
+                                        <i class="bi bi-star fs-1 text-warning"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card admin-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-muted mb-2">Средний рейтинг</h6>
+                                            <h3 class="mb-0">{{ avg_rating|default:"0"|floatformat:1 }}</h3>
+                                        </div>
+                                        <i class="bi bi-star-half fs-1 text-warning"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card admin-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-muted mb-2">5 звезд</h6>
+                                            <h3 class="mb-0">{{ rating_5|default:"0" }}</h3>
+                                        </div>
+                                        <i class="bi bi-star-fill fs-1 text-warning"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card admin-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-muted mb-2">1-2 звезды</h6>
+                                            <h3 class="mb-0">{{ rating_low|default:"0" }}</h3>
+                                        </div>
+                                        <i class="bi bi-star fs-1 text-warning"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Таблица отзывов -->
+                    <div class="card shadow admin-card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Помещение</th>
+                                            <th>Пользователь</th>
+                                            <th>Рейтинг</th>
+                                            <th>Отзыв</th>
+                                            <th>Дата</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for review in reviews %}
+                                        <tr>
+                                            <td>{{ review.id }}</td>
+                                            <td>
+                                                <strong>{{ review.property.title }}</strong><br>
+                                                <small class="text-muted">{{ review.property.city }}</small>
+                                            </td>
+                                            <td>
+                                                {{ review.user.get_full_name|default:review.user.username }}<br>
+                                                <small class="text-muted">{{ review.user.email }}</small>
+                                            </td>
+                                            <td>
+                                                <div class="stars">
+                                                    {% for i in "12345" %}
+                                                        {% if forloop.counter <= review.rating %}
+                                                            <i class="bi bi-star-fill"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-star"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                                <span class="badge bg-secondary rating-badge">{{ review.rating }}/5</span>
+                                            </td>
+                                            <td>
+                                                <div class="review-text" style="max-width: 300px;">
+                                                    {{ review.comment|truncatechars:100 }}
+                                                    {% if review.comment|length > 100 %}
+                                                    <a href="#" class="text-decoration-none" 
+                                                       data-bs-toggle="collapse" 
+                                                       data-bs-target="#review-{{ review.id }}">
+                                                       <small>показать больше</small>
+                                                    </a>
+                                                    <div class="collapse" id="review-{{ review.id }}">
+                                                        {{ review.comment|slice:"100:" }}
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <small>{{ review.created_at|date:"d.m.Y" }}</small><br>
+                                                <small class="text-muted">{{ review.created_at|time:"H:i" }}</small>
+                                            </td>
+                                            <td>
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="review_id" value="{{ review.id }}">
+                                                    <button type="submit" name="action" value="delete"
+                                                            class="btn btn-sm btn-outline-danger"
+                                                            onclick="return confirm('Удалить отзыв от {{ review.user.get_full_name|default:review.user.username }}?')"
+                                                            data-bs-toggle="tooltip"
+                                                            title="Удалить отзыв">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="7" class="text-center py-5">
+                                                <i class="bi bi-star display-4 text-muted mb-3"></i>
+                                                <h5 class="text-muted">Отзывы не найдены</h5>
+                                                <p class="text-muted">Пользователи еще не оставили отзывов</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Пагинация -->
+                            {% if reviews.has_other_pages %}
+                            <nav aria-label="Навигация по страницам" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if reviews.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ reviews.previous_page_number }}">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </span>
+                                    </li>
+                                    {% endif %}
+
+                                    {% for i in reviews.paginator.page_range %}
+                                        {% if reviews.number == i %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ i }}</span>
+                                        </li>
+                                        {% elif i > reviews.number|add:'-3' and i < reviews.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ i }}">
+                                                {{ i }}
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if reviews.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ reviews.next_page_number }}">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </span>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+
+                                <div class="text-center text-muted mt-2">
+                                    <small>
+                                        Страница {{ reviews.number }} из {{ reviews.paginator.num_pages }}
+                                        {% if reviews.paginator.count > 0 %}
+                                        | Показано {{ reviews.start_index }}–{{ reviews.end_index }} из {{ reviews.paginator.count }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </nav>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Если пользователь не администратор -->
+    <div class="container mt-5">
+        <div class="alert alert-danger">
+            <h4>Доступ запрещен</h4>
+            <p>У вас нет прав для доступа к админ-панели.</p>
+            <a href="{% url 'dashboard' %}" class="btn btn-primary">Вернуться в кабинет</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

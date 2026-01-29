@@ -61,9 +61,6 @@
                         {% endif %}
                     </p>
                     <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-{% if user.is_verified %}success{% else %}secondary{% endif %}">
-                            {% if user.is_verified %}✓ Верифицирован{% else %}Не верифицирован{% endif %}
-                        </span>
                         <span class="badge bg-info">
                             Зарегистрирован: {{ user.date_joined|date:"d.m.Y" }}
                         </span>

@@ -1,3 +1,4 @@
+# views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, update_session_auth_hash
@@ -565,14 +566,13 @@ def add_property(request):
         if form.is_valid():
             property_obj = form.save(commit=False)
             property_obj.landlord = request.user
-            from django.utils.text import slugify
-            property_obj.slug = slugify(property_obj.title)
             property_obj.save()
             form.save_m2m()
             messages.success(request, 'Помещение успешно добавлено!')
             return redirect('my_properties')
     else:
         form = PropertyForm()
+
     return render(request, 'core/add_property.html', {'form': form})
 
 
@@ -584,12 +584,24 @@ def edit_property(request, property_id):
     if request.method == 'POST':
         form = PropertyForm(request.POST, request.FILES, instance=property_obj)
         if form.is_valid():
-            form.save()
+            # Устанавливаем landlord перед сохранением
+            form.instance.landlord = request.user
+            property_obj = form.save()
             messages.success(request, 'Помещение успешно обновлено!')
             return redirect('my_properties')
     else:
         form = PropertyForm(instance=property_obj)
-    return render(request, 'core/edit_property.html', {'form': form, 'property': property_obj})
+
+    # Получаем существующие изображения для отображения
+    existing_images = property_obj.images.all()
+
+    context = {
+        'form': form,
+        'property': property_obj,
+        'existing_images': existing_images,
+    }
+
+    return render(request, 'core/edit_property.html', context)
 
 
 @login_required
@@ -633,6 +645,7 @@ def add_review(request, booking_id):
             return redirect('my_bookings')
     else:
         form = ReviewForm()
+
     return render(request, 'core/add_review.html', {'form': form, 'booking': booking})
 
 
@@ -1039,39 +1052,79 @@ def admin_booking_management(request):
         action = request.POST.get('action')
 
         if booking_id and action:
-            booking = get_object_or_404(Booking, id=booking_id)
+            try:
+                booking = get_object_or_404(Booking, id=booking_id)
 
-            if action == 'confirm':
-                booking.status = 'confirmed'
-                booking.save()
-                messages.success(request, f'Бронирование #{booking.booking_id} подтверждено.')
-            elif action == 'cancel':
-                booking.status = 'cancelled'
-                booking.save()
-                messages.success(request, f'Бронирование #{booking.booking_id} отменено.')
-            elif action == 'complete':
-                booking.status = 'completed'
-                booking.save()
-                messages.success(request, f'Бронирование #{booking.booking_id} завершено.')
-            elif action == 'delete':
-                booking.delete()
-                messages.success(request, f'Бронирование #{booking.booking_id} удалено.')
+                if action == 'confirm':
+                    if booking.status == 'pending':
+                        booking.status = 'confirmed'
+                        booking.save()
+                        messages.success(request, f'Бронирование #{booking.booking_id} подтверждено.')
+                    else:
+                        messages.warning(request,
+                                         f'Бронирование #{booking.booking_id} уже имеет статус {booking.get_status_display()}.')
 
-            # Редирект с сохранением параметров фильтрации
-            query_params = {}
-            if search_query:
-                query_params['search'] = search_query
-            if status_filter:
-                query_params['status'] = status_filter
-            if date_filter:
-                query_params['date'] = date_filter
+                elif action == 'cancel':
+                    if booking.status in ['pending', 'confirmed']:
+                        booking.status = 'cancelled'
+                        booking.save()
+                        messages.success(request, f'Бронирование #{booking.booking_id} отменено.')
+                    else:
+                        messages.warning(request,
+                                         f'Бронирование #{booking.booking_id} уже имеет статус {booking.get_status_display()}.')
 
-            redirect_url = reverse('admin_booking_management')
-            if query_params:
-                params = urlencode(query_params)
-                redirect_url = f"{redirect_url}?{params}"
+                elif action == 'complete':
+                    if booking.status == 'confirmed':
+                        booking.status = 'completed'
+                        booking.save()
+                        messages.success(request, f'Бронирование #{booking.booking_id} завершено.')
+                    elif booking.status == 'completed':
+                        messages.warning(request, f'Бронирование #{booking.booking_id} уже завершено.')
+                    else:
+                        messages.warning(request,
+                                         f'Бронирование #{booking.booking_id} должно быть подтверждено перед завершением.')
 
-            return redirect(redirect_url)
+                elif action == 'delete':
+                    booking.delete()
+                    messages.success(request, f'Бронирование #{booking.booking_id} удалено.')
+
+                # Редирект с сохранением параметров фильтрации
+                query_params = {}
+                if search_query:
+                    query_params['search'] = search_query
+                if status_filter:
+                    query_params['status'] = status_filter
+                if date_filter:
+                    query_params['date'] = date_filter
+
+                redirect_url = reverse('admin_booking_management')
+                if query_params:
+                    params = urlencode(query_params)
+                    redirect_url = f"{redirect_url}?{params}"
+
+                # Добавляем параметр страницы, если он был
+                page_number = request.GET.get('page')
+                if page_number and page_number != '1':
+                    redirect_url += f"&page={page_number}" if '?' in redirect_url else f"?page={page_number}"
+
+                return redirect(redirect_url)
+
+            except Exception as e:
+                messages.error(request, f'Ошибка при выполнении действия: {str(e)}')
+                # Редирект с сохранением параметров фильтрации
+                query_params = {}
+                if search_query:
+                    query_params['search'] = search_query
+                if status_filter:
+                    query_params['status'] = status_filter
+                if date_filter:
+                    query_params['date'] = date_filter
+
+                redirect_url = reverse('admin_booking_management')
+                if query_params:
+                    params = urlencode(query_params)
+                    redirect_url = f"{redirect_url}?{params}"
+                return redirect(redirect_url)
 
     # Пагинация
     paginator = Paginator(bookings, 10)  # 10 элементов на странице
@@ -1087,6 +1140,11 @@ def admin_booking_management(request):
     # Общая статистика для сайдбара
     total_users = User.objects.count()
     total_properties = Property.objects.count()
+
+    # Добавляем вычисление часов для каждого бронирования
+    for booking in bookings_page:
+        duration = booking.end_datetime - booking.start_datetime
+        booking.hours = round(duration.total_seconds() / 3600, 1)
 
     context = {
         'bookings': bookings_page,
@@ -1123,7 +1181,34 @@ def admin_review_management(request):
                 review.delete()
                 messages.success(request, f'Отзыв от {review.user} удален.')
 
-    return render(request, 'admin/review_management.html', {'reviews': reviews})
+    # Статистика для карточек
+    total_reviews = Review.objects.count()
+    avg_rating = Review.objects.aggregate(avg=Avg('rating'))['avg'] or 0
+
+    # Количество отзывов по рейтингам
+    rating_5 = Review.objects.filter(rating=5).count()
+    rating_low = Review.objects.filter(rating__in=[1, 2]).count()
+
+    # Пагинация
+    paginator = Paginator(reviews, 10)
+    page = request.GET.get('page')
+
+    try:
+        reviews_page = paginator.page(page)
+    except PageNotAnInteger:
+        reviews_page = paginator.page(1)
+    except EmptyPage:
+        reviews_page = paginator.page(paginator.num_pages)
+
+    context = {
+        'reviews': reviews_page,
+        'total_reviews': total_reviews,
+        'avg_rating': avg_rating,
+        'rating_5': rating_5,
+        'rating_low': rating_low,
+    }
+
+    return render(request, 'admin/review_management.html', context)
 
 
 @login_required
@@ -1220,7 +1305,19 @@ def admin_system_settings(request):
         messages.success(request, 'Настройки системы обновлены.')
         return redirect('admin_system_settings')
 
-    return render(request, 'admin/system_settings.html')
+    # Статистика для отображения
+    total_users = User.objects.count()
+    total_properties = Property.objects.count()
+    total_bookings = Booking.objects.count()
+
+    context = {
+        'total_users': total_users,
+        'total_properties': total_properties,
+        'total_bookings': total_bookings,
+        'uptime': '24/7',  # Можно добавить реальное время работы
+    }
+
+    return render(request, 'admin/system_settings.html', context)
 
 
 # Дополнительные функции для арендодателя

@@ -1,102 +1,265 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
 
 {% block title %}Настройки системы{% endblock %}
 
+{% block extra_css %}
+<style>
+    .admin-wrapper {
+        display: flex;
+        min-height: calc(100vh - 76px);
+    }
+
+    .admin-sidebar {
+        width: 250px;
+        background-color: #2c3e50;
+        color: white;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+        top: 76px;
+    }
+
+    .admin-content {
+        margin-left: 250px;
+        padding: 20px;
+        margin-top: 20px;
+        flex: 1;
+    }
+
+    .sidebar-brand {
+        padding: 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-menu {
+        padding: 20px 0;
+    }
+
+    .sidebar-menu .nav-link {
+        color: rgba(255,255,255,0.8);
+        padding: 12px 25px;
+        margin: 2px 0;
+        border-left: 3px solid transparent;
+        transition: all 0.3s;
+    }
+
+    .sidebar-menu .nav-link:hover {
+        color: white;
+        background-color: rgba(255,255,255,0.1);
+        border-left-color: #3a57e8;
+    }
+
+    .sidebar-menu .nav-link.active {
+        color: white;
+        background-color: rgba(58, 87, 232, 0.2);
+        border-left-color: #3a57e8;
+    }
+
+    .admin-card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-header bg-secondary text-white">
-                    <h4 class="mb-0"><i class="bi bi-gear"></i> Настройки системы</h4>
+<div class="admin-dashboard">
+    {% if user.is_authenticated and user.is_staff %}
+    <div class="admin-wrapper">
+        <!-- Admin Sidebar -->
+        <div class="admin-sidebar">
+            <div class="sidebar-brand">
+                <h4><i class="bi bi-speedometer2"></i> Админ-панель</h4>
+                <small class="text-muted">Commercial Rental</small>
+            </div>
+
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'custom_admin_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Дашборд
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_user_management' %}">
+                            <i class="bi bi-people"></i> Пользователи
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_property_management' %}">
+                            <i class="bi bi-buildings"></i> Помещения
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_booking_management' %}">
+                            <i class="bi bi-calendar-check"></i> Бронирования
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_review_management' %}">
+                            <i class="bi bi-star"></i> Отзывы
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'admin_system_settings' %}">
+                            <i class="bi bi-gear"></i> Настройки
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="/admin/" target="_blank">
+                            <i class="bi bi-box-arrow-up-right"></i> Django Admin
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Admin Content -->
+        <div class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Настройки системы</h2>
+                    <p class="text-muted mb-0">Управление настройками системы аренды помещений</p>
                 </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="mb-4">
-                            <h5 class="mb-3">Основные настройки</h5>
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenance_mode">
-                                <label class="form-check-label" for="maintenanceMode">Режим обслуживания</label>
-                            </div>
-                            
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" id="registrationEnabled" name="registration_enabled" checked>
-                                <label class="form-check-label" for="registrationEnabled">Регистрация новых пользователей</label>
-                            </div>
-                            
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications" checked>
-                                <label class="form-check-label" for="emailNotifications">Email уведомления</label>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <h5 class="mb-3">Настройки бронирования</h5>
-                            <div class="mb-3">
-                                <label for="maxBookingDays" class="form-label">Максимальное количество дней для бронирования</label>
-                                <input type="number" class="form-control" id="maxBookingDays" name="max_booking_days" value="90" min="1" max="365">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="minBookingHours" class="form-label">Минимальная длительность бронирования (часов)</label>
-                                <input type="number" class="form-control" id="minBookingHours" name="min_booking_hours" value="1" min="1" max="24">
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <h5 class="mb-3">Уведомления</h5>
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" id="notifyNewBooking" name="notify_new_booking" checked>
-                                <label class="form-check-label" for="notifyNewBooking">Уведомлять о новых бронированиях</label>
-                            </div>
-                            
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" id="notifyNewReview" name="notify_new_review" checked>
-                                <label class="form-check-label" for="notifyNewReview">Уведомлять о новых отзывах</label>
-                            </div>
-                            
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" id="notifyCancellation" name="notify_cancellation" checked>
-                                <label class="form-check-label" for="notifyCancellation">Уведомлять об отмене бронирований</label>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'custom_admin_dashboard' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Назад
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> Сохранить настройки
-                            </button>
-                        </div>
-                    </form>
+                <div class="text-end">
+                    <span class="badge bg-primary">{{ user.get_user_type_display }}</span>
+                    <small class="text-muted d-block">{{ user.email }}</small>
                 </div>
             </div>
-            
-            <!-- System Information -->
-            <div class="card shadow mt-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Информация о системе</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Версия системы:</strong> 1.0.0</p>
-                            <p><strong>Всего пользователей:</strong> {{ total_users }}</p>
-                            <p><strong>Всего помещений:</strong> {{ total_properties }}</p>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Общие настройки -->
+                        <div class="card admin-card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Общие настройки</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Название сайта</label>
+                                    <input type="text" class="form-control" value="Commercial Rental" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Валюта</label>
+                                    <select class="form-control" readonly>
+                                        <option selected>Рубли (₽)</option>
+                                        <option>Доллары ($)</option>
+                                        <option>Евро (€)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Язык интерфейса</label>
+                                    <select class="form-control" readonly>
+                                        <option selected>Русский</option>
+                                        <option>English</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <p><strong>База данных:</strong> SQLite</p>
-                            <p><strong>Последнее обновление:</strong> {{ last_update|date:"d.m.Y H:i" }}</p>
-                            <p><strong>Статус:</strong> <span class="badge bg-success">Работает</span></p>
+
+                        <!-- Настройки бронирований -->
+                        <div class="card admin-card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Настройки бронирований</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Минимальное время бронирования (часы)</label>
+                                    <input type="number" class="form-control" value="1" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Максимальное время бронирования (дни)</label>
+                                    <input type="number" class="form-control" value="30" readonly>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="autoConfirm" checked disabled>
+                                    <label class="form-check-label" for="autoConfirm">
+                                        Автоматическое подтверждение бронирований
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Настройки уведомлений -->
+                        <div class="card admin-card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Настройки уведомлений</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="emailNotifications" checked disabled>
+                                    <label class="form-check-label" for="emailNotifications">
+                                        Email уведомления
+                                    </label>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="smsNotifications" disabled>
+                                    <label class="form-check-label" for="smsNotifications">
+                                        SMS уведомления
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Сохранить настройки
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Информация о системе -->
+                <div class="col-md-4">
+                    <div class="card admin-card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Информация о системе</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <strong><i class="bi bi-server me-2"></i> Версия Django:</strong>
+                                    <span class="float-end">4.2.7</span>
+                                </li>
+                                <li class="mb-2">
+                                    <strong><i class="bi bi-database me-2"></i> База данных:</strong>
+                                    <span class="float-end">SQLite</span>
+                                </li>
+                                <li class="mb-2">
+                                    <strong><i class="bi bi-calendar me-2"></i> Всего бронирований:</strong>
+                                    <span class="float-end">{{ total_bookings|default:"0" }}</span>
+                                </li>
+                                <li class="mb-2">
+                                    <strong><i class="bi bi-people me-2"></i> Пользователей:</strong>
+                                    <span class="float-end">{{ total_users|default:"0" }}</span>
+                                </li>
+                                <li class="mb-2">
+                                    <strong><i class="bi bi-buildings me-2"></i> Помещений:</strong>
+                                    <span class="float-end">{{ total_properties|default:"0" }}</span>
+                                </li>
+                                <li class="mb-2">
+                                    <strong><i class="bi bi-clock me-2"></i> Время работы:</strong>
+                                    <span class="float-end">{{ uptime|default:"24/7" }}</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="container mt-5">
+        <div class="alert alert-danger">
+            <h4>Доступ запрещен</h4>
+            <p>У вас нет прав для доступа к админ-панели.</p>
+            <a href="{% url 'dashboard' %}" class="btn btn-primary">Вернуться в кабинет</a>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
