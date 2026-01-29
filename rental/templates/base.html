@@ -110,8 +110,6 @@
 </head>
 <body>
     <!-- Navigation -->
-    <!-- В шапке navigation добавьте: -->
-
     <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
@@ -132,7 +130,7 @@
                     </li>
                     {% if user.is_authenticated and user.user_type == 'landlord' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Мои помещения</a>
+                        <a class="nav-link" href="{% url 'my_properties' %}">Мои помещения</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -145,13 +143,26 @@
                             </button>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'dashboard' %}">Личный кабинет</a></li>
+                                {% if user.user_type == 'tenant' %}
+                                <li><a class="dropdown-item" href="{% url 'my_bookings' %}">Мои бронирования</a></li>
+                                <li><a class="dropdown-item" href="{% url 'my_favorites' %}">Избранное</a></li>
+                                {% elif user.user_type == 'landlord' %}
+                                <li><a class="dropdown-item" href="{% url 'landlord_bookings' %}">Бронирования</a></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'edit_profile' %}">Редактировать профиль</a></li>
+                                {% if user.is_staff %}
                                 <li><hr class="dropdown-divider"></li>
-                               <form method="post" action="{% url 'logout' %}" class="d-inline">
-    {% csrf_token %}
-    <button type="submit" class="dropdown-item" style="background: none; border: none; width: 100%; text-align: left;">
-        Выйти
-    </button>
-</form>
+                                <li><a class="dropdown-item" href="{% url 'custom_admin_dashboard' %}">Админ-панель</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item" style="background: none; border: none; width: 100%; text-align: left;">
+                                            Выйти
+                                        </button>
+                                    </form>
+                                </li>
                             </ul>
                         </div>
                     {% else %}

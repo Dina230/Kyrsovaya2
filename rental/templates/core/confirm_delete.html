@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Подтверждение удаления{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Подтверждение удаления
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Вы уверены, что хотите удалить?</h5>
+                    <p class="card-text">
+                        Вы собираетесь удалить <strong>{{ type }}</strong>:
+                        <strong>"{{ object.title|default:object }}"</strong>
+                    </p>
+                    <p class="text-danger">
+                        <i class="bi bi-exclamation-circle"></i>
+                        Это действие нельзя отменить.
+                    </p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="javascript:history.back()" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Удалить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

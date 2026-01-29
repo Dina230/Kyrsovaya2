@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Добавление нового помещения{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> Добавление нового помещения
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5>Основная информация</h5>
+                                <hr>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                                        Название помещения *
+                                    </label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.title.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">Придумайте короткое и понятное название</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        Описание *
+                                    </label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.description.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">Опишите помещение детально: планировка, особенности, оборудование</div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.property_type.id_for_label }}" class="form-label">
+                                            Тип помещения *
+                                        </label>
+                                        {{ form.property_type }}
+                                        {% if form.property_type.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.property_type.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.category.id_for_label }}" class="form-label">
+                                            Категория *
+                                        </label>
+                                        {{ form.category }}
+                                        {% if form.category.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.category.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5>Локация и цена</h5>
+                                <hr>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.city.id_for_label }}" class="form-label">
+                                            Город *
+                                        </label>
+                                        {{ form.city }}
+                                        {% if form.city.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.city.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.address.id_for_label }}" class="form-label">
+                                            Адрес *
+                                        </label>
+                                        {{ form.address }}
+                                        {% if form.address.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.address.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Улица, дом, корпус, этаж</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.price_per_hour.id_for_label }}" class="form-label">
+                                            Цена за час (₽) *
+                                        </label>
+                                        <div class="input-group">
+                                            {{ form.price_per_hour }}
+                                            <span class="input-group-text">₽</span>
+                                        </div>
+                                        {% if form.price_per_hour.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.price_per_hour.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Стоимость аренды за 1 час</div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.capacity.id_for_label }}" class="form-label">
+                                            Вместимость *
+                                        </label>
+                                        <div class="input-group">
+                                            {{ form.capacity }}
+                                            <span class="input-group-text">чел.</span>
+                                        </div>
+                                        {% if form.capacity.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.capacity.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">Максимальное количество человек</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.area.id_for_label }}" class="form-label">
+                                        Площадь (м²)
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.area }}
+                                        <span class="input-group-text">м²</span>
+                                    </div>
+                                    {% if form.area.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.area.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h5>Удобства и особенности</h5>
+                                <hr>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Удобства</label>
+                                    <div class="row">
+                                        {% for amenity in form.amenities.field.queryset %}
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="amenities" value="{{ amenity.id }}"
+                                                       id="amenity_{{ amenity.id }}">
+                                                <label class="form-check-label" for="amenity_{{ amenity.id }}">
+                                                    {{ amenity.name }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        <div class="col-12">
+                                            <p class="text-muted">Удобства еще не добавлены в систему</p>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if form.amenities.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.amenities.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">Выберите доступные удобства в помещении</div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            {{ form.is_featured }}
+                                            <label for="{{ form.is_featured.id_for_label }}" class="form-check-label">
+                                                Рекомендуемое помещение
+                                            </label>
+                                            <div class="form-text">
+                                                Отображается в списке рекомендуемых помещений
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.status.id_for_label }}" class="form-label">
+                                            Статус *
+                                        </label>
+                                        {{ form.status }}
+                                        {% if form.status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.status.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text">"Активно" - помещение видно всем пользователям</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h5>Изображения</h5>
+                                <hr>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.images.id_for_label }}" class="form-label">
+                                        Изображения помещения *
+                                    </label>
+                                    <input type="file" class="form-control" id="{{ form.images.id_for_label }}" 
+                                           name="images" multiple accept="image/*">
+                                    {% if form.images.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.images.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Можно выбрать несколько файлов. Поддерживаются форматы: JPG, PNG, GIF.
+                                        Первое загруженное изображение станет главным.
+                                    </div>
+                                </div>
+                                
+                                <!-- Предпросмотр изображений -->
+                                <div id="image-preview" class="row mt-3"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'my_properties' %}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Отмена
+                                    </a>
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-check-circle"></i> Добавить помещение
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Подсказки -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightbulb"></i> Советы по добавлению помещения
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Используйте качественные фотографии помещения с разных ракурсов</li>
+                        <li>Подробно опишите все особенности и оборудование</li>
+                        <li>Укажите реальную вместимость и площадь</li>
+                        <li>Установите конкурентную цену, исходя из расположения и удобств</li>
+                        <li>Отметьте все доступные удобства для привлечения большего числа клиентов</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Добавляем классы Bootstrap к полям формы
+    document.addEventListener('DOMContentLoaded', function() {
+        // Текстовые поля и селекты
+        const inputs = document.querySelectorAll('input[type="text"], input[type="number"], select, textarea');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+        });
+        
+        // Чекбоксы
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            cb.classList.add('form-check-input');
+        });
+        
+        // Добавляем валидацию формы
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+        
+        // Предпросмотр изображений перед загрузкой
+        const imageInput = document.getElementById('{{ form.images.id_for_label }}');
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                const files = e.target.files;
+                const previewContainer = document.getElementById('image-preview');
+                previewContainer.innerHTML = '';
+                
+                if (files.length > 0) {
+                    const title = document.createElement('h6');
+                    title.className = 'mb-3';
+                    title.textContent = 'Предпросмотр (' + files.length + ' изображений):';
+                    previewContainer.appendChild(title);
+                }
+                
+                for (let file of files) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const col = document.createElement('div');
+                        col.className = 'col-md-2 mb-3';
+                        
+                        const card = document.createElement('div');
+                        card.className = 'card h-100';
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'card-img-top';
+                        img.style.height = '100px';
+                        img.style.objectFit = 'cover';
+                        
+                        const cardBody = document.createElement('div');
+                        cardBody.className = 'card-body p-2 text-center';
+                        
+                        const fileName = document.createElement('small');
+                        fileName.className = 'text-muted d-block text-truncate';
+                        fileName.title = file.name;
+                        fileName.textContent = file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name;
+                        
+                        const fileSize = document.createElement('small');
+                        fileSize.className = 'text-muted d-block';
+                        fileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+                        
+                        cardBody.appendChild(fileName);
+                        cardBody.appendChild(fileSize);
+                        
+                        card.appendChild(img);
+                        card.appendChild(cardBody);
+                        col.appendChild(card);
+                        previewContainer.appendChild(col);
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    });
+</script>
+
+<style>
+    /* Стили для формы */
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+    }
+    
+    .form-check-input:checked {
+        background-color: #2563eb;
+        border-color: #2563eb;
+    }
+    
+    .invalid-feedback {
+        display: block !important;
+    }
+    
+    /* Адаптивность для предпросмотра изображений */
+    @media (max-width: 768px) {
+        #image-preview .col-md-2 {
+            width: 33.333%;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        #image-preview .col-md-2 {
+            width: 50%;
+        }
+    }
+</style>
+{% endblock %}

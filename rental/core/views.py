@@ -269,16 +269,41 @@ def my_properties(request):
     if status_filter:
         properties = properties.filter(status=status_filter)
 
+    # Статистика для карточек
+    total_count = properties.count()
+    active_count = properties.filter(status='active').count()
+    featured_count = properties.filter(is_featured=True).count()
+
+    # Помещения с активными бронированиями
+    booked_count = Property.objects.filter(
+        landlord=request.user,
+        bookings__status__in=['confirmed', 'pending'],
+        bookings__start_datetime__gte=timezone.now()
+    ).distinct().count()
+
+    # Общая выручка
+    total_revenue = Booking.objects.filter(
+        property__landlord=request.user,
+        status='completed'
+    ).aggregate(total=Sum('total_price'))['total'] or Decimal('0')
+
     paginator = Paginator(properties, 10)
     page = request.GET.get('page')
     try:
-        properties = paginator.page(page)
+        properties_page = paginator.page(page)
     except PageNotAnInteger:
-        properties = paginator.page(1)
+        properties_page = paginator.page(1)
     except EmptyPage:
-        properties = paginator.page(paginator.num_pages)
+        properties_page = paginator.page(paginator.num_pages)
 
-    return render(request, 'core/my_properties.html', {'properties': properties})
+    return render(request, 'core/my_properties.html', {
+        'properties': properties_page,
+        'total_count': total_count,
+        'active_count': active_count,
+        'featured_count': featured_count,
+        'booked_count': booked_count,
+        'total_revenue': total_revenue,
+    })
 
 
 def property_list(request):
