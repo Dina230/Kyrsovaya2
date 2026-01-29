@@ -77,6 +77,12 @@
         background-color: rgba(58, 87, 232, 0.2);
         border-left-color: #3a57e8;
     }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
 </style>
 {% endblock %}
 
@@ -185,8 +191,8 @@
                         <div class="card-body stats-card stats-bookings">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="text-muted mb-2">Бронирования</h6>
-                                    <h2 class="mb-0">{{ total_bookings }}</h2>
+                                    <h6 class="text-muted mb-2">Активные брони</h6>
+                                    <h2 class="mb-0">{{ active_bookings }}</h2>
                                 </div>
                                 <i class="bi bi-calendar-check fs-1 text-warning"></i>
                             </div>
@@ -203,6 +209,53 @@
                                     <h2 class="mb-0">{{ revenue_stats.total_revenue|default:"0"|floatformat:0 }} ₽</h2>
                                 </div>
                                 <i class="bi bi-cash-coin fs-1 text-danger"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="row mb-4">
+                <!-- User Types Chart -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header">
+                            <h6 class="mb-0">Распределение пользователей по типам</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="userTypesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Booking Status Chart -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card admin-card h-100">
+                        <div class="card-header">
+                            <h6 class="mb-0">Статусы бронирований</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="bookingStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property Types Chart -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card admin-card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Распределение помещений по типам</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="propertyTypesChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -341,10 +394,178 @@
     <div class="container mt-5">
         <div class="alert alert-danger">
             <h4>Доступ запрещен</h4>
-            <p>У вас нет прав для доступа к админ-панели.</p>
+            <p>У вас нет прав для доступа к админ -панели.</p>
             <a href="{% url 'dashboard' %}" class="btn btn-primary">Вернуться в кабинет</a>
         </div>
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Подключаем Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Данные для диаграмм из Django context
+    const userStats = {{ user_stats|safe }};
+    const propertyStats = {{ property_stats|safe }};
+    const bookingStats = {{ booking_stats|safe }};
+
+    // 1. Диаграмма типов пользователей (Doughnut)
+    const userTypesCtx = document.getElementById('userTypesChart').getContext('2d');
+
+    // Подготавливаем данные для пользователей
+    const userLabels = [];
+    const userData = [];
+    const userColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'];
+
+    userStats.forEach(stat => {
+        userLabels.push(getUserTypeLabel(stat.user_type));
+        userData.push(stat.count);
+    });
+
+    new Chart(userTypesCtx, {
+        type: 'doughnut',
+        data: {
+            labels: userLabels,
+            datasets: [{
+                data: userData,
+                backgroundColor: userColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 2. Диаграмма статусов бронирований (Pie)
+    const bookingStatusCtx = document.getElementById('bookingStatusChart').getContext('2d');
+
+    const bookingLabels = [];
+    const bookingData = [];
+    const bookingColors = ['#FFCE56', '#36A2EB', '#FF6384', '#4BC0C0'];
+
+    bookingStats.forEach(stat => {
+        bookingLabels.push(getBookingStatusLabel(stat.status));
+        bookingData.push(stat.count);
+    });
+
+    new Chart(bookingStatusCtx, {
+        type: 'pie',
+        data: {
+            labels: bookingLabels,
+            datasets: [{
+                data: bookingData,
+                backgroundColor: bookingColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+
+    // 3. Диаграмма типов помещений (Bar)
+    const propertyTypesCtx = document.getElementById('propertyTypesChart').getContext('2d');
+
+    const propertyLabels = [];
+    const propertyData = [];
+    const propertyColors = ['#FF9F40', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#C9CBCF'];
+
+    propertyStats.forEach(stat => {
+        propertyLabels.push(getPropertyTypeLabel(stat.property_type));
+        propertyData.push(stat.count);
+    });
+
+    new Chart(propertyTypesCtx, {
+        type: 'bar',
+        data: {
+            labels: propertyLabels,
+            datasets: [{
+                label: 'Количество помещений',
+                data: propertyData,
+                backgroundColor: propertyColors,
+                borderColor: propertyColors.map(color => color.replace('0.8', '1')),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Вспомогательные функции для преобразования значений
+    function getUserTypeLabel(type) {
+        const labels = {
+            'admin': 'Администраторы',
+            'landlord': 'Арендодатели',
+            'tenant': 'Арендаторы'
+        };
+        return labels[type] || type;
+    }
+
+    function getBookingStatusLabel(status) {
+        const labels = {
+            'pending': 'Ожидание',
+            'confirmed': 'Подтверждено',
+            'cancelled': 'Отменено',
+            'completed': 'Завершено'
+        };
+        return labels[status] || status;
+    }
+
+    function getPropertyTypeLabel(type) {
+        const labels = {
+            'office': 'Офис',
+            'coworking': 'Коворкинг',
+            'conference_room': 'Конференц-зал',
+            'retail': 'Торговая площадь',
+            'warehouse': 'Склад',
+            'industrial': 'Производственное',
+            'other': 'Другое'
+        };
+        return labels[type] || type;
+    }
+});
+</script>
 {% endblock %}

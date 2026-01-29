@@ -665,9 +665,10 @@ def custom_admin_dashboard(request):
 
     thirty_days_ago = timezone.now() - timedelta(days=30)
 
-    user_stats = User.objects.values('user_type').annotate(count=Count('id'))
-    property_stats = Property.objects.values('property_type').annotate(count=Count('id'))
-    booking_stats = Booking.objects.values('status').annotate(count=Count('id'))
+    # Получаем статистику и преобразуем в список
+    user_stats = list(User.objects.values('user_type').annotate(count=Count('id')))
+    property_stats = list(Property.objects.values('property_type').annotate(count=Count('id')))
+    booking_stats = list(Booking.objects.values('status').annotate(count=Count('id')))
 
     recent_users = User.objects.order_by('-date_joined')[:5]
     recent_bookings = Booking.objects.select_related('property', 'tenant').order_by('-created_at')[:5]
@@ -686,9 +687,9 @@ def custom_admin_dashboard(request):
         'total_properties': total_properties,
         'total_bookings': total_bookings,
         'active_bookings': active_bookings,
-        'user_stats': user_stats,
-        'property_stats': property_stats,
-        'booking_stats': booking_stats,
+        'user_stats': json.dumps(user_stats),  # Преобразуем в JSON
+        'property_stats': json.dumps(property_stats),  # Преобразуем в JSON
+        'booking_stats': json.dumps(booking_stats),  # Преобразуем в JSON
         'recent_users': recent_users,
         'recent_bookings': recent_bookings,
         'recent_reviews': recent_reviews,
