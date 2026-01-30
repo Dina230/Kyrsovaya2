@@ -39,7 +39,7 @@
         position: fixed;
         height: 100vh;
         overflow-y: auto;
-        top: 76px; /* Учитываем высоту навбара */
+        top: 76px;
     }
 
     .admin-content {
@@ -83,19 +83,167 @@
         height: 300px;
         width: 100%;
     }
+
+    /* Стили для фильтров */
+    .chart-filters {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .filter-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 15px;
+    }
+
+    .filter-btn-group .btn {
+        border-radius: 20px !important;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .chart-title {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .chart-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .export-btn {
+        background: transparent;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 5px 10px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .export-btn:hover {
+        background: #f8f9fa;
+        border-color: #3a57e8;
+    }
+
+    .time-period-selector {
+        display: flex;
+        gap: 5px;
+    }
+
+    .time-period-btn {
+        padding: 5px 15px;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.3s;
+    }
+
+    .time-period-btn.active {
+        background: #3a57e8;
+        color: white;
+        border-color: #3a57e8;
+    }
+
+    .time-period-btn:hover:not(.active) {
+        background: #f8f9fa;
+    }
+
+    /* Стили для модального окна фильтров */
+    .filter-modal-content {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .filter-option {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .filter-option:last-child {
+        border-bottom: none;
+    }
+
+    /* Анимация для загрузки данных */
+    .chart-loading {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255,255,255,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    /* Многоколоночный выбор */
+    .multi-select-columns {
+        column-count: 2;
+        column-gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .multi-select-columns {
+            column-count: 1;
+        }
+    }
+
+    /* Индикатор загрузки */
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .loading-overlay.show {
+        display: flex;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="admin-dashboard">
-    <!-- Проверка прав администратора -->
+    <!-- Индикатор загрузки -->
+    <div class="loading-overlay" id="globalLoading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+    </div>
+
     {% if user.is_authenticated and user.is_staff %}
     <div class="admin-wrapper">
         <!-- Admin Sidebar -->
         <div class="admin-sidebar">
             <div class="sidebar-brand">
                 <h4><i class="bi bi-speedometer2"></i> Админ-панель</h4>
-                <small class="text-muted">Commercial Rental</small>
+                <small class="text-muted">Простор</small>
             </div>
 
             <div class="sidebar-menu">
@@ -128,11 +276,6 @@
                             <i class="bi bi-star"></i> Отзывы
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'admin_system_settings' %}">
-                            <i class="bi bi-gear"></i> Настройки
-                        </a>
-                    </li>
                     <li class="nav-item mt-4">
                         <a class="nav-link" href="/admin/" target="_blank">
                             <i class="bi bi-box-arrow-up-right"></i> Django Admin
@@ -148,7 +291,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="mb-1">Дашборд</h2>
-                    <p class="text-muted mb-0">Обзор системы Commercial Rental</p>
+                    <p class="text-muted mb-0">Обзор системы Простор</p>
                 </div>
                 <div class="text-end">
                     <span class="badge bg-primary">{{ user.get_user_type_display }}</span>
@@ -157,7 +300,8 @@
             </div>
 
             <!-- Stats Cards -->
-            <div class="row mb-4">
+            <div class="row mb-4" id="statsCards">
+                <!-- Cards will be dynamically updated -->
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card admin-card h-100">
                         <div class="card-body stats-card stats-users">
@@ -220,12 +364,36 @@
                 <!-- User Types Chart -->
                 <div class="col-lg-6 mb-4">
                     <div class="card admin-card h-100">
-                        <div class="card-header">
-                            <h6 class="mb-0">Распределение пользователей по типам</h6>
+                        <div class="card-header chart-header">
+                            <h6 class="chart-title mb-0">Распределение пользователей по типам</h6>
+                            <div class="chart-actions">
+                                <div class="btn-group filter-btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary active" data-chart="userTypes" data-type="doughnut">Круговая</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-chart="userTypes" data-type="bar">Столбчатая</button>
+                                </div>
+                                <button class="export-btn" onclick="exportChart('userTypesChart')">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
                                 <canvas id="userTypesChart"></canvas>
+                            </div>
+                            <div class="filter-group mt-3">
+                                <select class="form-select form-select-sm" id="userTypeFilter" onchange="filterUserTypesChart()" style="width: auto;">
+                                    <option value="all">Все типы пользователей</option>
+                                    <option value="admin">Только администраторы</option>
+                                    <option value="landlord">Только арендодатели</option>
+                                    <option value="tenant">Только арендаторы</option>
+                                </select>
+                                <select class="form-select form-select-sm" id="userTimeFilter" onchange="filterUserTypesChart()" style="width: auto;">
+                                    <option value="all">За всё время</option>
+                                    <option value="today">Сегодня</option>
+                                    <option value="week">Эта неделя</option>
+                                    <option value="month">Этот месяц</option>
+                                    <option value="year">Этот год</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -234,29 +402,127 @@
                 <!-- Booking Status Chart -->
                 <div class="col-lg-6 mb-4">
                     <div class="card admin-card h-100">
-                        <div class="card-header">
-                            <h6 class="mb-0">Статусы бронирований</h6>
+                        <div class="card-header chart-header">
+                            <h6 class="chart-title mb-0">Статусы бронирований</h6>
+                            <div class="chart-actions">
+                                <div class="time-period-selector">
+                                    <button class="time-period-btn active" onclick="filterBookingsByPeriod('7d')">7 дн.</button>
+                                    <button class="time-period-btn" onclick="filterBookingsByPeriod('30d')">30 дн.</button>
+                                    <button class="time-period-btn" onclick="filterBookingsByPeriod('90d')">90 дн.</button>
+                                    <button class="time-period-btn" onclick="filterBookingsByPeriod('all')">Все</button>
+                                </div>
+                                <button class="export-btn" onclick="exportChart('bookingStatusChart')">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
                                 <canvas id="bookingStatusChart"></canvas>
+                            </div>
+                            <div class="filter-group mt-3">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="showPending" value="pending" checked onchange="filterBookingStatus()">
+                                    <label class="form-check-label" for="showPending">Ожидание</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="showConfirmed" value="confirmed" checked onchange="filterBookingStatus()">
+                                    <label class="form-check-label" for="showConfirmed">Подтверждено</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="showCancelled" value="cancelled" checked onchange="filterBookingStatus()">
+                                    <label class="form-check-label" for="showCancelled">Отменено</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="showCompleted" value="completed" checked onchange="filterBookingStatus()">
+                                    <label class="form-check-label" for="showCompleted">Завершено</label>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Property Types Chart -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card admin-card">
-                        <div class="card-header">
-                            <h6 class="mb-0">Распределение помещений по типам</h6>
+
+
+            <!-- Modal для фильтров помещений -->
+            <div class="modal fade" id="propertyFilterModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Фильтры помещений</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="card-body">
-                            <div class="chart-container">
-                                <canvas id="propertyTypesChart"></canvas>
+                        <div class="modal-body filter-modal-content">
+                            <h6>Типы помещений:</h6>
+                            <div class="multi-select-columns">
+                                <div class="form-check filter-option">
+                                    <input class="form-check-input" type="checkbox" value="office" id="propTypeOffice" checked>
+                                    <label class="form-check-label" for="propTypeOffice">
+                                        Офисы
+                                    </label>
+                                </div>
+                                <div class="form-check filter-option">
+                                    <input class="form-check-input" type="checkbox" value="coworking" id="propTypeCoworking" checked>
+                                    <label class="form-check-label" for="propTypeCoworking">
+                                        Коворкинги
+                                    </label>
+                                </div>
+                                <div class="form-check filter-option">
+                                    <input class="form-check-input" type="checkbox" value="conference_room" id="propTypeConference" checked>
+                                    <label class="form-check-label" for="propTypeConference">
+                                        Конференц-залы
+                                    </label>
+                                </div>
+                                <div class="form-check filter-option">
+                                    <input class="form-check-input" type="checkbox" value="retail" id="propTypeRetail" checked>
+                                    <label class="form-check-label" for="propTypeRetail">
+                                        Торговые площади
+                                    </label>
+                                </div>
+                                <div class="form-check filter-option">
+                                    <input class="form-check-input" type="checkbox" value="warehouse" id="propTypeWarehouse" checked>
+                                    <label class="form-check-label" for="propTypeWarehouse">
+                                        Склады
+                                    </label>
+                                </div>
+                                <div class="form-check filter-option">
+                                    <input class="form-check-input" type="checkbox" value="industrial" id="propTypeIndustrial" checked>
+                                    <label class="form-check-label" for="propTypeIndustrial">
+                                        Производственные
+                                    </label>
+                                </div>
+                                <div class="form-check filter-option">
+                                    <input class="form-check-input" type="checkbox" value="other" id="propTypeOther" checked>
+                                    <label class="form-check-label" for="propTypeOther">
+                                        Другое
+                                    </label>
+                                </div>
                             </div>
+
+                            <h6 class="mt-4">Статус помещений:</h6>
+                            <div class="form-check filter-option">
+                                <input class="form-check-input" type="checkbox" value="available" id="statusAvailable" checked>
+                                <label class="form-check-label" for="statusAvailable">
+                                    Доступно
+                                </label>
+                            </div>
+                            <div class="form-check filter-option">
+                                <input class="form-check-input" type="checkbox" value="booked" id="statusBooked" checked>
+                                <label class="form-check-label" for="statusBooked">
+                                    Забронировано
+                                </label>
+                            </div>
+                            <div class="form-check filter-option">
+                                <input class="form-check-input" type="checkbox" value="maintenance" id="statusMaintenance" checked>
+                                <label class="form-check-label" for="statusMaintenance">
+                                    На обслуживании
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="button" class="btn btn-primary" onclick="applyPropertyFilters()">Применить</button>
                         </div>
                     </div>
                 </div>
@@ -378,8 +644,8 @@
                                     </a>
                                 </div>
                                 <div class="col-md-3 col-6 mb-3">
-                                    <a href="{% url 'admin_system_settings' %}" class="btn btn-secondary w-100">
-                                        <i class="bi bi-gear"></i> Настройки системы
+                                    <a href="{% url 'admin_booking_management' %}" class="btn btn-warning w-100">
+                                        <i class="bi bi-calendar-check"></i> Управление бронированиями
                                     </a>
                                 </div>
                             </div>
@@ -394,7 +660,7 @@
     <div class="container mt-5">
         <div class="alert alert-danger">
             <h4>Доступ запрещен</h4>
-            <p>У вас нет прав для доступа к админ -панели.</p>
+            <p>У вас нет прав для доступа к админ-панели.</p>
             <a href="{% url 'dashboard' %}" class="btn btn-primary">Вернуться в кабинет</a>
         </div>
     </div>
@@ -407,32 +673,66 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+// Глобальные переменные для хранения данных и диаграмм
+let charts = {
+    userTypesChart: null,
+    bookingStatusChart: null,
+    propertyTypesChart: null,
+    revenueChart: null
+};
+
+let chartData = {
+    userStats: {{ user_stats|safe }},
+    propertyStats: {{ property_stats|safe }},
+    bookingStats: {{ booking_stats|safe }},
+    revenueData: {{ revenue_data|safe|default:"[]" }}
+};
+
+// Текущие фильтры
+let currentFilters = {
+    userTypes: 'all',
+    userTimePeriod: 'all',
+    bookingPeriod: '30d',
+    bookingStatuses: ['pending', 'confirmed', 'cancelled', 'completed'],
+    propertyTypes: ['office', 'coworking', 'conference_room', 'retail', 'warehouse', 'industrial', 'other'],
+    propertyStatuses: ['available', 'booked', 'maintenance'],
+    propertySort: 'count',
+    minPrice: null,
+    maxPrice: null,
+    revenuePeriod: 'daily',
+    revenueChartType: 'line'
+};
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Данные для диаграмм из Django context
-    const userStats = {{ user_stats|safe }};
-    const propertyStats = {{ property_stats|safe }};
-    const bookingStats = {{ booking_stats|safe }};
+    // Инициализация диаграмм
+    initUserTypesChart();
+    initBookingStatusChart();
+    initPropertyTypesChart();
+    initRevenueChart();
 
-    // 1. Диаграмма типов пользователей (Doughnut)
-    const userTypesCtx = document.getElementById('userTypesChart').getContext('2d');
+    // Инициализация кнопок переключения типа диаграммы
+    initChartTypeButtons();
 
-    // Подготавливаем данные для пользователей
-    const userLabels = [];
-    const userData = [];
-    const userColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'];
+    // Инициализация множественного выбора
+    initMultiSelect();
+});
 
-    userStats.forEach(stat => {
-        userLabels.push(getUserTypeLabel(stat.user_type));
-        userData.push(stat.count);
-    });
+// ========== Функции инициализации диаграмм ==========
 
-    new Chart(userTypesCtx, {
+function initUserTypesChart() {
+    const ctx = document.getElementById('userTypesChart').getContext('2d');
+
+    const filteredData = filterUserData();
+    const labels = filteredData.map(item => getUserTypeLabel(item.user_type));
+    const data = filteredData.map(item => item.count);
+
+    charts.userTypesChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: userLabels,
+            labels: labels,
             datasets: [{
-                data: userData,
-                backgroundColor: userColors,
+                data: data,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
                 borderWidth: 1
             }]
         },
@@ -457,26 +757,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+}
 
-    // 2. Диаграмма статусов бронирований (Pie)
-    const bookingStatusCtx = document.getElementById('bookingStatusChart').getContext('2d');
+function initBookingStatusChart() {
+    const ctx = document.getElementById('bookingStatusChart').getContext('2d');
 
-    const bookingLabels = [];
-    const bookingData = [];
-    const bookingColors = ['#FFCE56', '#36A2EB', '#FF6384', '#4BC0C0'];
+    const filteredData = filterBookingData();
+    const labels = filteredData.map(item => getBookingStatusLabel(item.status));
+    const data = filteredData.map(item => item.count);
 
-    bookingStats.forEach(stat => {
-        bookingLabels.push(getBookingStatusLabel(stat.status));
-        bookingData.push(stat.count);
-    });
-
-    new Chart(bookingStatusCtx, {
+    charts.bookingStatusChart = new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: bookingLabels,
+            labels: labels,
             datasets: [{
-                data: bookingData,
-                backgroundColor: bookingColors,
+                data: data,
+                backgroundColor: ['#FFCE56', '#36A2EB', '#FF6384', '#4BC0C0'],
                 borderWidth: 1
             }]
         },
@@ -490,28 +786,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+}
 
-    // 3. Диаграмма типов помещений (Bar)
-    const propertyTypesCtx = document.getElementById('propertyTypesChart').getContext('2d');
+function initPropertyTypesChart() {
+    const ctx = document.getElementById('propertyTypesChart').getContext('2d');
 
-    const propertyLabels = [];
-    const propertyData = [];
-    const propertyColors = ['#FF9F40', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#C9CBCF'];
+    const filteredData = filterPropertyData();
+    const labels = filteredData.map(item => getPropertyTypeLabel(item.property_type));
+    const data = filteredData.map(item => item.count);
 
-    propertyStats.forEach(stat => {
-        propertyLabels.push(getPropertyTypeLabel(stat.property_type));
-        propertyData.push(stat.count);
-    });
-
-    new Chart(propertyTypesCtx, {
+    charts.propertyTypesChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: propertyLabels,
+            labels: labels,
             datasets: [{
                 label: 'Количество помещений',
-                data: propertyData,
-                backgroundColor: propertyColors,
-                borderColor: propertyColors.map(color => color.replace('0.8', '1')),
+                data: data,
+                backgroundColor: '#3a57e8',
+                borderColor: '#3a57e8',
                 borderWidth: 1
             }]
         },
@@ -533,39 +825,431 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+}
 
-    // Вспомогательные функции для преобразования значений
-    function getUserTypeLabel(type) {
-        const labels = {
-            'admin': 'Администраторы',
-            'landlord': 'Арендодатели',
-            'tenant': 'Арендаторы'
-        };
-        return labels[type] || type;
+function initRevenueChart() {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+
+    const filteredData = filterRevenueData();
+    const labels = filteredData.map(item => item.date);
+    const data = filteredData.map(item => item.revenue);
+
+    charts.revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Выручка (₽)',
+                data: data,
+                backgroundColor: 'rgba(58, 87, 232, 0.1)',
+                borderColor: '#3a57e8',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('ru-RU') + ' ₽';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ========== Функции фильтрации данных ==========
+
+function filterUserData() {
+    let data = chartData.userStats;
+
+    // Фильтр по типу пользователя
+    if (currentFilters.userTypes !== 'all') {
+        data = data.filter(item => item.user_type === currentFilters.userTypes);
     }
 
-    function getBookingStatusLabel(status) {
-        const labels = {
-            'pending': 'Ожидание',
-            'confirmed': 'Подтверждено',
-            'cancelled': 'Отменено',
-            'completed': 'Завершено'
-        };
-        return labels[status] || status;
+    // Фильтр по периоду времени (имитация)
+    if (currentFilters.userTimePeriod !== 'all') {
+        // Здесь должна быть логика фильтрации по дате
+        // В реальном приложении нужно делать AJAX запрос к серверу
     }
 
-    function getPropertyTypeLabel(type) {
-        const labels = {
-            'office': 'Офис',
-            'coworking': 'Коворкинг',
-            'conference_room': 'Конференц-зал',
-            'retail': 'Торговая площадь',
-            'warehouse': 'Склад',
-            'industrial': 'Производственное',
-            'other': 'Другое'
-        };
-        return labels[type] || type;
+    return data;
+}
+
+function filterBookingData() {
+    let data = chartData.bookingStats;
+
+    // Фильтр по статусам
+    data = data.filter(item => currentFilters.bookingStatuses.includes(item.status));
+
+    // Фильтр по периоду (имитация)
+    if (currentFilters.bookingPeriod !== 'all') {
+        // Здесь должна быть логика фильтрации по дате
     }
-});
+
+    return data;
+}
+
+function filterPropertyData() {
+    let data = chartData.propertyStats;
+
+    // Фильтр по типам помещений
+    data = data.filter(item => currentFilters.propertyTypes.includes(item.property_type));
+
+    // Сортировка
+    data.sort((a, b) => {
+        if (currentFilters.propertySort === 'alphabetical') {
+            return getPropertyTypeLabel(a.property_type).localeCompare(getPropertyTypeLabel(b.property_type));
+        } else if (currentFilters.propertySort === 'revenue') {
+            return b.revenue - a.revenue;
+        } else {
+            return b.count - a.count;
+        }
+    });
+
+    return data;
+}
+
+function filterRevenueData() {
+    // Здесь должна быть логика фильтрации данных по выручке
+    // В реальном приложении нужно делать AJAX запрос к серверу
+    return chartData.revenueData;
+}
+
+// ========== Функции обновления диаграмм ==========
+
+function updateUserTypesChart() {
+    const filteredData = filterUserData();
+    charts.userTypesChart.data.labels = filteredData.map(item => getUserTypeLabel(item.user_type));
+    charts.userTypesChart.data.datasets[0].data = filteredData.map(item => item.count);
+    charts.userTypesChart.update();
+}
+
+function updateBookingStatusChart() {
+    const filteredData = filterBookingData();
+    charts.bookingStatusChart.data.labels = filteredData.map(item => getBookingStatusLabel(item.status));
+    charts.bookingStatusChart.data.datasets[0].data = filteredData.map(item => item.count);
+    charts.bookingStatusChart.update();
+}
+
+function updatePropertyTypesChart() {
+    const filteredData = filterPropertyData();
+    charts.propertyTypesChart.data.labels = filteredData.map(item => getPropertyTypeLabel(item.property_type));
+    charts.propertyTypesChart.data.datasets[0].data = filteredData.map(item => item.count);
+    charts.propertyTypesChart.update();
+}
+
+function updateRevenueChart() {
+    const filteredData = filterRevenueData();
+    charts.revenueChart.data.labels = filteredData.map(item => item.date);
+    charts.revenueChart.data.datasets[0].data = filteredData.map(item => item.revenue);
+    charts.revenueChart.type = currentFilters.revenueChartType;
+    charts.revenueChart.update();
+}
+
+// ========== Обработчики фильтров ==========
+
+function filterUserTypesChart() {
+    currentFilters.userTypes = document.getElementById('userTypeFilter').value;
+    currentFilters.userTimePeriod = document.getElementById('userTimeFilter').value;
+    updateUserTypesChart();
+}
+
+function filterBookingsByPeriod(period) {
+    // Обновляем активные кнопки
+    document.querySelectorAll('.time-period-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.trim() === getPeriodLabel(period)) {
+            btn.classList.add('active');
+        }
+    });
+
+    currentFilters.bookingPeriod = period;
+    updateBookingStatusChart();
+}
+
+function filterBookingStatus() {
+    const statuses = [];
+    if (document.getElementById('showPending').checked) statuses.push('pending');
+    if (document.getElementById('showConfirmed').checked) statuses.push('confirmed');
+    if (document.getElementById('showCancelled').checked) statuses.push('cancelled');
+    if (document.getElementById('showCompleted').checked) statuses.push('completed');
+
+    currentFilters.bookingStatuses = statuses;
+    updateBookingStatusChart();
+}
+
+function sortPropertyChart() {
+    currentFilters.propertySort = document.getElementById('propertySortFilter').value;
+    updatePropertyTypesChart();
+}
+
+function filterByPrice() {
+    currentFilters.minPrice = document.getElementById('minPriceFilter').value || null;
+    currentFilters.maxPrice = document.getElementById('maxPriceFilter').value || null;
+    updatePropertyTypesChart();
+}
+
+function changeRevenueChartType() {
+    currentFilters.revenueChartType = document.getElementById('revenueChartType').value;
+    updateRevenueChart();
+}
+
+function filterRevenueByPeriod(period) {
+    // Обновляем активные кнопки
+    document.querySelectorAll('#revenueChart .time-period-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.trim() === getPeriodLabel(period)) {
+            btn.classList.add('active');
+        }
+    });
+
+    currentFilters.revenuePeriod = period;
+    updateRevenueChart();
+}
+
+// ========== Глобальные фильтры ==========
+
+function applyGlobalFilters() {
+    showLoading();
+
+    // Собираем данные фильтров
+    const filters = {
+        timePeriod: document.getElementById('globalTimeFilter').value,
+        userTypes: getSelectedValues('globalUserTypeFilter'),
+        propertyTypes: getSelectedValues('globalPropertyTypeFilter'),
+        bookingStatuses: getSelectedValues('globalBookingStatusFilter')
+    };
+
+    // Здесь должен быть AJAX запрос для получения обновленных данных
+    setTimeout(() => {
+        // Имитация загрузки данных
+        console.log('Применены фильтры:', filters);
+
+        // Обновляем все диаграммы
+        updateAllCharts();
+        hideLoading();
+
+        // Показываем уведомление
+        showToast('Фильтры успешно применены', 'success');
+    }, 1000);
+}
+
+function resetGlobalFilters() {
+    document.getElementById('globalTimeFilter').value = '30d';
+    resetSelect('globalUserTypeFilter', ['all']);
+    resetSelect('globalPropertyTypeFilter', ['all']);
+    resetSelect('globalBookingStatusFilter', ['all']);
+
+    applyGlobalFilters();
+}
+
+// ========== Фильтры помещений (модальное окно) ==========
+
+function applyPropertyFilters() {
+    const modal = document.getElementById('propertyFilterModal');
+    const modalInstance = bootstrap.Modal.getInstance(modal);
+
+    // Собираем выбранные типы помещений
+    const selectedTypes = [];
+    document.querySelectorAll('#propertyFilterModal input[type="checkbox"][value]').forEach(checkbox => {
+        if (checkbox.checked && ['office', 'coworking', 'conference_room', 'retail', 'warehouse', 'industrial', 'other'].includes(checkbox.value)) {
+            selectedTypes.push(checkbox.value);
+        }
+    });
+
+    // Собираем выбранные статусы
+    const selectedStatuses = [];
+    document.querySelectorAll('#propertyFilterModal input[type="checkbox"][value="available"], #propertyFilterModal input[type="checkbox"][value="booked"], #propertyFilterModal input[type="checkbox"][value="maintenance"]').forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedStatuses.push(checkbox.value);
+        }
+    });
+
+    currentFilters.propertyTypes = selectedTypes.length > 0 ? selectedTypes : ['office', 'coworking', 'conference_room', 'retail', 'warehouse', 'industrial', 'other'];
+    currentFilters.propertyStatuses = selectedStatuses.length > 0 ? selectedStatuses : ['available', 'booked', 'maintenance'];
+
+    updatePropertyTypesChart();
+    modalInstance.hide();
+
+    showToast('Фильтры помещений применены', 'success');
+}
+
+// ========== Вспомогательные функции ==========
+
+function initChartTypeButtons() {
+    document.querySelectorAll('[data-chart="userTypes"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const chartName = this.getAttribute('data-chart');
+            const chartType = this.getAttribute('data-type');
+
+            // Обновляем активную кнопку
+            document.querySelectorAll(`[data-chart="${chartName}"]`).forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            // Меняем тип диаграммы
+            if (charts[chartName + 'Chart']) {
+                charts[chartName + 'Chart'].config.type = chartType;
+                charts[chartName + 'Chart'].update();
+            }
+        });
+    });
+}
+
+function initMultiSelect() {
+    // Инициализация множественного выбора
+    const multiSelects = document.querySelectorAll('select[multiple]');
+    multiSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const selectedValues = Array.from(this.selectedOptions).map(option => option.value);
+            if (selectedValues.includes('all') && selectedValues.length > 1) {
+                // Если выбран "все" и другие опции, снимаем выбор с "все"
+                const allOption = this.querySelector('option[value="all"]');
+                allOption.selected = false;
+            } else if (!selectedValues.includes('all') && selectedValues.length === 0) {
+                // Если ничего не выбрано, выбираем "все"
+                const allOption = this.querySelector('option[value="all"]');
+                allOption.selected = true;
+            }
+        });
+    });
+}
+
+function getSelectedValues(selectId) {
+    const select = document.getElementById(selectId);
+    return Array.from(select.selectedOptions).map(option => option.value);
+}
+
+function resetSelect(selectId, defaultValues) {
+    const select = document.getElementById(selectId);
+    Array.from(select.options).forEach(option => {
+        option.selected = defaultValues.includes(option.value);
+    });
+}
+
+function getUserTypeLabel(type) {
+    const labels = {
+        'admin': 'Администраторы',
+        'landlord': 'Арендодатели',
+        'tenant': 'Арендаторы'
+    };
+    return labels[type] || type;
+}
+
+function getBookingStatusLabel(status) {
+    const labels = {
+        'pending': 'Ожидание',
+        'confirmed': 'Подтверждено',
+        'cancelled': 'Отменено',
+        'completed': 'Завершено'
+    };
+    return labels[status] || status;
+}
+
+function getPropertyTypeLabel(type) {
+    const labels = {
+        'office': 'Офис',
+        'coworking': 'Коворкинг',
+        'conference_room': 'Конференц-зал',
+        'retail': 'Торговая площадь',
+        'warehouse': 'Склад',
+        'industrial': 'Производственное',
+        'other': 'Другое'
+    };
+    return labels[type] || type;
+}
+
+function getPeriodLabel(period) {
+    const labels = {
+        '7d': '7 дн.',
+        '30d': '30 дн.',
+        '90d': '90 дн.',
+        'all': 'Все',
+        'daily': 'По дням',
+        'weekly': 'По неделям',
+        'monthly': 'По месяцам'
+    };
+    return labels[period] || period;
+}
+
+// ========== Функции экспорта ==========
+
+function exportChart(chartId) {
+    const chart = charts[chartId];
+    if (!chart) return;
+
+    const link = document.createElement('a');
+    link.download = `${chartId}_${new Date().toISOString().split('T')[0]}.png`;
+    link.href = chart.toBase64Image();
+    link.click();
+
+    showToast('Диаграмма экспортирована', 'success');
+}
+
+// ========== Вспомогательные UI функции ==========
+
+function showLoading() {
+    document.getElementById('globalLoading').classList.add('show');
+}
+
+function hideLoading() {
+    document.getElementById('globalLoading').classList.remove('show');
+}
+
+function showToast(message, type = 'info') {
+    // Создаем toast уведомление
+    const toastContainer = document.createElement('div');
+    toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+    toastContainer.style.zIndex = '1050';
+
+    const toastId = 'toast-' + Date.now();
+    toastContainer.innerHTML = `
+        <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(toastContainer);
+
+    const toastEl = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
+
+    toastEl.addEventListener('hidden.bs.toast', function () {
+        document.body.removeChild(toastContainer);
+    });
+}
+
+function updateAllCharts() {
+    updateUserTypesChart();
+    updateBookingStatusChart();
+    updatePropertyTypesChart();
+    updateRevenueChart();
+}
+
+// Инициализация после загрузки
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+    initDashboard();
+}
+
+function initDashboard() {
+    console.log('Дашборд инициализирован');
+    // Дополнительная инициализация при необходимости
+}
 </script>
 {% endblock %}
