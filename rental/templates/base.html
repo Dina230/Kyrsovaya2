@@ -201,48 +201,6 @@
 
                 <div class="d-flex align-items-center">
                     {% if user.is_authenticated %}
-                        <!-- Уведомления -->
-                        <div class="dropdown me-3">
-                            <a class="nav-link position-relative" href="#" id="notificationsDropdown"
-                               role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-bell fs-5"></i>
-                                {% if unread_notifications_count > 0 %}
-                                    <span class="badge bg-danger notification-badge">{{ unread_notifications_count }}</span>
-                                {% endif %}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end notification-dropdown"
-                                aria-labelledby="notificationsDropdown">
-                                <li><h6 class="dropdown-header">Уведомления</h6></li>
-                                {% for notification in recent_notifications %}
-                                    <li>
-                                        <a class="dropdown-item notification-item {% if not notification.is_read %}unread{% endif %}"
-                                           href="{% if notification.related_object_type == 'booking' %}{% url 'booking_detail' notification.related_object_id %}{% elif notification.related_object_type == 'message' %}{% url 'messages_list' %}{% else %}#{% endif %}"
-                                           onclick="markNotificationRead({{ notification.id }})">
-                                            <div class="notification-preview">
-                                                <div class="notification-title">{{ notification.title }}</div>
-                                                <div class="notification-message">{{ notification.message|truncatechars:50 }}</div>
-                                                <div class="notification-time">{{ notification.created_at|timesince }} назад</div>
-                                            </div>
-                                        </a>
-                                    </li>
-                                {% empty %}
-                                    <li><a class="dropdown-item text-muted text-center">Нет уведомлений</a></li>
-                                {% endfor %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'notifications_list' %}">
-                                        <i class="fas fa-list me-2"></i> Все уведомления
-                                    </a>
-                                </li>
-                                {% if unread_notifications_count > 0 %}
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'mark_all_notifications_read' %}">
-                                            <i class="fas fa-check-double me-2"></i> Пометить все как прочитанные
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </div>
 
                         <!-- Сообщения -->
                         <div class="dropdown me-3">
@@ -286,12 +244,6 @@
                                     <i class="fas fa-envelope me-2"></i> Сообщения
                                     {% if unread_messages_count > 0 %}
                                         <span class="badge bg-danger float-end">{{ unread_messages_count }}</span>
-                                    {% endif %}
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'notifications_list' %}">
-                                    <i class="fas fa-bell me-2"></i> Уведомления
-                                    {% if unread_notifications_count > 0 %}
-                                        <span class="badge bg-danger float-end">{{ unread_notifications_count }}</span>
                                     {% endif %}
                                 </a></li>
                                 <li><a class="dropdown-item" href="{% url 'edit_profile' %}">

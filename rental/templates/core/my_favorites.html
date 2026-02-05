@@ -1,185 +1,217 @@
-# core/views.py - минимальная рабочая версия
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse
-from django.utils import timezone
-from datetime import timedelta
-from .models import *
-from .forms import CustomUserCreationForm
+<!-- core/templates/core/my_favorites.html -->
+{% extends 'base.html' %}
+{% load static %}
 
-# ============================================================================
-# ПУБЛИЧНЫЕ СТРАНИЦЫ
-# ============================================================================
+{% block title %}Избранные помещения{% endblock %}
 
-def home(request):
-    """Главная страница"""
-    properties = Property.objects.filter(status='active').order_by('-created_at')[:6]
-    context = {
-        'properties': properties,
-    }
-    return render(request, 'core/home.html', context)
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Боковая панель пользователя -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" class="rounded-circle mb-3" width="100" height="100" alt="Аватар">
+                    {% else %}
+                        <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle mb-3" width="100" height="100" alt="Аватар">
+                    {% endif %}
+                    <h5 class="card-title">{{ user.get_full_name_or_username }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+                    {% if user.company_name %}
+                        <p class="text-muted"><i class="fas fa-building"></i> {{ user.company_name }}</p>
+                    {% endif %}
+                    <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary btn-sm">Редактировать профиль</a>
+                </div>
+            </div>
 
-
-def property_list(request):
-    """Список всех помещений"""
-    properties = Property.objects.filter(status='active')
-    context = {
-        'properties': properties,
-    }
-    return render(request, 'core/property_list.html', context)
-
-
-def property_detail(request, slug):
-    """Детальная страница помещения"""
-    property_obj = get_object_or_404(Property, slug=slug)
-    
-    # Простой календарь на 30 дней
-    today = timezone.now().date()
-    calendar_data = []
-    for i in range(30):
-        current_date = today + timedelta(days=i)
-        calendar_data.append({
-            'date': current_date,
-            'bookings': []  # Пока пусто
-        })
-    
-    context = {
-        'property': property_obj,
-        'calendar_data': calendar_data,
-    }
-    return render(request, 'core/property_detail.html', context)
-
-
-def register(request):
-    """Регистрация нового пользователя"""
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    
-    if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            
-            # Аутентификация и вход пользователя
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=password)
-            
-            if user is not None:
-                login(request, user)
-                messages.success(request, 'Регистрация успешно завершена!')
-                return redirect('dashboard')
-    else:
-        form = CustomUserCreationForm()
-    
-    return render(request, 'core/register.html', {'form': form})
-
-
-# ============================================================================
-# ЛИЧНЫЙ КАБИНЕТ
-# ============================================================================
-
-@login_required
-def dashboard(request):
-    """Личный кабинет"""
-    context = {}
-    
-    if request.user.user_type == 'tenant':
-        # Для арендатора
-        context['bookings'] = request.user.booking_set.all()[:5]
+            <div class="list-group mb-4">
+                <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Обзор
+                </a>
+                {% if user.user_type == 'tenant' %}
+                    <a href="{% url 'my_bookings' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-calendar-check"></i> Мои бронирования
+                    </a>
+                    <a href="{% url 'my_favorites' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-heart"></i> Избранное
+                        <span class="badge bg-primary float-end">{{ favorites.count }}</span>
+                    </a>
+                {% elif user.user_type == 'landlord' %}
+                    <a href="{% url 'my_properties' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-home"></i> Мои помещения
+                    </a>
+                    <a href="{% url 'add_property' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus-circle"></i> Добавить помещение
+                    </a>
+                    <a href="{% url 'landlord_bookings' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-calendar-alt"></i> Бронирования
+                    </a>
+                {% endif %}
+                <a href="{% url 'messages_list' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-envelope"></i> Сообщения
+                    {% if unread_messages_count > 0 %}
+                        <span class="badge bg-danger float-end">{{ unread_messages_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'notifications_list' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bell"></i> Уведомления
+                    {% if unread_notifications_count > 0 %}
+                        <span class="badge bg-danger float-end">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user-edit"></i> Профиль
+                </a>
+                <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-key"></i> Сменить пароль
+                </a>
+            </div>
+        </div>
         
-    elif request.user.user_type == 'landlord':
-        # Для арендодателя
-        context['properties'] = request.user.property_set.all()
-        
-    elif request.user.is_staff:
-        # Для администратора
-        context['is_admin'] = True
-    
-    return render(request, 'core/dashboard.html', context)
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-heart text-danger"></i> Избранные помещения
+                        <span class="badge bg-primary ms-2">{{ favorites.count }}</span>
+                    </h4>
+                    <a href="{% url 'property_list' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-search"></i> Найти ещё помещения
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    {% if favorites %}
+                        <div class="row">
+                            {% for favorite in favorites %}
+                                <div class="col-md-4 mb-4">
+                                    <div class="card h-100 property-card">
+                                        <!-- Изображение помещения -->
+                                        {% if favorite.property.get_main_image %}
+                                            <img src="{{ favorite.property.get_main_image.image.url }}" 
+                                                 class="card-img-top" 
+                                                 alt="{{ favorite.property.title }}" 
+                                                 height="180" 
+                                                 style="object-fit: cover;">
+                                        {% else %}
+                                            <img src="{% static 'images/default-property.jpg' %}" 
+                                                 class="card-img-top" 
+                                                 alt="{{ favorite.property.title }}" 
+                                                 height="180" 
+                                                 style="object-fit: cover;">
+                                        {% endif %}
+                                        
+                                        <!-- Бейджи -->
+                                        <div class="position-absolute top-0 start-0 p-2">
+                                            {% if favorite.property.is_featured %}
+                                                <span class="badge bg-warning">Рекомендуемое</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Кнопка удаления из избранного -->
+                                        <div class="position-absolute top-0 end-0 p-2">
+                                            <a href="{% url 'toggle_favorite' favorite.property.id %}" 
+                                               class="btn btn-danger btn-sm"
+                                               title="Удалить из избранного">
+                                                <i class="fas fa-heart-broken"></i>
+                                            </a>
+                                        </div>
+                                        
+                                        <div class="card-body d-flex flex-column">
+                                            <h6 class="card-title">
+                                                <a href="{% url 'property_detail' favorite.property.slug %}" 
+                                                   class="text-decoration-none text-dark">
+                                                    {{ favorite.property.title|truncatechars:30 }}
+                                                </a>
+                                            </h6>
+                                            
+                                            <p class="card-text small text-muted mb-2">
+                                                <i class="fas fa-map-marker-alt"></i> {{ favorite.property.city }}
+                                            </p>
+                                            
+                                            <p class="card-text small mb-2">
+                                                <i class="fas fa-building"></i> {{ favorite.property.get_property_type_display }}
+                                            </p>
+                                            
+                                            <div class="mt-auto">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <span class="h5 text-primary">
+                                                            {{ favorite.property.price_per_hour }} ₽/час
+                                                        </span>
+                                                        {% if favorite.property.price_per_day %}
+                                                            <br>
+                                                            <small class="text-muted">
+                                                                {{ favorite.property.price_per_day }} ₽/день
+                                                            </small>
+                                                        {% endif %}
+                                                    </div>
+                                                    
+                                                    <!-- Статус -->
+                                                    <span class="badge {% if favorite.property.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                                        {{ favorite.property.get_status_display }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card-footer bg-transparent">
+                                            <div class="d-flex justify-content-between">
+                                                <a href="{% url 'property_detail' favorite.property.slug %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Подробнее
+                                                </a>
+                                                {% if user.user_type == 'tenant' %}
+                                                    <a href="{% url 'create_booking' favorite.property.id %}" 
+                                                       class="btn btn-sm btn-success">
+                                                        <i class="fas fa-calendar-plus"></i> Забронировать
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-heart-broken fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">Нет избранных помещений</h5>
+                            <p class="text-muted mb-3">
+                                Добавляйте понравившиеся помещения в избранное, чтобы быстро находить их позже.
+                            </p>
+                            <a href="{% url 'property_list' %}" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Найти помещения
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-
-@login_required
-def edit_profile(request):
-    """Редактирование профиля"""
-    return render(request, 'core/edit_profile.html')
-
-
-@login_required
-def my_bookings(request):
-    """Мои бронирования"""
-    bookings = request.user.booking_set.all()
-    return render(request, 'core/my_bookings.html', {'bookings': bookings})
-
-
-@login_required
-def my_favorites(request):
-    """Избранные помещения"""
-    favorites = request.user.favorites.all()
-    return render(request, 'core/my_favorites.html', {'favorites': favorites})
-
-
-@login_required
-def my_properties(request):
-    """Мои помещения"""
-    properties = request.user.property_set.all()
-    return render(request, 'core/my_properties.html', {'properties': properties})
-
-
-# ============================================================================
-# АДМИН-ПАНЕЛЬ (упрощенная)
-# ============================================================================
-
-@login_required
-def custom_admin_dashboard(request):
-    """Кастомная админ-панель"""
-    if not request.user.is_staff:
-        messages.error(request, 'У вас нет прав для доступа к этой странице.')
-        return redirect('dashboard')
-    
-    # Простая статистика
-    total_users = User.objects.count()
-    total_properties = Property.objects.count()
-    total_bookings = Booking.objects.count()
-    
-    context = {
-        'total_users': total_users,
-        'total_properties': total_properties,
-        'total_bookings': total_bookings,
+{% block extra_css %}
+<style>
+    .property-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: 1px solid #e9ecef;
     }
-    return render(request, 'admin/dashboard.html', context)
-
-
-@login_required
-def admin_user_management(request):
-    """Управление пользователями"""
-    if not request.user.is_staff:
-        messages.error(request, 'У вас нет прав для доступа к этой странице.')
-        return redirect('dashboard')
     
-    users = User.objects.all()
-    return render(request, 'admin/user_management.html', {'users': users})
-
-
-@login_required
-def admin_property_management(request):
-    """Управление помещениями"""
-    if not request.user.is_staff:
-        messages.error(request, 'У вас нет прав для доступа к этой странице.')
-        return redirect('dashboard')
+    .property-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        border-color: #007bff;
+    }
     
-    properties = Property.objects.all()
-    return render(request, 'admin/property_management.html', {'properties': properties})
-
-
-@login_required
-def admin_booking_management(request):
-    """Управление бронированиями"""
-    if not request.user.is_staff:
-        messages.error(request, 'У вас нет прав для доступа к этой странице.')
-        return redirect('dashboard')
+    .favorite-btn {
+        transition: all 0.3s;
+    }
     
-    bookings = Booking.objects.all()
-    return render(request, 'admin/booking_management.html', {'bookings': bookings})
+    .favorite-btn:hover {
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}
