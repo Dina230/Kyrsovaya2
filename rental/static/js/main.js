@@ -132,3 +132,4 @@ function validateBookingForm() {
 
     return true;
 }
+

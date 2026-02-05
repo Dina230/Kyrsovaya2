@@ -1,4 +1,3 @@
-# core/urls.py (ваш текущий файл с префиксом admin-panel/)
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
@@ -17,6 +16,19 @@ urlpatterns = [
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('profile/password/', views.change_password, name='change_password'),
 
+    # Уведомления
+    path('notifications/', views.notifications_list, name='notifications_list'),
+    path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('notifications/<int:notification_id>/delete/', views.delete_notification, name='delete_notification'),
+    path('notifications/delete-all/', views.delete_all_notifications, name='delete_all_notifications'),
+    path('notifications/unread-count/', views.get_unread_count, name='get_unread_count'),
+
+    # Мессенджер
+    path('messages/', views.messages_list, name='messages_list'),
+    path('messages/send/<int:user_id>/', views.send_message, name='send_message'),
+    path('messages/property/<int:property_id>/', views.send_message, name='send_message_property'),
+
     # Для арендатора
     path('my-bookings/', views.my_bookings, name='my_bookings'),
     path('my-favorites/', views.my_favorites, name='my_favorites'),
@@ -34,10 +46,10 @@ urlpatterns = [
     path('properties/<int:property_id>/images/add/', views.add_property_image, name='add_property_image'),
     path('images/<int:image_id>/delete/', views.delete_property_image, name='delete_property_image'),
 
-
     # Помещения
     path('properties/', views.property_list, name='property_list'),
     path('properties/<slug:slug>/', views.property_detail, name='property_detail'),
+    path('properties/<int:property_id>/calendar/', views.booking_calendar, name='booking_calendar'),
     path('properties/<int:property_id>/favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('properties/<int:property_id>/book/', views.create_booking, name='create_booking'),
     path('api/properties/<int:property_id>/book-ajax/', views.ajax_create_booking, name='ajax_create_booking'),
@@ -54,6 +66,7 @@ urlpatterns = [
     path('admin-panel/bookings/', views.admin_booking_management, name='admin_booking_management'),
     path('admin-panel/bookings/edit/<int:booking_id>/', views.admin_edit_booking, name='admin_edit_booking'),
     path('admin-panel/reviews/', views.admin_review_management, name='admin_review_management'),
+    path('admin-panel/reviews/edit/<int:review_id>/', views.admin_edit_review, name='admin_edit_review'),
     path('admin-panel/settings/', views.admin_system_settings, name='admin_system_settings'),
 
     # Встроенные Django представления для сброса пароля

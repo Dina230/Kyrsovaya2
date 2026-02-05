@@ -1,0 +1,232 @@
+<!-- core/templates/core/notifications_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            {% include 'core/includes/landlord_sidebar.html' %}
+        </div>
+
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-bell"></i> Мои уведомления</h4>
+                    <div class="btn-group">
+                        <a href="{% url 'notifications_list' %}?mark_read=1" class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-check-double"></i> Прочитать все
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                            <i class="fas fa-trash"></i> Удалить все
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if notifications %}
+                        <div class="list-group list-group-flush">
+                            {% for notification in notifications %}
+                                <div class="list-group-item notification-item {% if not notification.is_read %}unread{% else %}read{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            {% if not notification.is_read %}
+                                                <span class="badge bg-primary me-2">Новое</span>
+                                            {% endif %}
+                                            <h6 class="mb-1">{{ notification.title }}</h6>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <small class="text-muted">{{ notification.created_at|timesince }} назад</small>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-link text-muted" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    {% if not notification.is_read %}
+                                                        <li>
+                                                            <a class="dropdown-item mark-read-btn" href="#" data-notification-id="{{ notification.id }}">
+                                                                <i class="fas fa-check text-success"></i> Пометить прочитанным
+                                                            </a>
+                                                        </li>
+                                                    {% endif %}
+                                                    <li>
+                                                        <a class="dropdown-item text-danger delete-notification-btn" href="#" data-notification-id="{{ notification.id }}">
+                                                            <i class="fas fa-trash"></i> Удалить
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="mb-1">{{ notification.message }}</p>
+                                    {% if notification.related_object_type == 'booking' %}
+                                        <a href="{% url 'booking_detail' notification.related_object_id %}" class="btn btn-sm btn-outline-primary mt-2">
+                                            Перейти к бронированию
+                                        </a>
+                                    {% elif notification.related_object_type == 'message' %}
+                                        <a href="{% url 'messages_list' %}" class="btn btn-sm btn-outline-info mt-2">
+                                            Перейти к сообщениям
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Пагинация -->
+                        {% if notifications.paginator.num_pages > 1 %}
+                            <nav aria-label="Навигация по уведомлениям" class="mt-3">
+                                <ul class="pagination justify-content-center">
+                                    {% if notifications.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1">&laquo;</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ notifications.previous_page_number }}">Назад</a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in notifications.paginator.page_range %}
+                                        {% if notifications.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > notifications.number|add:'-3' and num < notifications.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if notifications.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ notifications.next_page_number }}">Вперед</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ notifications.paginator.num_pages }}">&raquo;</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-bell-slash fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">Нет уведомлений</h5>
+                            <p class="text-muted">Когда появятся новые уведомления, они будут отображаться здесь.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно удаления всех уведомлений -->
+<div class="modal fade" id="deleteAllModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Удаление всех уведомлений</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить все уведомления? Это действие нельзя отменить.</p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="{% url 'delete_all_notifications' %}">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-danger">Удалить все</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Пометить уведомление как прочитанное
+    document.querySelectorAll('.mark-read-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const notificationId = this.dataset.notificationId;
+
+            fetch(`/notifications/${notificationId}/mark-read/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const item = btn.closest('.notification-item');
+                    item.classList.remove('unread');
+                    item.classList.add('read');
+                    btn.closest('li').remove();
+
+                    // Обновляем счетчик в навбаре
+                    updateNotificationCount();
+                }
+            });
+        });
+    });
+
+    // Удаление уведомления
+    document.querySelectorAll('.delete-notification-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const notificationId = this.dataset.notificationId;
+
+            if (confirm('Удалить это уведомление?')) {
+                fetch(`/notifications/${notificationId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.closest('.notification-item').remove();
+
+                        // Обновляем счетчик в навбаре
+                        updateNotificationCount();
+
+                        // Проверяем, есть ли еще уведомления
+                        if (!document.querySelector('.notification-item')) {
+                            location.reload();
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    // Функция для обновления счетчика уведомлений
+    function updateNotificationCount() {
+        fetch('{% url "get_unread_count" %}', {
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                if (data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

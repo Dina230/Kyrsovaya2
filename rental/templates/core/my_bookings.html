@@ -6,6 +6,27 @@
 <div class="container py-5">
     <h1 class="mb-4">Мои бронирования</h1>
     
+    <!-- Фильтр по статусу -->
+    <div class="mb-4">
+        <div class="btn-group" role="group">
+            <a href="{% url 'my_bookings' %}" class="btn btn-outline-secondary {% if not request.GET.status %}active{% endif %}">
+                Все
+            </a>
+            <a href="{% url 'my_bookings' %}?status=pending" class="btn btn-outline-warning {% if request.GET.status == 'pending' %}active{% endif %}">
+                Ожидание
+            </a>
+            <a href="{% url 'my_bookings' %}?status=confirmed" class="btn btn-outline-success {% if request.GET.status == 'confirmed' %}active{% endif %}">
+                Подтверждено
+            </a>
+            <a href="{% url 'my_bookings' %}?status=completed" class="btn btn-outline-info {% if request.GET.status == 'completed' %}active{% endif %}">
+                Завершено
+            </a>
+            <a href="{% url 'my_bookings' %}?status=cancelled" class="btn btn-outline-danger {% if request.GET.status == 'cancelled' %}active{% endif %}">
+                Отменено
+            </a>
+        </div>
+    </div>
+
     {% if bookings %}
     <div class="table-responsive">
         <table class="table table-hover">
@@ -23,7 +44,11 @@
                 {% for booking in bookings %}
                 <tr>
                     <td><small>{{ booking.booking_id }}</small></td>
-                    <td>{{ booking.property.title }}</td>
+                    <td>
+                        <a href="{% url 'property_detail' booking.property.slug %}" class="text-decoration-none">
+                            {{ booking.property.title }}
+                        </a>
+                    </td>
                     <td>
                         {{ booking.start_datetime|date:"d.m.Y" }}<br>
                         <small>{{ booking.start_datetime|time:"H:i" }} - {{ booking.end_datetime|time:"H:i" }}</small>
@@ -35,15 +60,61 @@
                         </span>
                     </td>
                     <td>
-                        <a href="{% url 'property_detail' booking.property.slug %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye"></i>
-                        </a>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-primary" title="Детали бронирования">
+                                <i class="bi bi-info-circle"></i> Детали
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <!-- Пагинация -->
+    {% if bookings.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if bookings.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ bookings.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&laquo;</span>
+            </li>
+            {% endif %}
+
+            {% for num in bookings.paginator.page_range %}
+                {% if bookings.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > bookings.number|add:'-3' and num < bookings.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if bookings.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ bookings.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&raquo;</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
     {% else %}
     <div class="text-center py-5">
         <i class="bi bi-calendar-x display-1 text-muted"></i>

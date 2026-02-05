@@ -1,0 +1,174 @@
+<!-- core/templates/core/send_message.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            {% include 'core/includes/user_sidebar.html' %}
+        </div>
+
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-paper-plane"></i>
+                        {% if property %}
+                            Сообщение владельцу {{ property.title }}
+                        {% else %}
+                            Сообщение для {{ recipient.get_full_name_or_username }}
+                        {% endif %}
+                    </h4>
+                </div>
+
+                <div class="card-body">
+                    {% if conversation %}
+                        <!-- История переписки -->
+                        <div class="conversation-history mb-4">
+                            <h6 class="mb-3">История переписки</h6>
+                            <div class="messages-container" style="max-height: 300px; overflow-y: auto;">
+                                {% for msg in conversation %}
+                                    <div class="message-item mb-3 {% if msg.sender == request.user %}text-end{% endif %}">
+                                        <div class="d-flex {% if msg.sender == request.user %}justify-content-end{% endif %}">
+                                            <div class="message-bubble {% if msg.sender == request.user %}bg-primary text-white{% else %}bg-light{% endif %}
+                                                rounded-3 p-3" style="max-width: 70%;">
+                                                <div class="message-header mb-2">
+                                                    <small class="fw-bold">
+                                                        {% if msg.sender == request.user %}
+                                                            Вы
+                                                        {% else %}
+                                                            {{ msg.sender.get_full_name_or_username }}
+                                                        {% endif %}
+                                                    </small>
+                                                    <small class="text-muted ms-2">
+                                                        {{ msg.created_at|date:"d.m.Y H:i" }}
+                                                    </small>
+                                                </div>
+                                                <p class="mb-0">{{ msg.message|linebreaks }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <hr>
+                    {% endif %}
+
+                    <!-- Форма отправки сообщения -->
+                    <form method="post">
+                        {% csrf_token %}
+
+                        {% if not property %}
+                            <!-- Тема сообщения (только при отправке конкретному пользователю) -->
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Тема сообщения</label>
+                                <input type="text" class="form-control" id="subject" name="subject"
+                                       placeholder="Введите тему сообщения" value="{{ request.POST.subject }}">
+                            </div>
+                        {% endif %}
+
+                        <!-- Текст сообщения -->
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Сообщение</label>
+                            <textarea class="form-control" id="message" name="message" rows="6"
+                                      placeholder="Напишите ваше сообщение..." required>{{ request.POST.message }}</textarea>
+                        </div>
+
+                        <!-- Информация о получателе -->
+                        <div class="alert alert-info">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>Получатель:</strong>
+                                    {% if property %}
+                                        {{ property.landlord.get_full_name_or_username }} (владелец помещения "{{ property.title }}")
+                                    {% else %}
+                                        {{ recipient.get_full_name_or_username }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% if property %}{% url 'property_detail' property.slug %}{% else %}{% url 'messages_list' %}{% endif %}"
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить сообщение
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .message-bubble {
+        position: relative;
+    }
+
+    .message-bubble.bg-primary:after {
+        content: '';
+        position: absolute;
+        right: -10px;
+        top: 20px;
+        width: 0;
+        height: 0;
+        border: 10px solid transparent;
+        border-left-color: var(--primary);
+    }
+
+    .message-bubble.bg-light:before {
+        content: '';
+        position: absolute;
+        left: -10px;
+        top: 20px;
+        width: 0;
+        height: 0;
+        border: 10px solid transparent;
+        border-right-color: #f8f9fa;
+    }
+
+    .messages-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .messages-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Автоматическая прокрутка к последнему сообщению
+    $(document).ready(function() {
+        var messagesContainer = $('.messages-container');
+        if (messagesContainer.length > 0) {
+            messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+        }
+
+        // Автофокус на поле сообщения
+        $('#message').focus();
+    });
+</script>
+{% endblock %}
