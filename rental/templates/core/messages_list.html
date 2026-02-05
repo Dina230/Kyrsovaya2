@@ -1,0 +1,171 @@
+<!-- core/templates/core/messages_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <!-- Боковая панель пользователя -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" class="rounded-circle mb-3" width="100" height="100" alt="Аватар">
+                    {% else %}
+                        <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle mb-3" width="100" height="100" alt="Аватар">
+                    {% endif %}
+                    <h5 class="card-title">{{ user.get_full_name_or_username }}</h5>
+                    <p class="text-muted">{{ user.email }}</p>
+                    {% if user.company_name %}
+                        <p class="text-muted"><i class="fas fa-building"></i> {{ user.company_name }}</p>
+                    {% endif %}
+                    <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary btn-sm">Редактировать профиль</a>
+                </div>
+            </div>
+
+            <div class="list-group mb-4">
+                <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Обзор
+                </a>
+                {% if user.user_type == 'tenant' %}
+                    <a href="{% url 'my_bookings' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-calendar-check"></i> Мои бронирования
+                    </a>
+                    <a href="{% url 'my_favorites' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-heart"></i> Избранное
+                    </a>
+                {% elif user.user_type == 'landlord' %}
+                    <a href="{% url 'my_properties' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-home"></i> Мои помещения
+                    </a>
+                    <a href="{% url 'add_property' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus-circle"></i> Добавить помещение
+                    </a>
+                    <a href="{% url 'landlord_bookings' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-calendar-alt"></i> Бронирования
+                    </a>
+                {% endif %}
+                <a href="{% url 'messages_list' %}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-envelope"></i> Сообщения
+                    {% if unread_messages_count > 0 %}
+                        <span class="badge bg-danger float-end">{{ unread_messages_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'notifications_list' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bell"></i> Уведомления
+                    {% if unread_notifications_count > 0 %}
+                        <span class="badge bg-danger float-end">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user-edit"></i> Профиль
+                </a>
+                <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-key"></i> Сменить пароль
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-envelope"></i> Мои сообщения</h4>
+                    <a href="{% url 'property_list' %}" class="btn btn-sm btn-outline-primary">
+                        Найти помещение для обсуждения
+                    </a>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if conversations %}
+                        <div class="list-group list-group-flush">
+                            {% for conversation in conversations %}
+                                <a href="{% url 'send_message' conversation.user.id %}"
+                                   class="list-group-item list-group-item-action conversation-item {% if conversation.unread_count > 0 %}unread{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <!-- Аватар пользователя -->
+                                            {% if conversation.user.avatar %}
+                                                <img src="{{ conversation.user.avatar.url }}" class="rounded-circle me-3" width="50" height="50" alt="Аватар">
+                                            {% else %}
+                                                <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle me-3" width="50" height="50" alt="Аватар">
+                                            {% endif %}
+
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    {{ conversation.user.get_full_name_or_username }}
+                                                    {% if conversation.user.user_type == 'landlord' %}
+                                                        <span class="badge bg-info ms-2">Арендодатель</span>
+                                                    {% elif conversation.user.user_type == 'tenant' %}
+                                                        <span class="badge bg-success ms-2">Арендатор</span>
+                                                    {% endif %}
+                                                </h6>
+                                                {% if conversation.last_message %}
+                                                    <p class="mb-1 text-muted message-preview">
+                                                        {% if conversation.last_message.sender == request.user %}
+                                                            <strong>Вы:</strong>
+                                                        {% endif %}
+                                                        {{ conversation.last_message.message|truncatechars:60 }}
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="text-end">
+                                            {% if conversation.last_message %}
+                                                <small class="text-muted d-block">
+                                                    {{ conversation.last_message.created_at|timesince }} назад
+                                                </small>
+                                            {% endif %}
+                                            {% if conversation.unread_count > 0 %}
+                                                <span class="badge bg-danger mt-1">
+                                                    {{ conversation.unread_count }} нов{{ conversation.unread_count|pluralize:"ое,ых" }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-envelope-open fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">Нет сообщений</h5>
+                            <p class="text-muted">У вас пока нет сообщений. Начните общение!</p>
+                            <p class="text-muted mb-3">Вы можете связаться с владельцем любого помещения, нажав кнопку "Написать владельцу" на странице помещения.</p>
+                            <a href="{% url 'property_list' %}" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Найти помещение
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .conversation-item {
+        border-left: 4px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .conversation-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    .conversation-item.unread {
+        border-left-color: #2563eb;
+        background-color: rgba(37, 99, 235, 0.05);
+    }
+
+    .message-preview {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+</style>
+{% endblock %}
