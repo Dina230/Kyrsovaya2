@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% load static %}
+
 {% block title %}Регистрация{% endblock %}
 
 {% block content %}
@@ -12,7 +14,7 @@
                     <p class="mb-0">Создайте аккаунт для аренды или сдачи помещений</p>
                 </div>
                 <div class="card-body p-4 p-md-5">
-                    <form method="post" novalidate>
+                    <form method="post" novalidate id="registrationForm">
                         {% csrf_token %}
 
                         <div class="row">
@@ -83,20 +85,30 @@
 
                             <div class="col-md-6 mb-3">
                                 <label for="{{ form.phone.id_for_label }}" class="form-label">
-                                    <i class="bi bi-telephone"></i> Телефон
+                                    <i class="bi bi-telephone"></i> Телефон *
                                 </label>
-                                {{ form.phone }}
+                                <div class="input-group">
+                                    <span class="input-group-text">+7</span>
+                                    <input type="tel"
+                                           class="form-control"
+                                           id="phoneInput"
+                                           name="{{ form.phone.name }}"
+                                           placeholder="(999) 999-99-99"
+                                           value="{{ form.phone.value|default:'' }}"
+                                           data-mask="(000) 000-00-00">
+                                </div>
                                 {% if form.phone.errors %}
                                 <div class="invalid-feedback d-block">
                                     {{ form.phone.errors }}
                                 </div>
                                 {% endif %}
+                                <small class="form-text text-muted">Формат: +7 (999) 999-99-99</small>
                             </div>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-3" id="companyField">
                             <label for="{{ form.company_name.id_for_label }}" class="form-label">
-                                <i class="bi bi-building"></i> Название компании
+                                <i class="bi bi-building"></i> Название компании <span id="companyRequired"></span>
                             </label>
                             {{ form.company_name }}
                             {% if form.company_name.errors %}
@@ -104,7 +116,7 @@
                                 {{ form.company_name.errors }}
                             </div>
                             {% endif %}
-                            <small class="form-text text-muted">Только для арендодателей</small>
+                            <small class="form-text text-muted" id="companyHint">Только для арендодателей</small>
                         </div>
 
                         <div class="row">
@@ -146,10 +158,13 @@
 
                         <!-- Соглашение -->
                         <div class="form-check mb-4">
-                            <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                            <input class="form-check-input" type="checkbox" id="agreeTerms" name="agree_terms" required>
                             <label class="form-check-label" for="agreeTerms">
                                 Я соглашаюсь с <a href="#" class="text-decoration-none">условиями использования</a> и <a href="#" class="text-decoration-none">политикой конфиденциальности</a> *
                             </label>
+                            <div class="invalid-feedback">
+                                Необходимо принять условия использования
+                            </div>
                         </div>
 
                         <div class="d-grid">
@@ -170,6 +185,10 @@
         </div>
     </div>
 </div>
+
+<!-- Подключаем Inputmask -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js"></script>
 
 <style>
     .form-label {
@@ -194,26 +213,144 @@
     .invalid-feedback {
         font-size: 0.875em;
     }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-right: none;
+    }
+
+    #phoneInput {
+        border-left: none;
+        padding-left: 0;
+    }
 </style>
 
 <script>
-    // Показываем/скрываем поле компании в зависимости от типа пользователя
     document.addEventListener('DOMContentLoaded', function() {
-        const userTypeSelect = document.querySelector('#{{ form.user_type.id_for_label }}');
-        const companyField = document.querySelector('#{{ form.company_name.id_for_label }}').closest('.mb-3');
+        // Инициализация маски для телефона
+        $('#phoneInput').inputmask({
+            mask: '(999) 999-99-99',
+            placeholder: '_',
+            showMaskOnHover: false,
+            showMaskOnFocus: true,
+            onBeforePaste: function (pastedValue, opts) {
+                // Удаляем все нецифровые символы
+                var processedValue = pastedValue.replace(/\D/g, '');
+                // Если начинается с 7 или 8, убираем первую цифру
+                if (processedValue.startsWith('7') || processedValue.startsWith('8')) {
+                    processedValue = processedValue.substring(1);
+                }
+                // Оставляем только 10 цифр
+                processedValue = processedValue.substring(0, 10);
+                return processedValue;
+            }
+        });
 
-        function toggleCompanyField() {
-            if (userTypeSelect.value === 'landlord') {
-                companyField.style.display = 'block';
-            } else {
-                companyField.style.display = 'block'; // Всегда показываем, но выделяем
-                document.querySelector('label[for="{{ form.company_name.id_for_label }}"]').innerHTML =
-                    '<i class="bi bi-building"></i> Название компании (опционально)';
+        // Получаем элементы
+        const userTypeSelect = document.querySelector('#{{ form.user_type.id_for_label }}');
+        const companyField = document.getElementById('companyField');
+        const companyInput = document.querySelector('#{{ form.company_name.id_for_label }}');
+        const companyHint = document.getElementById('companyHint');
+        const companyRequired = document.getElementById('companyRequired');
+
+        // Функция для фильтрации опций (убираем admin)
+        function filterUserTypeOptions() {
+            const options = userTypeSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === 'admin') {
+                    options[i].style.display = 'none';
+                }
             }
         }
 
-        userTypeSelect.addEventListener('change', toggleCompanyField);
-        toggleCompanyField(); // Инициализация
+        // Функция для обновления поля компании
+        function updateCompanyField() {
+            const userType = userTypeSelect.value;
+
+            if (userType === 'landlord') {
+                // Для арендодателя - обязательно
+                companyRequired.innerHTML = '*';
+                companyInput.required = true;
+                companyHint.innerHTML = 'Обязательно для арендодателей';
+                companyInput.placeholder = 'Введите название вашей компании';
+            } else {
+                // Для арендатора - необязательно
+                companyRequired.innerHTML = '';
+                companyInput.required = false;
+                companyHint.innerHTML = 'Опционально (можно указать название организации)';
+                companyInput.placeholder = 'Опционально (название организации)';
+            }
+        }
+
+        // Инициализация при загрузке
+        filterUserTypeOptions();
+        updateCompanyField();
+
+        // Обработчик изменения типа пользователя
+        userTypeSelect.addEventListener('change', updateCompanyField);
+
+        // Валидация формы
+        const form = document.getElementById('registrationForm');
+        const agreeCheckbox = document.getElementById('agreeTerms');
+
+        form.addEventListener('submit', function(event) {
+            let isValid = true;
+
+            // Проверка согласия с условиями
+            if (!agreeCheckbox.checked) {
+                agreeCheckbox.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                agreeCheckbox.classList.remove('is-invalid');
+            }
+
+            // Проверка телефона
+            const phoneInput = document.getElementById('phoneInput');
+            const phoneValue = phoneInput.value.replace(/\D/g, '');
+
+            if (phoneValue.length < 10) {
+                phoneInput.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                phoneInput.classList.remove('is-invalid');
+                // Форматируем телефон для отправки (добавляем +7)
+                phoneInput.value = '+7' + phoneValue;
+            }
+
+            // Проверка компании для арендодателя
+            if (userTypeSelect.value === 'landlord' && !companyInput.value.trim()) {
+                companyInput.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                companyInput.classList.remove('is-invalid');
+            }
+
+            if (!isValid) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                // Прокрутка к первой ошибке
+                const firstError = document.querySelector('.is-invalid');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
+                }
+            }
+        });
+
+        // Автоматическое форматирование телефона при вводе
+        document.getElementById('phoneInput').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+
+            if (value.length > 10) {
+                value = value.substring(0, 10);
+            }
+
+            if (value.length >= 10) {
+                const formatted = `(${value.substring(0,3)}) ${value.substring(3,6)}-${value.substring(6,8)}-${value.substring(8,10)}`;
+                e.target.value = formatted;
+            }
+        });
     });
 </script>
 {% endblock %}

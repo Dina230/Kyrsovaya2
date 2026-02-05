@@ -502,10 +502,10 @@
             {% endfor %}
         </div>
 
-        {% if active_bookings.count > 4 %}
+        {% if active_bookings|length > 4 %}
         <div class="text-center">
             <a href="{% url 'my_bookings' %}" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-right"></i> Все бронирования ({{ active_bookings.count }})
+                <i class="bi bi-arrow-right"></i> Все бронирования ({{ active_bookings|length }})
             </a>
         </div>
         {% endif %}
@@ -530,7 +530,8 @@
 
         {% if favorite_properties %}
         <div class="property-grid">
-            {% for property in favorite_properties|slice:":4" %}
+            {% for favorite in favorite_properties|slice:":4" %}
+            {% with favorite.property as property %}
             <div class="property-item">
                 {% if property.get_main_image %}
                 <img src="{{ property.get_main_image.image.url }}"
@@ -549,19 +550,26 @@
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="fw-bold text-primary">{{ property.price_per_hour }} ₽/час</span>
+                        {% if property.slug and property.slug.strip %}
                         <a href="{% url 'property_detail' property.slug %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-arrow-right"></i>
                         </a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-secondary" disabled title="Ссылка недоступна">
+                            <i class="bi bi-slash-circle"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
+            {% endwith %}
             {% endfor %}
         </div>
 
-        {% if favorite_properties.count > 4 %}
+        {% if favorite_properties|length > 4 %}
         <div class="text-center mt-4">
             <a href="{% url 'my_favorites' %}" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-right"></i> Все избранное ({{ favorite_properties.count }})
+                <i class="bi bi-arrow-right"></i> Все избранное ({{ favorite_properties|length }})
             </a>
         </div>
         {% endif %}
@@ -619,9 +627,15 @@
                             {% endif %}
                         </div>
                         <div class="btn-group btn-group-sm">
+                            {% if property.slug and property.slug.strip %}
                             <a href="{% url 'property_detail' property.slug %}" class="btn btn-outline-primary">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            {% else %}
+                            <button class="btn btn-outline-secondary" disabled title="Ссылка недоступна">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                            {% endif %}
                             <a href="{% url 'edit_property' property.id %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-pencil"></i>
                             </a>
@@ -632,10 +646,10 @@
             {% endfor %}
         </div>
 
-        {% if properties.count > 6 %}
+        {% if properties|length > 6 %}
         <div class="text-center mt-4">
             <a href="{% url 'my_properties' %}" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-right"></i> Все помещения ({{ properties.count }})
+                <i class="bi bi-arrow-right"></i> Все помещения ({{ properties|length }})
             </a>
         </div>
         {% endif %}
@@ -719,6 +733,14 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('mouseleave', function() {
             this.style.transform = 'translateY(0)';
         });
+    });
+
+    // Безопасная обработка ссылок на помещения
+    document.querySelectorAll('[data-check-slug]').forEach(link => {
+        const slug = link.getAttribute('href').match(/properties\/([^\/]+)/);
+        if (!slug || !slug[1].trim()) {
+            link.style.display = 'none';
+        }
     });
 });
 </script>
