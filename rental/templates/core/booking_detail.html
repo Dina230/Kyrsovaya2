@@ -100,11 +100,11 @@
             <h1 class="h2 mb-2">Бронирование #{{ booking.booking_id }}</h1>
             <div class="d-flex align-items-center">
                 <span class="booking-status status-{{ booking.status }} me-3">
-                    <i class="bi bi-clock-history me-1"></i>
+                    <i class="fas fa-clock me-1"></i>
                     {{ booking.get_status_display }}
                 </span>
                 <small class="text-muted">
-                    <i class="bi bi-calendar-event me-1"></i>
+                    <i class="fas fa-calendar-alt me-1"></i>
                     Создано: {{ booking.created_at|date:"d.m.Y H:i" }}
                 </small>
             </div>
@@ -113,11 +113,11 @@
             <div class="btn-group" role="group">
                 <a href="{% url 'property_detail' booking.property.slug %}"
                    class="btn btn-outline-primary">
-                    <i class="bi bi-building"></i> К помещению
+                    <i class="fas fa-building"></i> К помещению
                 </a>
                 {% if can_cancel %}
                 <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
-                    <i class="bi bi-x-circle"></i> Отменить
+                    <i class="fas fa-times-circle"></i> Отменить
                 </button>
                 {% endif %}
             </div>
@@ -131,7 +131,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="bi bi-building me-2"></i>
+                        <i class="fas fa-building me-2"></i>
                         Помещение
                     </h5>
                 </div>
@@ -144,7 +144,7 @@
                                  alt="{{ booking.property.title }}">
                             {% else %}
                             <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 150px;">
-                                <i class="bi bi-building text-muted fs-1"></i>
+                                <i class="fas fa-building text-muted fa-2x"></i>
                             </div>
                             {% endif %}
                         </div>
@@ -156,7 +156,7 @@
                                 </a>
                             </h5>
                             <p class="text-muted mb-2">
-                                <i class="bi bi-geo-alt"></i> {{ booking.property.address }}, {{ booking.property.city }}
+                                <i class="fas fa-map-marker-alt"></i> {{ booking.property.address }}, {{ booking.property.city }}
                             </p>
                             <div class="row">
                                 <div class="col-6 col-md-3">
@@ -173,7 +173,7 @@
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <small class="text-muted d-block">Владелец</small>
-                                    <strong>{{ booking.property.landlord.get_full_name|default:booking.property.landlord.username }}</strong>
+                                    <strong>{{ booking.property.landlord.get_full_name_or_username }}</strong>
                                 </div>
                             </div>
                         </div>
@@ -185,7 +185,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="bi bi-calendar-check me-2"></i>
+                        <i class="fas fa-calendar-check me-2"></i>
                         Детали бронирования
                     </h5>
                 </div>
@@ -194,9 +194,9 @@
                         <div class="timeline-item">
                             <h6 class="mb-1">Начало бронирования</h6>
                             <p class="mb-0 text-muted">
-                                <i class="bi bi-calendar me-1"></i>
+                                <i class="fas fa-calendar me-1"></i>
                                 {{ booking.start_datetime|date:"d.m.Y" }}
-                                <i class="bi bi-clock ms-3 me-1"></i>
+                                <i class="fas fa-clock ms-3 me-1"></i>
                                 {{ booking.start_datetime|date:"H:i" }}
                             </p>
                         </div>
@@ -204,9 +204,9 @@
                         <div class="timeline-item">
                             <h6 class="mb-1">Окончание бронирования</h6>
                             <p class="mb-0 text-muted">
-                                <i class="bi bi-calendar me-1"></i>
+                                <i class="fas fa-calendar me-1"></i>
                                 {{ booking.end_datetime|date:"d.m.Y" }}
-                                <i class="bi bi-clock ms-3 me-1"></i>
+                                <i class="fas fa-clock ms-3 me-1"></i>
                                 {{ booking.end_datetime|date:"H:i" }}
                             </p>
                         </div>
@@ -214,11 +214,15 @@
                         <div class="timeline-item">
                             <h6 class="mb-1">Длительность</h6>
                             <p class="mb-0">
-                                {% with duration=booking.get_duration %}
+                                {% if hours_count >= 24 %}
                                 <span class="badge bg-info fs-6">
-                                    {{ duration.hours }} ч {{ duration.minutes }} мин
+                                    {{ days_count }} дней ({{ hours_count|floatformat:1 }} часов)
                                 </span>
-                                {% endwith %}
+                                {% else %}
+                                <span class="badge bg-info fs-6">
+                                    {{ hours_count|floatformat:1 }} часов
+                                </span>
+                                {% endif %}
                             </p>
                         </div>
 
@@ -245,7 +249,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="bi bi-activity me-2"></i>
+                        <i class="fas fa-history me-2"></i>
                         История статусов
                     </h5>
                 </div>
@@ -303,14 +307,14 @@
             <div class="card">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
-                        <i class="bi bi-star me-2"></i>
+                        <i class="fas fa-star me-2"></i>
                         Оставить отзыв
                     </h5>
                 </div>
                 <div class="card-body">
                     <p>Бронирование завершено. Вы можете оставить отзыв о помещении.</p>
                     <a href="{% url 'add_review' booking.id %}" class="btn btn-success">
-                        <i class="bi bi-pencil"></i> Написать отзыв
+                        <i class="fas fa-pen"></i> Написать отзыв
                     </a>
                 </div>
             </div>
@@ -323,7 +327,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="bi bi-cash-stack me-2"></i>
+                        <i class="fas fa-money-bill-wave me-2"></i>
                         Стоимость
                     </h5>
                 </div>
@@ -334,12 +338,16 @@
                             <span>{{ booking.property.price_per_hour }} ₽</span>
                         </div>
 
-                        {% with duration=booking.get_duration %}
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Время:</span>
-                            <span>{{ duration.total_hours|floatformat:1 }} часа</span>
+                            <span class="text-muted">Длительность:</span>
+                            <span>
+                                {% if hours_count >= 24 %}
+                                    {{ days_count }} дн. ({{ hours_count|floatformat:1 }} ч)
+                                {% else %}
+                                    {{ hours_count|floatformat:1 }} ч
+                                {% endif %}
+                            </span>
                         </div>
-                        {% endwith %}
 
                         <hr>
 
@@ -351,22 +359,22 @@
 
                     {% if booking.status == 'pending' %}
                     <div class="alert alert-warning small mb-0">
-                        <i class="bi bi-info-circle me-1"></i>
+                        <i class="fas fa-info-circle me-1"></i>
                         Ожидает подтверждения владельцем
                     </div>
                     {% elif booking.status == 'confirmed' %}
                     <div class="alert alert-success small mb-0">
-                        <i class="bi bi-check-circle me-1"></i>
+                        <i class="fas fa-check-circle me-1"></i>
                         Подтверждено владельцем
                     </div>
                     {% elif booking.status == 'cancelled' %}
                     <div class="alert alert-danger small mb-0">
-                        <i class="bi bi-x-circle me-1"></i>
+                        <i class="fas fa-times-circle me-1"></i>
                         Бронирование отменено
                     </div>
                     {% elif booking.status == 'completed' %}
                     <div class="alert alert-info small mb-0">
-                        <i class="bi bi-check-circle-fill me-1"></i>
+                        <i class="fas fa-check-circle me-1"></i>
                         Бронирование завершено
                     </div>
                     {% endif %}
@@ -377,7 +385,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="bi bi-person-lines-fill me-2"></i>
+                        <i class="fas fa-user-tie me-2"></i>
                         Контакты
                     </h5>
                 </div>
@@ -391,13 +399,13 @@
                                      class="rounded-circle"
                                      width="50"
                                      height="50"
-                                     alt="{{ booking.property.landlord.get_full_name }}">
+                                     alt="{{ booking.property.landlord.get_full_name_or_username }}">
                                 {% else %}
-                                <i class="bi bi-person-circle fs-3 text-primary"></i>
+                                <i class="fas fa-user-circle fa-2x text-primary"></i>
                                 {% endif %}
                             </div>
                             <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-0">{{ booking.property.landlord.get_full_name|default:booking.property.landlord.username }}</h6>
+                                <h6 class="mb-0">{{ booking.property.landlord.get_full_name_or_username }}</h6>
                                 <small class="text-muted">Владелец</small>
                             </div>
                         </div>
@@ -407,14 +415,14 @@
                         <h6 class="text-muted mb-2">Контактная информация</h6>
                         {% if booking.property.landlord.phone %}
                         <p class="mb-1">
-                            <i class="bi bi-telephone me-2"></i>
+                            <i class="fas fa-phone me-2"></i>
                             {{ booking.property.landlord.phone }}
                         </p>
                         {% endif %}
 
                         {% if booking.property.landlord.email %}
                         <p class="mb-0">
-                            <i class="bi bi-envelope me-2"></i>
+                            <i class="fas fa-envelope me-2"></i>
                             {{ booking.property.landlord.email }}
                         </p>
                         {% endif %}
@@ -422,7 +430,7 @@
 
                     {% if user == booking.tenant %}
                     <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#contactModal">
-                        <i class="bi bi-chat-dots"></i> Связаться с владельцем
+                        <i class="fas fa-comments"></i> Связаться с владельцем
                     </button>
                     {% endif %}
                 </div>
@@ -432,24 +440,24 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="bi bi-lightning me-2"></i>
+                        <i class="fas fa-bolt me-2"></i>
                         Быстрые действия
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="{% url 'property_detail' booking.property.slug %}" class="btn btn-outline-primary">
-                            <i class="bi bi-eye"></i> Посмотреть помещение
+                            <i class="fas fa-eye"></i> Посмотреть помещение
                         </a>
 
-                        {% if booking.status == 'pending' %}
+                        {% if can_cancel %}
                         <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
-                            <i class="bi bi-x-circle"></i> Отменить бронирование
+                            <i class="fas fa-times-circle"></i> Отменить бронирование
                         </button>
                         {% endif %}
 
                         <a href="{% url 'my_bookings' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-list-ul"></i> Все бронирования
+                            <i class="fas fa-list"></i> Все бронирования
                         </a>
                     </div>
                 </div>
@@ -464,19 +472,13 @@
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" id="cancelModalLabel">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <i class="fas fa-exclamation-triangle me-2"></i>
                     Отмена бронирования
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Вы уверены, что хотите отменить бронирование <strong>#{{ booking.booking_id }}</strong>?</p>
-
-                <div class="alert alert-warning">
-                    <i class="bi bi-info-circle me-2"></i>
-                    <strong>Внимание:</strong> Отмена бронирования может быть невозможна, если до начала осталось менее 24 часов.
-                    Пожалуйста, свяжитесь с владельцем для уточнения условий отмены.
-                </div>
 
                 <form method="post" action="{% url 'cancel_booking' booking.id %}">
                     {% csrf_token %}
@@ -495,10 +497,10 @@
 
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="bi bi-arrow-left"></i> Вернуться
+                            <i class="fas fa-arrow-left"></i> Вернуться
                         </button>
                         <button type="submit" class="btn btn-danger" id="confirmCancelBtn" disabled>
-                            <i class="bi bi-x-circle"></i> Подтвердить отмену
+                            <i class="fas fa-times-circle"></i> Подтвердить отмену
                         </button>
                     </div>
                 </form>
@@ -518,29 +520,31 @@
             <div class="modal-body">
                 <p>Отправить сообщение владельцу помещения по бронированию #{{ booking.booking_id }}</p>
 
-                <form id="contactForm">
+                <form id="contactForm" action="{% url 'send_message_property' booking.property.id %}" method="post">
+                    {% csrf_token %}
                     <div class="mb-3">
                         <label for="contactSubject" class="form-label">Тема</label>
-                        <input type="text" class="form-control" id="contactSubject"
+                        <input type="text" class="form-control" id="contactSubject" name="subject"
                                value="Бронирование #{{ booking.booking_id }} - {{ booking.property.title|truncatechars:30 }}">
                     </div>
 
                     <div class="mb-3">
                         <label for="contactMessage" class="form-label">Сообщение</label>
-                        <textarea class="form-control" id="contactMessage" rows="4"
+                        <textarea class="form-control" id="contactMessage" name="message" rows="4" required
                                   placeholder="Здравствуйте! У меня есть вопрос по бронированию #{{ booking.booking_id }}..."></textarea>
                     </div>
 
                     <div class="alert alert-info small">
-                        <i class="bi bi-info-circle"></i> Владелец получит ваше сообщение на email
+                        <i class="fas fa-info-circle"></i> Владелец получит ваше сообщение на email
+                    </div>
+
+                    <div class="modal-footer px-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Отправить
+                        </button>
                     </div>
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="sendMessage()">
-                    <i class="bi bi-send"></i> Отправить
-                </button>
             </div>
         </div>
     </div>
@@ -555,39 +559,14 @@
             $('#confirmCancelBtn').prop('disabled', !$(this).is(':checked'));
         });
 
-        // Calculate and display duration
-        function updateDurationDisplay() {
-            const start = new Date('{{ booking.start_datetime.isoformat }}');
-            const end = new Date('{{ booking.end_datetime.isoformat }}');
-            const durationMs = end - start;
-
-            const hours = Math.floor(durationMs / (1000 * 60 * 60));
-            const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-
-            $('#durationDisplay').text(`${hours} ч ${minutes} мин`);
-        }
-
-        // Initialize duration display
-        updateDurationDisplay();
-
         // Contact form handler
-        window.sendMessage = function() {
-            const subject = $('#contactSubject').val();
-            const message = $('#contactMessage').val();
-
-            if (!message.trim()) {
+        $('#contactForm').on('submit', function(e) {
+            const message = $('#contactMessage').val().trim();
+            if (!message) {
+                e.preventDefault();
                 alert('Пожалуйста, введите сообщение');
                 return;
             }
-
-            // Здесь можно добавить AJAX запрос для отправки сообщения
-            alert('Сообщение отправлено владельцу!');
-            $('#contactModal').modal('hide');
-        };
-
-        // Print booking details
-        $('#printBooking').click(function() {
-            window.print();
         });
     });
 </script>

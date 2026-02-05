@@ -1,4 +1,3 @@
-# core/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
@@ -336,6 +335,35 @@ def dashboard(request):
             'monthly_stats': monthly_stats,
         })
 
+    elif request.user.user_type == 'admin' or request.user.is_staff:
+        # Для администратора
+        stats = {
+            'total_users': User.objects.count(),
+            'new_users_today': User.objects.filter(date_joined__date=timezone.now().date()).count(),
+            'total_properties': Property.objects.count(),
+            'active_properties': Property.objects.filter(status='active').count(),
+            'total_bookings': Booking.objects.count(),
+            'pending_bookings': Booking.objects.filter(status='pending').count(),
+            'today_bookings': Booking.objects.filter(start_datetime__date=timezone.now().date()).count(),
+            'month_revenue': Booking.objects.filter(
+                status='completed',
+                updated_at__gte=timezone.now() - timedelta(days=30)
+            ).aggregate(total=Sum('total_price'))['total'] or 0,
+        }
+
+        # Последние действия
+        recent_users = User.objects.order_by('-date_joined')[:5]
+        recent_bookings = Booking.objects.select_related('property', 'tenant').order_by('-created_at')[:5]
+        recent_reviews = Review.objects.select_related('property', 'user').order_by('-created_at')[:5]
+
+        context.update({
+            'stats': stats,
+            'recent_users': recent_users,
+            'recent_bookings': recent_bookings,
+            'recent_reviews': recent_reviews,
+            'is_admin_dashboard': True,
+        })
+
     return render(request, 'core/dashboard.html', context)
 
 
@@ -471,7 +499,7 @@ def toggle_favorite(request, property_id):
 
 @login_required
 def create_booking(request, property_id):
-    """Создание бронирования"""
+    """Создание бронирования - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
     property_obj = get_object_or_404(Property, id=property_id)
 
     if request.user.user_type != 'tenant':
@@ -479,44 +507,44 @@ def create_booking(request, property_id):
         return redirect('property_detail', slug=property_obj.slug)
 
     if request.method == 'POST':
-        form = BookingForm(request.POST)
+        form = BookingForm(request.POST, property_obj=property_obj)
         if form.is_valid():
             booking = form.save(commit=False)
             booking.property = property_obj
             booking.tenant = request.user
             booking.status = 'pending'
+            booking.save()
 
-            # Проверка доступности
-            conflicting_bookings = Booking.objects.filter(
-                property=property_obj,
-                status__in=['confirmed', 'pending'],
-                start_datetime__lt=booking.end_datetime,
-                end_datetime__gt=booking.start_datetime
-            )
+            # Создаем уведомление для владельца
+            create_booking_notification(booking, 'booking_created')
 
-            if conflicting_bookings.exists():
-                messages.error(request, 'Выбранное время уже занято.')
-            else:
-                booking.save()
-
-                # Создаем уведомление для владельца
-                create_booking_notification(booking, 'booking_created')
-
-                messages.success(request, 'Бронирование отправлено на подтверждение.')
-                return redirect('my_bookings')
+            messages.success(request, 'Бронирование отправлено на подтверждение.')
+            return redirect('my_bookings')
+        else:
+            # Если есть ошибки, показываем их пользователю
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
     else:
-        form = BookingForm()
+        form = BookingForm(property_obj=property_obj)
 
-    return render(request, 'core/create_booking.html', {
+    # Рассчитываем стоимость для отображения в форме
+    price_per_hour = property_obj.price_per_hour
+    price_per_day = property_obj.price_per_day or float(price_per_hour) * 8  # 8 часов в день
+
+    context = {
         'form': form,
         'property': property_obj,
+        'price_per_hour': price_per_hour,
+        'price_per_day': price_per_day,
         'title': 'Бронирование помещения'
-    })
+    }
+    return render(request, 'core/create_booking.html', context)
 
 
 @login_required
 def booking_detail(request, booking_id):
-    """Детали бронирования"""
+    """Детали бронирования - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
     booking = get_object_or_404(
         Booking.objects.select_related('property', 'tenant'),
         id=booking_id
@@ -527,10 +555,11 @@ def booking_detail(request, booking_id):
         messages.error(request, 'У вас нет доступа к этому бронированию.')
         return redirect('dashboard')
 
+    # ИСПРАВЛЕНИЕ: Убрали условие 24 часа для отмены
     can_cancel = (
             request.user == booking.tenant and
             booking.status in ['pending', 'confirmed'] and
-            booking.start_datetime > timezone.now() + timedelta(hours=24)
+            booking.start_datetime > timezone.now()  # Можно отменять в любое время до начала
     )
 
     can_review = (
@@ -539,29 +568,40 @@ def booking_detail(request, booking_id):
             not Review.objects.filter(property=booking.property, user=request.user).exists()
     )
 
+    # Рассчитываем количество дней
+    if booking.start_datetime and booking.end_datetime:
+        days_count = (booking.end_datetime.date() - booking.start_datetime.date()).days + 1
+        hours_count = (booking.end_datetime - booking.start_datetime).total_seconds() / 3600
+    else:
+        days_count = 0
+        hours_count = 0
+
     return render(request, 'core/booking_detail.html', {
         'booking': booking,
         'can_cancel': can_cancel,
         'can_review': can_review,
+        'days_count': days_count,
+        'hours_count': hours_count,
         'title': f'Бронирование #{booking.booking_id}'
     })
 
 
 @login_required
 def cancel_booking(request, booking_id):
-    """Отмена бронирования"""
+    """Отмена бронирования - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
     booking = get_object_or_404(Booking, id=booking_id)
 
     if request.user != booking.tenant:
         messages.error(request, 'Вы не можете отменить это бронирование.')
         return redirect('dashboard')
 
+    # ИСПРАВЛЕНИЕ: Убрали условие 24 часа, можно отменять в любое время до начала
     if booking.status not in ['pending', 'confirmed']:
         messages.error(request, 'Это бронирование нельзя отменить.')
         return redirect('booking_detail', booking_id=booking_id)
 
-    if booking.start_datetime <= timezone.now() + timedelta(hours=24):
-        messages.error(request, 'Отмена возможна не позднее чем за 24 часа до начала.')
+    if booking.start_datetime <= timezone.now():
+        messages.error(request, 'Нельзя отменить начавшееся бронирование.')
         return redirect('booking_detail', booking_id=booking_id)
 
     booking.status = 'cancelled'

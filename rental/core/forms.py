@@ -1,4 +1,3 @@
-# core/forms.py
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, PasswordChangeForm
 from django.core.exceptions import ValidationError
@@ -37,7 +36,8 @@ class CustomUserCreationForm(UserCreationForm):
         max_length=20,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': '+7 (XXX) XXX-XX-XX'
+            'placeholder': '+7 (999) 999-99-99',
+            'id': 'phone'
         })
     )
     company_name = forms.CharField(
@@ -77,9 +77,24 @@ class CustomUserCreationForm(UserCreationForm):
             raise ValidationError('Пользователь с таким email уже существует.')
         return email
 
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+        if phone and User.objects.filter(phone=phone).exists():
+            raise ValidationError('Пользователь с таким телефоном уже существует.')
+        return phone
+
 
 class CustomUserChangeForm(UserChangeForm):
     """Форма редактирования профиля пользователя"""
+    phone = forms.CharField(
+        required=False,
+        max_length=20,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+7 (999) 999-99-99',
+            'id': 'phone'
+        })
+    )
 
     class Meta:
         model = User
@@ -96,9 +111,6 @@ class CustomUserChangeForm(UserChangeForm):
                 'class': 'form-control'
             }),
             'email': forms.EmailInput(attrs={
-                'class': 'form-control'
-            }),
-            'phone': forms.TextInput(attrs={
                 'class': 'form-control'
             }),
             'company_name': forms.TextInput(attrs={
@@ -201,21 +213,66 @@ class PropertyForm(forms.ModelForm):
 
 class BookingForm(forms.ModelForm):
     """Форма бронирования помещения"""
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'id': 'start_date'
+        }),
+        label='Дата начала'
+    )
+    end_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'id': 'end_date'
+        }),
+        label='Дата окончания'
+    )
+    start_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'type': 'time',
+            'class': 'form-control',
+            'id': 'start_time'
+        }),
+        label='Время начала',
+        initial='09:00'
+    )
+    end_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'type': 'time',
+            'class': 'form-control',
+            'id': 'end_time'
+        }),
+        label='Время окончания',
+        initial='18:00'
+    )
+    booking_type = forms.ChoiceField(
+        choices=[('hourly', 'Почасовое'), ('daily', 'Посуточное')],
+        widget=forms.RadioSelect(attrs={
+            'class': 'form-check-input booking-type'
+        }),
+        initial='hourly',
+        label='Тип бронирования'
+    )
+    days_count = forms.IntegerField(
+        min_value=1,
+        max_value=365,
+        initial=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'id': 'days_count',
+            'min': '1',
+            'max': '365'
+        }),
+        required=False,
+        label='Количество дней'
+    )
 
     class Meta:
         model = Booking
-        fields = ['start_datetime', 'end_datetime', 'guests', 'special_requests']
+        fields = ['guests', 'special_requests']
         widgets = {
-            'start_datetime': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'class': 'form-control',
-                'id': 'start_datetime'
-            }),
-            'end_datetime': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'class': 'form-control',
-                'id': 'end_datetime'
-            }),
             'guests': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'min': 1,
@@ -229,62 +286,125 @@ class BookingForm(forms.ModelForm):
             }),
         }
         labels = {
-            'start_datetime': 'Начало бронирования',
-            'end_datetime': 'Окончание бронирования',
             'guests': 'Количество гостей',
             'special_requests': 'Особые пожелания',
         }
 
     def __init__(self, *args, **kwargs):
+        self.property_obj = kwargs.pop('property_obj', None)
         super().__init__(*args, **kwargs)
-        # Устанавливаем минимальную дату - сегодня
-        today = timezone.now().strftime('%Y-%m-%dT%H:%M')
-        self.fields['start_datetime'].widget.attrs['min'] = today
-        self.fields['end_datetime'].widget.attrs['min'] = today
 
-        # Устанавливаем значения по умолчанию
-        if not self.instance.pk:
-            tomorrow = timezone.now() + timedelta(days=1)
-            self.fields['start_datetime'].initial = tomorrow.replace(hour=9, minute=0, second=0, microsecond=0)
-            self.fields['end_datetime'].initial = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
-            self.fields['guests'].initial = 1
+        # Устанавливаем минимальную дату - сегодня
+        today = timezone.now().date().strftime('%Y-%m-%d')
+        self.fields['start_date'].widget.attrs['min'] = today
+        self.fields['end_date'].widget.attrs['min'] = today
+
+        # Устанавливаем начальные значения
+        tomorrow = timezone.now() + timedelta(days=1)
+        self.fields['start_date'].initial = tomorrow.date()
+        self.fields['end_date'].initial = tomorrow.date()
 
     def clean(self):
         cleaned_data = super().clean()
-        start_datetime = cleaned_data.get('start_datetime')
-        end_datetime = cleaned_data.get('end_datetime')
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        booking_type = cleaned_data.get('booking_type')
+        days_count = cleaned_data.get('days_count', 1)
         guests = cleaned_data.get('guests')
 
-        if start_datetime and end_datetime:
-            # Проверка на прошедшие даты
-            if start_datetime < timezone.now():
-                raise ValidationError({'start_datetime': 'Нельзя бронировать на прошедшие даты.'})
+        if not all([start_date, end_date, start_time, end_time]):
+            raise ValidationError('Все даты и времена должны быть заполнены.')
 
-            # Проверка что окончание позже начала
-            if end_datetime <= start_datetime:
-                raise ValidationError({'end_datetime': 'Время окончания должно быть позже времени начала.'})
+        # Создаем полные datetime объекты
+        start_datetime = datetime.combine(start_date, start_time)
+        end_datetime = datetime.combine(end_date, end_time)
 
-            # Проверка минимальной продолжительности (1 час)
-            duration = end_datetime - start_datetime
-            if duration < timedelta(hours=1):
-                raise ValidationError({'end_datetime': 'Минимальное время бронирования - 1 час.'})
+        # Конвертируем в aware datetime
+        start_datetime = timezone.make_aware(start_datetime)
+        end_datetime = timezone.make_aware(end_datetime)
 
-            # Проверка рабочего времени (9:00-22:00)
+        # Для посуточного бронирования устанавливаем время 00:00 - 23:59
+        if booking_type == 'daily':
+            end_datetime = end_datetime.replace(hour=23, minute=59)
+
+        # Проверка на прошедшие даты
+        if start_datetime < timezone.now():
+            raise ValidationError({'start_date': 'Нельзя бронировать на прошедшие даты.'})
+
+        # Проверка что окончание позже начала
+        if end_datetime <= start_datetime:
+            raise ValidationError({'end_date': 'Дата окончания должна быть позже даты начала.'})
+
+        # Проверка минимальной продолжительности
+        duration = end_datetime - start_datetime
+        if booking_type == 'hourly' and duration < timedelta(hours=1):
+            raise ValidationError({'end_time': 'Минимальное время бронирования - 1 час.'})
+
+        if booking_type == 'daily' and duration < timedelta(days=1):
+            raise ValidationError({'end_date': 'Минимальное время бронирования - 1 день.'})
+
+        # Проверка рабочего времени для почасового бронирования
+        if booking_type == 'hourly':
             if start_datetime.hour < 9 or start_datetime.hour >= 22:
-                raise ValidationError({'start_datetime': 'Рабочее время с 9:00 до 22:00.'})
+                raise ValidationError({'start_time': 'Рабочее время с 9:00 до 22:00.'})
 
             if end_datetime.hour > 22 or (end_datetime.hour == 22 and end_datetime.minute > 0):
-                raise ValidationError({'end_datetime': 'Рабочее время до 22:00.'})
+                raise ValidationError({'end_time': 'Рабочее время до 22:00.'})
 
-            # Проверка на длительное бронирование (более 24 часов)
-            if duration > timedelta(days=1):
-                self.add_warning = True  # Добавляем флаг для предупреждения
+        # Проверка доступности помещения
+        if self.property_obj:
+            conflicting_bookings = Booking.objects.filter(
+                property=self.property_obj,
+                status__in=['confirmed', 'pending'],
+                start_datetime__lt=end_datetime,
+                end_datetime__gt=start_datetime
+            ).exclude(id=self.instance.id if self.instance else None)
 
+            if conflicting_bookings.exists():
+                raise ValidationError('Выбранное время уже занято другим бронированием.')
+
+        # Проверка количества гостей
         if guests:
             if guests < 1:
                 raise ValidationError({'guests': 'Минимум 1 гость.'})
+            if self.property_obj and guests > self.property_obj.capacity:
+                raise ValidationError(
+                    {'guests': f'Превышена вместимость помещения. Максимум: {self.property_obj.capacity} человек.'})
+
+        # Сохраняем рассчитанные datetime
+        cleaned_data['calculated_start_datetime'] = start_datetime
+        cleaned_data['calculated_end_datetime'] = end_datetime
+
+        # Рассчитываем стоимость
+        if self.property_obj:
+            if booking_type == 'hourly':
+                hours = duration.total_seconds() / 3600
+                price = float(self.property_obj.price_per_hour) * hours
+            else:
+                days = (end_date - start_date).days + 1
+                # Используем цену за день если есть, иначе рассчитываем по часам
+                if self.property_obj.price_per_day:
+                    price = float(self.property_obj.price_per_day) * days
+                else:
+                    price = float(self.property_obj.price_per_hour) * 8 * days  # 8 часов в день
+
+            cleaned_data['calculated_price'] = round(price, 2)
 
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.start_datetime = self.cleaned_data['calculated_start_datetime']
+        instance.end_datetime = self.cleaned_data['calculated_end_datetime']
+
+        if 'calculated_price' in self.cleaned_data:
+            instance.total_price = self.cleaned_data['calculated_price']
+
+        if commit:
+            instance.save()
+        return instance
 
 
 class ReviewForm(forms.ModelForm):
@@ -341,6 +461,15 @@ class PasswordChangeCustomForm(PasswordChangeForm):
 
 class AdminUserEditForm(UserChangeForm):
     """Форма редактирования пользователя для администратора"""
+    phone = forms.CharField(
+        required=False,
+        max_length=20,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+7 (999) 999-99-99',
+            'id': 'phone'
+        })
+    )
 
     class Meta:
         model = User
@@ -351,7 +480,6 @@ class AdminUserEditForm(UserChangeForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'company_name': forms.TextInput(attrs={'class': 'form-control'}),
             'user_type': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

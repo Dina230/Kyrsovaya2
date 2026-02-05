@@ -15,11 +15,6 @@
         padding: 0.75rem;
     }
 
-    .datetime-inputs .form-control:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-
     .property-card {
         transition: transform 0.2s;
         border: 1px solid #e9ecef;
@@ -30,41 +25,43 @@
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
 
-    .form-label {
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-    }
-
     .required::after {
         content: " *";
         color: #dc3545;
     }
 
-    .date-validation {
-        font-size: 0.875rem;
+    .booking-type-selector {
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        background: #f8f9fa;
     }
 
-    .validation-error {
-        border-color: #dc3545 !important;
-        background-color: #fff8f8;
+    .booking-type-card {
+        cursor: pointer;
+        padding: 15px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        transition: all 0.3s;
     }
 
-    .validation-success {
-        border-color: #28a745 !important;
-        background-color: #f8fff9;
+    .booking-type-card:hover {
+        border-color: #86b7fe;
+        background-color: #f0f8ff;
     }
 
-    .validation-message {
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
+    .booking-type-card.active {
+        border-color: #007bff;
+        background-color: #e7f1ff;
     }
 
-    .validation-message.error {
-        color: #dc3545;
+    .time-fields {
+        display: none;
     }
 
-    .validation-message.success {
-        color: #28a745;
+    .days-fields {
+        display: none;
     }
 
     .price-breakdown {
@@ -96,28 +93,28 @@
         margin-top: 0.75rem;
     }
 
-    .time-slots {
+    .quick-days {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
+        gap: 8px;
+        margin-top: 10px;
     }
 
-    .time-slot {
-        padding: 0.375rem 0.75rem;
+    .quick-day {
+        padding: 6px 12px;
         border: 1px solid #dee2e6;
-        border-radius: 0.375rem;
+        border-radius: 20px;
         cursor: pointer;
         font-size: 0.875rem;
         transition: all 0.2s;
     }
 
-    .time-slot:hover {
+    .quick-day:hover {
         background-color: #f8f9fa;
         border-color: #86b7fe;
     }
 
-    .time-slot.active {
+    .quick-day.active {
         background-color: #007bff;
         color: white;
         border-color: #007bff;
@@ -144,7 +141,7 @@
             <div class="card property-card mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i class="bi bi-calendar-plus me-2"></i>
+                        <i class="fas fa-calendar-plus me-2"></i>
                         Новое бронирование
                     </h5>
                 </div>
@@ -153,23 +150,27 @@
                         <div class="col-md-8">
                             <h3 class="mb-2">{{ property.title }}</h3>
                             <p class="text-muted mb-2">
-                                <i class="bi bi-geo-alt me-1"></i> {{ property.address }}, {{ property.city }}
+                                <i class="fas fa-map-marker-alt me-1"></i> {{ property.address }}, {{ property.city }}
                             </p>
                             <div class="d-flex gap-3">
                                 <small class="text-muted">
-                                    <i class="bi bi-rulers me-1"></i> {{ property.area }} м²
+                                    <i class="fas fa-ruler-combined me-1"></i> {{ property.area }} м²
                                 </small>
                                 <small class="text-muted">
-                                    <i class="bi bi-people me-1"></i> {{ property.capacity }} чел.
+                                    <i class="fas fa-users me-1"></i> {{ property.capacity }} чел.
                                 </small>
                                 <small class="text-muted">
-                                    <i class="bi bi-building me-1"></i> {{ property.get_property_type_display }}
+                                    <i class="fas fa-building me-1"></i> {{ property.get_property_type_display }}
                                 </small>
                             </div>
                         </div>
                         <div class="col-md-4 text-md-end">
                             <div class="h4 text-primary mb-2">{{ property.price_per_hour }} ₽</div>
                             <small class="text-muted">за час</small>
+                            {% if property.price_per_day %}
+                            <div class="h5 text-success mb-2">{{ property.price_per_day }} ₽</div>
+                            <small class="text-muted">за день</small>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -195,75 +196,98 @@
                         </div>
                         {% endif %}
 
-                        <!-- Используем Django форму вместо ручных полей -->
-                        <!-- Дата и время -->
-                        <div class="row mb-4">
-                            <div class="col-md-6 mb-3">
-                                <label for="id_start_datetime" class="form-label required">
-                                    <i class="bi bi-calendar-check me-1"></i> Начало бронирования
-                                </label>
-                                {{ form.start_datetime }}
-                                <div class="validation-message" id="startDateValidation"></div>
-                                {% if form.start_datetime.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.start_datetime.errors|join:", " }}
+                        <!-- Выбор типа бронирования -->
+                        <div class="booking-type-selector mb-4">
+                            <h6 class="mb-3">Выберите тип бронирования:</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="booking-type-card text-center" onclick="selectBookingType('hourly')" id="hourlyCard">
+                                        <i class="fas fa-clock fa-2x mb-2 text-primary"></i>
+                                        <h6>Почасовое</h6>
+                                        <p class="text-muted small mb-0">{{ property.price_per_hour }} ₽/час</p>
+                                        <p class="small text-muted">Минимум 1 час</p>
+                                    </div>
                                 </div>
-                                {% endif %}
-                                <small class="form-text text-muted">Минимальная продолжительность: 1 час</small>
+                                <div class="col-md-6 mb-3">
+                                    <div class="booking-type-card text-center" onclick="selectBookingType('daily')" id="dailyCard">
+                                        <i class="fas fa-calendar-day fa-2x mb-2 text-success"></i>
+                                        <h6>Посуточное</h6>
+                                        <p class="text-muted small mb-0">
+                                            {% if property.price_per_day %}
+                                                {{ property.price_per_day }} ₽/день
+                                            {% else %}
+                                                {{ property.price_per_hour|floatformat:0|add:"0"|floatformat:"0"|add:"00" }} ₽/день
+                                            {% endif %}
+                                        </p>
+                                        <p class="small text-muted">Минимум 1 день</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="booking_type" id="booking_type" value="hourly">
+                        </div>
 
-                                <!-- Быстрый выбор времени -->
-                                <div class="time-slots">
-                                    <div class="time-slot" onclick="setStartTime('09:00')">9:00</div>
-                                    <div class="time-slot" onclick="setStartTime('10:00')">10:00</div>
-                                    <div class="time-slot" onclick="setStartTime('11:00')">11:00</div>
-                                    <div class="time-slot" onclick="setStartTime('12:00')">12:00</div>
-                                    <div class="time-slot" onclick="setStartTime('13:00')">13:00</div>
-                                    <div class="time-slot" onclick="setStartTime('14:00')">14:00</div>
+                        <!-- Поля для почасового бронирования -->
+                        <div id="hourlyFields">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="start_date" class="form-label required">
+                                        <i class="fas fa-calendar-plus me-1"></i> Дата начала
+                                    </label>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="end_date" class="form-label required">
+                                        <i class="fas fa-calendar-minus me-1"></i> Дата окончания
+                                    </label>
+                                    <input type="date" class="form-control" id="end_date" name="end_date" required>
                                 </div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label for="id_end_datetime" class="form-label required">
-                                    <i class="bi bi-calendar-x me-1"></i> Окончание бронирования
-                                </label>
-                                {{ form.end_datetime }}
-                                <div class="validation-message" id="endDateValidation"></div>
-                                {% if form.end_datetime.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.end_datetime.errors|join:", " }}
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="start_time" class="form-label required">
+                                        <i class="fas fa-clock me-1"></i> Время начала
+                                    </label>
+                                    <input type="time" class="form-control" id="start_time" name="start_time" value="09:00" required>
                                 </div>
-                                {% endif %}
-                                <small class="form-text text-muted">Бронирование завершается в 22:00</small>
-
-                                <!-- Быстрый выбор времени -->
-                                <div class="time-slots">
-                                    <div class="time-slot" onclick="setEndTime('13:00')">13:00 (4 ч)</div>
-                                    <div class="time-slot" onclick="setEndTime('15:00')">15:00 (6 ч)</div>
-                                    <div class="time-slot" onclick="setEndTime('17:00')">17:00 (8 ч)</div>
-                                    <div class="time-slot" onclick="setEndTime('19:00')">19:00 (10 ч)</div>
-                                    <div class="time-slot" onclick="setEndTime('21:00')">21:00 (12 ч)</div>
+                                <div class="col-md-6">
+                                    <label for="end_time" class="form-label required">
+                                        <i class="fas fa-clock me-1"></i> Время окончания
+                                    </label>
+                                    <input type="time" class="form-control" id="end_time" name="end_time" value="18:00" required>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Продолжительность -->
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label">
-                                    <i class="bi bi-clock me-1"></i> Продолжительность
-                                </label>
-                                <span class="badge bg-info" id="durationBadge">Не выбрано</span>
+                        <!-- Поля для посуточного бронирования -->
+                        <div id="dailyFields" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="daily_start_date" class="form-label required">
+                                        <i class="fas fa-calendar-plus me-1"></i> Дата начала
+                                    </label>
+                                    <input type="date" class="form-control" id="daily_start_date" name="start_date" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="days_count" class="form-label required">
+                                        <i class="fas fa-calendar-day me-1"></i> Количество дней
+                                    </label>
+                                    <input type="number" class="form-control" id="days_count" name="days_count" min="1" max="365" value="1">
+                                    <div class="quick-days">
+                                        <span class="quick-day" onclick="setDays(1)">1 день</span>
+                                        <span class="quick-day" onclick="setDays(3)">3 дня</span>
+                                        <span class="quick-day" onclick="setDays(7)">1 неделя</span>
+                                        <span class="quick-day" onclick="setDays(14)">2 недели</span>
+                                        <span class="quick-day" onclick="setDays(30)">1 месяц</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="progress mb-2" style="height: 8px;">
-                                <div class="progress-bar" id="durationProgress" role="progressbar" style="width: 0%"></div>
-                            </div>
-                            <small class="text-muted d-block">Рабочее время: с 9:00 до 22:00</small>
                         </div>
 
                         <!-- Количество гостей -->
                         <div class="mb-4">
-                            <label for="id_guests" class="form-label required">
-                                <i class="bi bi-people me-1"></i> Количество гостей
+                            <label for="guests" class="form-label required">
+                                <i class="fas fa-users me-1"></i> Количество гостей
                             </label>
                             <div class="row align-items-center">
                                 <div class="col-md-8">
@@ -272,7 +296,7 @@
                                            id="guestsRange"
                                            min="1"
                                            max="{{ property.capacity }}"
-                                           value="{{ form.guests.value|default:1 }}">
+                                           value="1">
                                     <div class="d-flex justify-content-between mt-1">
                                         <small>1 чел.</small>
                                         <small>{{ property.capacity }} чел.</small>
@@ -281,67 +305,60 @@
                                 <div class="col-md-4 text-center">
                                     <div class="input-group">
                                         <button type="button" class="btn btn-outline-secondary" onclick="changeGuests(-1)">
-                                            <i class="bi bi-dash"></i>
+                                            <i class="fas fa-minus"></i>
                                         </button>
-                                        {{ form.guests }}
+                                        <input type="number" class="form-control text-center" id="guests" name="guests" value="1" min="1" max="{{ property.capacity }}" required>
                                         <button type="button" class="btn btn-outline-secondary" onclick="changeGuests(1)">
-                                            <i class="bi bi-plus"></i>
+                                            <i class="fas fa-plus"></i>
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="validation-message" id="guestsValidation"></div>
-                            {% if form.guests.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.guests.errors|join:", " }}
-                            </div>
-                            {% endif %}
+                            <small class="form-text text-muted">Максимальная вместимость: {{ property.capacity }} человек</small>
                         </div>
 
                         <!-- Особые пожелания -->
                         <div class="mb-4">
-                            <label for="id_special_requests" class="form-label">
-                                <i class="bi bi-chat-text me-1"></i> Особые пожелания (необязательно)
+                            <label for="special_requests" class="form-label">
+                                <i class="fas fa-comment me-1"></i> Особые пожелания (необязательно)
                             </label>
-                            {{ form.special_requests }}
-                            {% if form.special_requests.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.special_requests.errors|join:", " }}
-                            </div>
-                            {% endif %}
-                            <small class="form-text text-muted">Любая дополнительная информация, которую нужно учесть</small>
+                            <textarea class="form-control" id="special_requests" name="special_requests" rows="3" placeholder="Любая дополнительная информация, которую нужно учесть"></textarea>
                         </div>
 
                         <!-- Предварительный расчет -->
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h5 class="mb-0">
-                                    <i class="bi bi-calculator me-2"></i>
+                                    <i class="fas fa-calculator me-2"></i>
                                     Предварительный расчет
                                 </h5>
                             </div>
                             <div class="card-body">
                                 <div class="price-breakdown" id="priceBreakdown">
                                     <div class="text-center text-muted py-3">
-                                        <i class="bi bi-clock-history fs-1"></i>
-                                        <p class="mt-2">Выберите даты для расчета стоимости</p>
+                                        <i class="fas fa-clock-history fa-2x"></i>
+                                        <p class="mt-2">Выберите параметры для расчета стоимости</p>
                                     </div>
                                 </div>
 
-                                <div class="alert alert-warning mt-3 d-none" id="dateWarning">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                <div class="alert alert-warning mt-3" id="dateWarning" style="display: none;">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
                                     <span id="warningText"></span>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Скрытые поля формы -->
+                        <input type="hidden" name="property_id" value="{{ property.id }}">
+                        <input type="hidden" name="calculated_price" id="calculated_price" value="0">
+
                         <!-- Кнопки отправки -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{% url 'property_detail' property.slug %}" class="btn btn-outline-secondary me-md-2">
-                                <i class="bi bi-arrow-left"></i> Назад к помещению
+                                <i class="fas fa-arrow-left"></i> Назад к помещению
                             </a>
                             <button type="submit" class="btn btn-primary btn-lg px-5" id="submitBtn">
-                                <i class="bi bi-check-circle"></i> Отправить заявку
+                                <i class="fas fa-check-circle"></i> Отправить заявку
                             </button>
                         </div>
                     </form>
@@ -361,13 +378,13 @@
                 {% else %}
                 <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
                      style="height: 200px;">
-                    <i class="bi bi-building text-muted fs-1"></i>
+                    <i class="fas fa-building text-muted fa-2x"></i>
                 </div>
                 {% endif %}
                 <div class="card-body">
                     <h5 class="card-title">{{ property.title }}</h5>
                     <p class="card-text text-muted">
-                        <i class="bi bi-geo-alt me-1"></i> {{ property.address }}, {{ property.city }}
+                        <i class="fas fa-map-marker-alt me-1"></i> {{ property.address }}, {{ property.city }}
                     </p>
 
                     <div class="row g-2 mb-3">
@@ -388,9 +405,10 @@
                     <!-- Часы работы -->
                     <div class="alert alert-light mb-3">
                         <h6 class="alert-heading">
-                            <i class="bi bi-clock me-1"></i> Часы работы
+                            <i class="fas fa-clock me-1"></i> Часы работы
                         </h6>
                         <p class="mb-0 small">Ежедневно с 9:00 до 22:00</p>
+                        <p class="mb-0 small text-muted">(для почасового бронирования)</p>
                     </div>
 
                     <!-- Удобства -->
@@ -400,7 +418,7 @@
                         {% for amenity in property.amenities.all|slice:":6" %}
                         <div class="col-6">
                             <div class="d-flex align-items-center">
-                                <i class="bi bi-check-circle text-success me-2"></i>
+                                <i class="fas fa-check-circle text-success me-2"></i>
                                 <small>{{ amenity.name }}</small>
                             </div>
                         </div>
@@ -414,34 +432,34 @@
             <div class="card property-card">
                 <div class="card-header">
                     <h6 class="mb-0">
-                        <i class="bi bi-info-circle me-2"></i>
+                        <i class="fas fa-info-circle me-2"></i>
                         Правила бронирования
                     </h6>
                 </div>
                 <div class="card-body">
                     <ul class="list-unstyled mb-0 small">
                         <li class="mb-2">
-                            <i class="bi bi-check-circle text-success me-2"></i>
-                            Минимальное время бронирования: 1 час
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Почасовое: мин. 1 час
                         </li>
                         <li class="mb-2">
-                            <i class="bi bi-check-circle text-success me-2"></i>
-                            Бронирование возможно только на будущие даты
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Посуточное: мин. 1 день
                         </li>
                         <li class="mb-2">
-                            <i class="bi bi-check-circle text-success me-2"></i>
-                            Рабочее время: с 9:00 до 22:00
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Бронирование на будущие даты
                         </li>
                         <li class="mb-2">
-                            <i class="bi bi-check-circle text-success me-2"></i>
-                            Отмена бесплатно за 24 часа до начала
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Отмена бесплатно до начала
                         </li>
                         <li class="mb-2">
-                            <i class="bi bi-check-circle text-success me-2"></i>
-                            Подтверждение владельца в течение 24 часов
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Подтверждение в течение 24 часов
                         </li>
                         <li>
-                            <i class="bi bi-check-circle text-success me-2"></i>
+                            <i class="fas fa-check-circle text-success me-2"></i>
                             Оплата на месте после подтверждения
                         </li>
                     </ul>
@@ -455,234 +473,60 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Получаем элементы
-        const startInput = document.getElementById('id_start_datetime');
-        const endInput = document.getElementById('id_end_datetime');
-        const guestsInput = document.getElementById('id_guests');
-        const guestsRange = document.getElementById('guestsRange');
-        const priceBreakdown = document.getElementById('priceBreakdown');
-        const durationBadge = document.getElementById('durationBadge');
-        const durationProgress = document.getElementById('durationProgress');
-        const dateWarning = document.getElementById('dateWarning');
-        const warningText = document.getElementById('warningText');
+        // Установка минимальной даты
+        const today = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-        // Устанавливаем минимальную дату (сегодня)
-        const today = new Date();
-        const minDate = today.toISOString().slice(0, 16);
-        if (startInput) startInput.min = minDate;
-        if (endInput) endInput.min = minDate;
+        document.getElementById('start_date').min = today;
+        document.getElementById('end_date').min = today;
+        document.getElementById('daily_start_date').min = today;
 
-        // Связываем слайдер и поле ввода гостей
-        if (guestsInput && guestsRange) {
-            guestsRange.addEventListener('input', function() {
-                guestsInput.value = this.value;
-            });
-
-            guestsInput.addEventListener('input', function() {
-                guestsRange.value = this.value;
-            });
-        }
-
-        // Функция для расчета продолжительности и стоимости
-        function calculateDurationAndPrice() {
-            if (!startInput.value || !endInput.value) {
-                priceBreakdown.innerHTML = `
-                    <div class="text-center text-muted py-3">
-                        <i class="bi bi-clock-history fs-1"></i>
-                        <p class="mt-2">Выберите даты для расчета стоимости</p>
-                    </div>
-                `;
-                if (durationBadge) durationBadge.textContent = 'Не выбрано';
-                if (durationProgress) durationProgress.style.width = '0%';
-                dateWarning.classList.add('d-none');
-                return;
-            }
-
-            const start = new Date(startInput.value);
-            const end = new Date(endInput.value);
-
-            if (end <= start) {
-                priceBreakdown.innerHTML = `
-                    <div class="text-center text-danger py-3">
-                        <i class="bi bi-exclamation-triangle fs-1"></i>
-                        <p class="mt-2">Дата окончания должна быть позже даты начала</p>
-                    </div>
-                `;
-                if (durationBadge) durationBadge.textContent = 'Ошибка';
-                if (durationProgress) durationProgress.style.width = '0%';
-                return;
-            }
-
-            // Рассчитываем продолжительность
-            const durationMs = end - start;
-            const durationHours = durationMs / (1000 * 60 * 60);
-
-            // Обновляем отображение продолжительности
-            const hours = Math.floor(durationHours);
-            const minutes = Math.round((durationHours - hours) * 60);
-
-            let durationText = '';
-            if (hours > 0 && minutes > 0) {
-                durationText = `${hours} ч ${minutes} мин`;
-            } else if (hours > 0) {
-                durationText = `${hours} ч`;
-            } else {
-                durationText = `${minutes} мин`;
-            }
-
-            if (durationBadge) durationBadge.textContent = durationText;
-
-            // Обновляем прогресс-бар (но без ограничения на 12 часов)
-            if (durationProgress) {
-                const maxHours = 24; // Теперь показываем прогресс до 24 часов
-                const progressPercent = Math.min((durationHours / maxHours) * 100, 100);
-                durationProgress.style.width = `${progressPercent}%`;
-
-                // Меняем цвет в зависимости от продолжительности
-                if (durationHours <= 4) {
-                    durationProgress.className = 'progress-bar bg-success';
-                } else if (durationHours <= 8) {
-                    durationProgress.className = 'progress-bar bg-info';
-                } else if (durationHours <= 12) {
-                    durationProgress.className = 'progress-bar bg-warning';
-                } else {
-                    durationProgress.className = 'progress-bar bg-danger';
-                }
-            }
-
-            // Расчет стоимости
-            const pricePerHour = {{ property.price_per_hour }};
-            const basePrice = durationHours * pricePerHour;
-
-            // Скидки (оставим для длительных бронирований)
-            let discount = 0;
-            let discountText = '';
-
-            if (durationHours >= 24) {
-                discount = basePrice * 0.15; // 15% скидка за сутки
-                discountText = 'Скидка за суточное бронирование (15%)';
-            } else if (durationHours >= 12) {
-                discount = basePrice * 0.10; // 10% скидка за 12+ часов
-                discountText = 'Скидка за длительное бронирование (10%)';
-            } else if (durationHours >= 8) {
-                discount = basePrice * 0.08; // 8% скидка за 8+ часов
-                discountText = 'Скидка за длительное бронирование (8%)';
-            } else if (durationHours >= 4) {
-                discount = basePrice * 0.05; // 5% скидка за 4+ часа
-                discountText = 'Скидка за длительное бронирование (5%)';
-            }
-
-            const totalPrice = basePrice - discount;
-
-            // Форматирование
-            const formatCurrency = (num) => {
-                return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-            };
-
-            // Обновляем отображение стоимости
-            priceBreakdown.innerHTML = `
-                <div class="price-item">
-                    <span>Продолжительность</span>
-                    <span>${durationHours.toFixed(1)} ч</span>
-                </div>
-                <div class="price-item">
-                    <span>Стоимость часа</span>
-                    <span>${formatCurrency(pricePerHour)} ₽</span>
-                </div>
-                <div class="price-item">
-                    <span>Основная стоимость</span>
-                    <span>${formatCurrency(basePrice)} ₽</span>
-                </div>
-                ${discount > 0 ? `
-                    <div class="price-item text-success">
-                        <span>${discountText}</span>
-                        <span>-${formatCurrency(discount)} ₽</span>
-                    </div>
-                ` : ''}
-                <div class="price-item total">
-                    <span>Итого к оплате</span>
-                    <span>${formatCurrency(totalPrice)} ₽</span>
-                </div>
-            `;
-
-            // Проверяем на длительное бронирование и показываем предупреждение
-            dateWarning.classList.add('d-none');
-            if (durationHours > 24) {
-                dateWarning.classList.remove('d-none');
-                warningText.textContent = 'Длительное бронирование (более 24 часов). Рекомендуем согласовать с владельцем.';
-            } else if (start.getHours() >= 18) {
-                dateWarning.classList.remove('d-none');
-                warningText.textContent = 'Вечернее бронирование. Рекомендуем подтвердить заранее.';
-            }
-
-            // Проверяем на выходные
-            const dayOfWeek = start.getDay();
-            if (dayOfWeek === 0 || dayOfWeek === 6) {
-                if (!dateWarning.classList.contains('d-none')) {
-                    warningText.textContent += ' Бронирование на выходные.';
-                } else {
-                    dateWarning.classList.remove('d-none');
-                    warningText.textContent = 'Бронирование на выходные. Пожалуйста, подтвердите с владельцем.';
-                }
-            }
-        }
-
-        // Добавляем обработчики событий
-        if (startInput) {
-            startInput.addEventListener('change', calculateDurationAndPrice);
-            startInput.addEventListener('input', calculateDurationAndPrice);
-        }
-
-        if (endInput) {
-            endInput.addEventListener('change', calculateDurationAndPrice);
-            endInput.addEventListener('input', calculateDurationAndPrice);
-        }
+        // Установка начальных значений дат
+        document.getElementById('start_date').value = tomorrowStr;
+        document.getElementById('end_date').value = tomorrowStr;
+        document.getElementById('daily_start_date').value = tomorrowStr;
 
         // Инициализация
-        calculateDurationAndPrice();
+        selectBookingType('hourly');
+        calculatePrice();
+
+        // Обработчики событий для расчета стоимости
+        document.querySelectorAll('#start_date, #end_date, #start_time, #end_time, #daily_start_date, #days_count, #guests').forEach(el => {
+            el.addEventListener('change', calculatePrice);
+            el.addEventListener('input', calculatePrice);
+        });
     });
 
-    // Простые функции для быстрого выбора времени
-    function setStartTime(time) {
-        const input = document.getElementById('id_start_datetime');
-        if (!input.value) {
-            const today = new Date().toISOString().slice(0, 10);
-            input.value = `${today}T${time}`;
+    function selectBookingType(type) {
+        // Сброс активных карточек
+        document.getElementById('hourlyCard').classList.remove('active');
+        document.getElementById('dailyCard').classList.remove('active');
+
+        // Активация выбранной карточки
+        document.getElementById(type + 'Card').classList.add('active');
+        document.getElementById('booking_type').value = type;
+
+        // Показ/скрытие полей
+        if (type === 'hourly') {
+            document.getElementById('hourlyFields').style.display = 'block';
+            document.getElementById('dailyFields').style.display = 'none';
         } else {
-            const date = input.value.slice(0, 10);
-            input.value = `${date}T${time}`;
+            document.getElementById('hourlyFields').style.display = 'none';
+            document.getElementById('dailyFields').style.display = 'block';
         }
-        // Запускаем расчет
-        setTimeout(() => {
-            if (input.onchange) input.onchange();
-            if (input.oninput) input.oninput();
-        }, 0);
+
+        calculatePrice();
     }
 
-    function setEndTime(time) {
-        const startInput = document.getElementById('id_start_datetime');
-        const endInput = document.getElementById('id_end_datetime');
-
-        if (startInput.value) {
-            const startDate = new Date(startInput.value);
-            const [hours, minutes] = time.split(':').map(Number);
-            const endDate = new Date(startDate);
-            endDate.setHours(hours, minutes);
-
-            if (endDate > startDate) {
-                endInput.value = endDate.toISOString().slice(0, 16);
-                // Запускаем расчет
-                setTimeout(() => {
-                    if (endInput.onchange) endInput.onchange();
-                    if (endInput.oninput) endInput.oninput();
-                }, 0);
-            }
-        }
+    function setDays(days) {
+        document.getElementById('days_count').value = days;
+        calculatePrice();
     }
 
-    // Управление количеством гостей
     function changeGuests(delta) {
-        const input = document.getElementById('id_guests');
+        const input = document.getElementById('guests');
         const range = document.getElementById('guestsRange');
         const max = {{ property.capacity }};
         const current = parseInt(input.value) || 1;
@@ -690,6 +534,120 @@
 
         input.value = newValue;
         if (range) range.value = newValue;
+        calculatePrice();
+    }
+
+    function calculatePrice() {
+        const bookingType = document.getElementById('booking_type').value;
+        const pricePerHour = parseFloat('{{ property.price_per_hour }}');
+        const pricePerDay = parseFloat('{{ property.price_per_day|default:price_per_hour|floatformat:0|add:"0"|floatformat:"0"|add:"00" }}');
+        const guests = parseInt(document.getElementById('guests').value) || 1;
+
+        let totalPrice = 0;
+        let details = [];
+        let warning = '';
+
+        if (bookingType === 'hourly') {
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            const startTime = document.getElementById('start_time').value;
+            const endTime = document.getElementById('end_time').value;
+
+            if (startDate && endDate && startTime && endTime) {
+                const start = new Date(startDate + 'T' + startTime);
+                const end = new Date(endDate + 'T' + endTime);
+
+                // Проверка на корректность дат
+                if (end <= start) {
+                    warning = 'Дата окончания должна быть позже даты начала';
+                } else {
+                    const hours = (end - start) / (1000 * 60 * 60);
+
+                    if (hours < 1) {
+                        warning = 'Минимальное время бронирования - 1 час';
+                    } else {
+                        totalPrice = pricePerHour * hours;
+
+                        // Проверка рабочего времени
+                        const startHour = start.getHours();
+                        const endHour = end.getHours();
+                        if (startHour < 9 || startHour >= 22) {
+                            warning = 'Начало бронирования должно быть с 9:00 до 22:00';
+                        } else if (endHour > 22 || (endHour === 22 && end.getMinutes() > 0)) {
+                            warning = 'Окончание бронирования должно быть до 22:00';
+                        }
+
+                        details.push(`Продолжительность: ${hours.toFixed(1)} ч`);
+                        details.push(`Стоимость часа: ${pricePerHour.toFixed(2)} ₽`);
+                    }
+                }
+            }
+        } else {
+            const startDate = document.getElementById('daily_start_date').value;
+            const daysCount = parseInt(document.getElementById('days_count').value) || 1;
+
+            if (startDate) {
+                totalPrice = pricePerDay * daysCount;
+                details.push(`Количество дней: ${daysCount}`);
+                details.push(`Стоимость дня: ${pricePerDay.toFixed(2)} ₽`);
+
+                if (daysCount > 30) {
+                    warning = 'Бронирование на срок более 30 дней. Рекомендуем связаться с владельцем.';
+                }
+            }
+        }
+
+        // Форматирование цены
+        const formatCurrency = (num) => {
+            return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        };
+
+        // Обновление отображения
+        const priceBreakdown = document.getElementById('priceBreakdown');
+        const warningEl = document.getElementById('dateWarning');
+        const warningText = document.getElementById('warningText');
+
+        if (totalPrice > 0) {
+            priceBreakdown.innerHTML = `
+                ${details.map(detail => `<div class="price-item"><span>${detail.split(':')[0]}:</span><span>${detail.split(':')[1]}</span></div>`).join('')}
+                <div class="price-item">
+                    <span>Количество гостей:</span>
+                    <span>${guests} чел.</span>
+                </div>
+                <div class="price-item total">
+                    <span>Итого к оплате:</span>
+                    <span>${formatCurrency(totalPrice)} ₽</span>
+                </div>
+            `;
+
+            // Обновляем скрытое поле с ценой
+            document.getElementById('calculated_price').value = totalPrice.toFixed(2);
+        } else {
+            priceBreakdown.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-clock-history fa-2x"></i>
+                    <p class="mt-2">Выберите параметры для расчета стоимости</p>
+                </div>
+            `;
+        }
+
+        // Показ/скрытие предупреждения
+        if (warning) {
+            warningEl.style.display = 'block';
+            warningText.textContent = warning;
+        } else {
+            warningEl.style.display = 'none';
+        }
+
+        // Активация/деактивация кнопки отправки
+        const submitBtn = document.getElementById('submitBtn');
+        if (totalPrice > 0 && !warning) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Отправить заявку';
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Заполните все поля';
+        }
     }
 </script>
 {% endblock %}
