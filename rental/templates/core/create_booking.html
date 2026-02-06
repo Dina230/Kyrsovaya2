@@ -170,6 +170,9 @@
                             {% if property.price_per_day %}
                             <div class="h5 text-success mb-2">{{ property.price_per_day }} ₽</div>
                             <small class="text-muted">за день</small>
+                            {% else %}
+                            <div class="h5 text-success mb-2">{{ property.price_per_hour|floatformat:"0"|add:"0"|floatformat:"0"|add:"00" }} ₽</div>
+                            <small class="text-muted">за день (8 часов)</small>
                             {% endif %}
                         </div>
                     </div>
@@ -216,7 +219,7 @@
                                             {% if property.price_per_day %}
                                                 {{ property.price_per_day }} ₽/день
                                             {% else %}
-                                                {{ property.price_per_hour|floatformat:0|add:"0"|floatformat:"0"|add:"00" }} ₽/день
+                                                {{ property.price_per_hour|floatformat:"0"|add:"0"|floatformat:"0"|add:"00" }} ₽/день
                                             {% endif %}
                                         </p>
                                         <p class="small text-muted">Минимум 1 день</p>
@@ -497,6 +500,20 @@
             el.addEventListener('change', calculatePrice);
             el.addEventListener('input', calculatePrice);
         });
+
+        // Связь range и input для гостей
+        const guestsInput = document.getElementById('guests');
+        const guestsRange = document.getElementById('guestsRange');
+
+        guestsInput.addEventListener('input', function() {
+            guestsRange.value = this.value;
+            calculatePrice();
+        });
+
+        guestsRange.addEventListener('input', function() {
+            guestsInput.value = this.value;
+            calculatePrice();
+        });
     });
 
     function selectBookingType(type) {
@@ -512,9 +529,22 @@
         if (type === 'hourly') {
             document.getElementById('hourlyFields').style.display = 'block';
             document.getElementById('dailyFields').style.display = 'none';
+
+            // Переносим значение даты
+            const dailyDate = document.getElementById('daily_start_date').value;
+            if (dailyDate) {
+                document.getElementById('start_date').value = dailyDate;
+                document.getElementById('end_date').value = dailyDate;
+            }
         } else {
             document.getElementById('hourlyFields').style.display = 'none';
             document.getElementById('dailyFields').style.display = 'block';
+
+            // Переносим значение даты
+            const hourlyDate = document.getElementById('start_date').value;
+            if (hourlyDate) {
+                document.getElementById('daily_start_date').value = hourlyDate;
+            }
         }
 
         calculatePrice();
@@ -527,12 +557,12 @@
 
     function changeGuests(delta) {
         const input = document.getElementById('guests');
-        const range = document.getElementById('guestsRange');
         const max = {{ property.capacity }};
         const current = parseInt(input.value) || 1;
         const newValue = Math.max(1, Math.min(current + delta, max));
 
         input.value = newValue;
+        const range = document.getElementById('guestsRange');
         if (range) range.value = newValue;
         calculatePrice();
     }
@@ -540,7 +570,7 @@
     function calculatePrice() {
         const bookingType = document.getElementById('booking_type').value;
         const pricePerHour = parseFloat('{{ property.price_per_hour }}');
-        const pricePerDay = parseFloat('{{ property.price_per_day|default:price_per_hour|floatformat:0|add:"0"|floatformat:"0"|add:"00" }}');
+        const pricePerDay = parseFloat('{{ property.price_per_day|default:0 }}');
         const guests = parseInt(document.getElementById('guests').value) || 1;
 
         let totalPrice = 0;
@@ -587,9 +617,12 @@
             const daysCount = parseInt(document.getElementById('days_count').value) || 1;
 
             if (startDate) {
-                totalPrice = pricePerDay * daysCount;
+                // Если цена за день указана в БД, используем её
+                // Иначе считаем как 8 часов по цене за час
+                const dailyRate = pricePerDay > 0 ? pricePerDay : pricePerHour * 8;
+                totalPrice = dailyRate * daysCount;
                 details.push(`Количество дней: ${daysCount}`);
-                details.push(`Стоимость дня: ${pricePerDay.toFixed(2)} ₽`);
+                details.push(`Стоимость дня: ${dailyRate.toFixed(2)} ₽`);
 
                 if (daysCount > 30) {
                     warning = 'Бронирование на срок более 30 дней. Рекомендуем связаться с владельцем.';
