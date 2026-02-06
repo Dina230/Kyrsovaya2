@@ -9,7 +9,6 @@ from .models import User, Property, Booking, Review, Favorite, Category, Amenity
 
 class CustomUserCreationForm(UserCreationForm):
     """Форма регистрации пользователя"""
-    # Убираем admin из выбора для обычной регистрации
     USER_TYPE_CHOICES_REGISTRATION = [
         ('tenant', 'Арендатор'),
         ('landlord', 'Арендодатель'),
@@ -56,7 +55,7 @@ class CustomUserCreationForm(UserCreationForm):
         })
     )
     user_type = forms.ChoiceField(
-        choices=USER_TYPE_CHOICES_REGISTRATION,  # Используем исправленный список
+        choices=USER_TYPE_CHOICES_REGISTRATION,
         widget=forms.Select(attrs={
             'class': 'form-select'
         })
@@ -86,44 +85,30 @@ class CustomUserCreationForm(UserCreationForm):
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
-
-        # Если телефон не указан - пропускаем
         if not phone:
             return phone
 
-        # Очищаем номер от всех символов, кроме цифр
         phone_digits = re.sub(r'\D', '', phone)
-
-        # Проверяем длину номера
         if len(phone_digits) < 10:
             raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
-
-        # Проверяем формат (должен начинаться с 7 или 8)
         if phone_digits[0] not in ['7', '8']:
             raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
 
-        # Проверяем уникальность телефона
         if User.objects.filter(phone__endswith=phone_digits[-10:]).exists():
             raise ValidationError('Пользователь с таким телефоном уже существует.')
 
-        # Форматируем номер в стандартный вид: +7 (XXX) XXX-XX-XX
         if len(phone_digits) == 11:
-            # Если номер с 7 или 8 в начале (11 цифр)
-            phone_digits = phone_digits[1:]  # Убираем первую цифру (7 или 8)
+            phone_digits = phone_digits[1:]
 
-        # Оставляем только 10 цифр
         phone_digits = phone_digits[:10]
-
-        # Форматируем в красивый вид
         formatted_phone = f"+7 ({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:8]}-{phone_digits[8:10]}"
 
         return formatted_phone
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        # Дополнительная проверка - не позволяем регистрироваться как admin через форму
         if user.user_type == 'admin':
-            user.user_type = 'tenant'  # Устанавливаем значение по умолчанию
+            user.user_type = 'tenant'
         if commit:
             user.save()
         return user
@@ -165,31 +150,19 @@ class CustomUserChangeForm(UserChangeForm):
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
-
-        # Если телефон не указан - пропускаем
         if not phone:
             return phone
 
-        # Очищаем номер от всех символов, кроме цифр
         phone_digits = re.sub(r'\D', '', phone)
-
-        # Проверяем длину номера
         if len(phone_digits) < 10:
             raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
-
-        # Проверяем формат (должен начинаться с 7 или 8)
         if phone_digits[0] not in ['7', '8']:
             raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
 
-        # Форматируем номер в стандартный вид: +7 (XXX) XXX-XX-XX
         if len(phone_digits) == 11:
-            # Если номер с 7 или 8 в начале (11 цифр)
-            phone_digits = phone_digits[1:]  # Убираем первую цифру (7 или 8)
+            phone_digits = phone_digits[1:]
 
-        # Оставляем только 10 цифр
         phone_digits = phone_digits[:10]
-
-        # Форматируем в красивый вид
         formatted_phone = f"+7 ({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:8]}-{phone_digits[8:10]}"
 
         return formatted_phone
@@ -223,11 +196,52 @@ class PropertyForm(forms.ModelForm):
         label='Изображения'
     )
 
+    # Добавляем поля для цены за день, неделю, месяц
+    price_per_day = forms.DecimalField(
+        required=False,
+        min_value=0,
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Автоматический расчет',
+            'id': 'price_per_day'
+        }),
+        label='Цена за день (₽)'
+    )
+
+    price_per_week = forms.DecimalField(
+        required=False,
+        min_value=0,
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Автоматический расчет',
+            'id': 'price_per_week'
+        }),
+        label='Цена за неделю (₽)'
+    )
+
+    price_per_month = forms.DecimalField(
+        required=False,
+        min_value=0,
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Автоматический расчет',
+            'id': 'price_per_month'
+        }),
+        label='Цена за месяц (₽)'
+    )
+
     class Meta:
         model = Property
         fields = ['title', 'description', 'property_type', 'category', 'city',
-                  'address', 'price_per_hour', 'capacity', 'area', 'floor',
-                  'amenities', 'is_featured', 'status']
+                  'address', 'price_per_hour', 'price_per_day', 'price_per_week',
+                  'price_per_month', 'capacity', 'area', 'floor', 'amenities',
+                  'is_featured', 'status']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -255,7 +269,8 @@ class PropertyForm(forms.ModelForm):
             'price_per_hour': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'min': 0,
-                'step': 100
+                'step': 100,
+                'id': 'price_per_hour'
             }),
             'capacity': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -264,12 +279,10 @@ class PropertyForm(forms.ModelForm):
             'area': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'min': 1,
-                'step': 1
+                'step': 0.01
             }),
             'floor': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': -5,
-                'max': 200
+                'class': 'form-control'
             }),
             'amenities': forms.CheckboxSelectMultiple(attrs={
                 'class': 'form-check-input'
@@ -285,6 +298,28 @@ class PropertyForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['amenities'].queryset = Amenity.objects.all()
+
+        # Делаем некоторые поля необязательными
+        self.fields['category'].required = False
+        self.fields['area'].required = False
+        self.fields['floor'].required = False
+        self.fields['price_per_day'].required = False
+        self.fields['price_per_week'].required = False
+        self.fields['price_per_month'].required = False
+
+        # Устанавливаем начальные значения для цен при редактировании
+        if self.instance and self.instance.pk:
+            if not self.initial.get('price_per_day') and self.instance.price_per_hour:
+                # Автоматический расчет если нет цены за день
+                self.initial['price_per_day'] = self.instance.price_per_hour * 8
+
+            if not self.initial.get('price_per_week') and self.instance.price_per_hour:
+                # Автоматический расчет если нет цены за неделю
+                self.initial['price_per_week'] = self.instance.price_per_hour * 8 * 5  # 5 рабочих дней
+
+            if not self.initial.get('price_per_month') and self.instance.price_per_hour:
+                # Автоматический расчет если нет цены за месяц
+                self.initial['price_per_month'] = self.instance.price_per_hour * 8 * 20  # 20 рабочих дней
 
 
 class BookingForm(forms.ModelForm):
@@ -324,7 +359,8 @@ class BookingForm(forms.ModelForm):
         initial='18:00'
     )
     booking_type = forms.ChoiceField(
-        choices=[('hourly', 'Почасовое'), ('daily', 'Посуточное')],
+        choices=[('hourly', 'Почасовое'), ('daily', 'Посуточное'),
+                 ('weekly', 'Понедельное'), ('monthly', 'Помесячное')],
         widget=forms.RadioSelect(attrs={
             'class': 'form-check-input booking-type'
         }),
@@ -401,8 +437,8 @@ class BookingForm(forms.ModelForm):
         start_datetime = timezone.make_aware(start_datetime)
         end_datetime = timezone.make_aware(end_datetime)
 
-        # Для посуточного бронирования устанавливаем время 00:00 - 23:59
-        if booking_type == 'daily':
+        # Для посуточного, недельного и месячного бронирования
+        if booking_type in ['daily', 'weekly', 'monthly']:
             end_datetime = end_datetime.replace(hour=23, minute=59)
 
         # Проверка на прошедшие даты
@@ -417,15 +453,17 @@ class BookingForm(forms.ModelForm):
         duration = end_datetime - start_datetime
         if booking_type == 'hourly' and duration < timedelta(hours=1):
             raise ValidationError({'end_time': 'Минимальное время бронирования - 1 час.'})
-
         if booking_type == 'daily' and duration < timedelta(days=1):
             raise ValidationError({'end_date': 'Минимальное время бронирования - 1 день.'})
+        if booking_type == 'weekly' and duration < timedelta(days=7):
+            raise ValidationError({'end_date': 'Минимальное время бронирования - 7 дней.'})
+        if booking_type == 'monthly' and duration < timedelta(days=28):
+            raise ValidationError({'end_date': 'Минимальное время бронирования - 28 дней.'})
 
         # Проверка рабочего времени для почасового бронирования
         if booking_type == 'hourly':
             if start_datetime.hour < 9 or start_datetime.hour >= 22:
                 raise ValidationError({'start_time': 'Рабочее время с 9:00 до 22:00.'})
-
             if end_datetime.hour > 22 or (end_datetime.hour == 22 and end_datetime.minute > 0):
                 raise ValidationError({'end_time': 'Рабочее время до 22:00.'})
 
@@ -455,16 +493,34 @@ class BookingForm(forms.ModelForm):
 
         # Рассчитываем стоимость
         if self.property_obj:
+            duration_days = (end_date - start_date).days + 1
+
             if booking_type == 'hourly':
                 hours = duration.total_seconds() / 3600
                 price = float(self.property_obj.price_per_hour) * hours
-            else:
-                days = (end_date - start_date).days + 1
-                # Используем цену за день если есть, иначе рассчитываем по часам
+            elif booking_type == 'daily':
                 if self.property_obj.price_per_day:
-                    price = float(self.property_obj.price_per_day) * days
+                    price = float(self.property_obj.price_per_day) * duration_days
                 else:
-                    price = float(self.property_obj.price_per_hour) * 8 * days  # 8 часов в день
+                    price = float(self.property_obj.price_per_hour) * 8 * duration_days
+            elif booking_type == 'weekly':
+                weeks = max(1, duration_days // 7 + (1 if duration_days % 7 > 0 else 0))
+                if self.property_obj.price_per_week:
+                    price = float(self.property_obj.price_per_week) * weeks
+                elif self.property_obj.price_per_day:
+                    price = float(self.property_obj.price_per_day) * 5 * weeks  # 5 рабочих дней в неделю
+                else:
+                    price = float(self.property_obj.price_per_hour) * 8 * 5 * weeks
+            elif booking_type == 'monthly':
+                months = max(1, duration_days // 30 + (1 if duration_days % 30 > 0 else 0))
+                if self.property_obj.price_per_month:
+                    price = float(self.property_obj.price_per_month) * months
+                elif self.property_obj.price_per_week:
+                    price = float(self.property_obj.price_per_week) * 4 * months  # 4 недели в месяц
+                elif self.property_obj.price_per_day:
+                    price = float(self.property_obj.price_per_day) * 20 * months  # 20 рабочих дней в месяц
+                else:
+                    price = float(self.property_obj.price_per_hour) * 8 * 20 * months
 
             cleaned_data['calculated_price'] = round(price, 2)
 
@@ -564,31 +620,19 @@ class AdminUserEditForm(UserChangeForm):
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
-
-        # Если телефон не указан - пропускаем
         if not phone:
             return phone
 
-        # Очищаем номер от всех символов, кроме цифр
         phone_digits = re.sub(r'\D', '', phone)
-
-        # Проверяем длину номера
         if len(phone_digits) < 10:
             raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
-
-        # Проверяем формат (должен начинаться с 7 или 8)
         if phone_digits[0] not in ['7', '8']:
             raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
 
-        # Форматируем номер в стандартный вид: +7 (XXX) XXX-XX-XX
         if len(phone_digits) == 11:
-            # Если номер с 7 или 8 в начале (11 цифр)
-            phone_digits = phone_digits[1:]  # Убираем первую цифру (7 или 8)
+            phone_digits = phone_digits[1:]
 
-        # Оставляем только 10 цифр
         phone_digits = phone_digits[:10]
-
-        # Форматируем в красивый вид
         formatted_phone = f"+7 ({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:8]}-{phone_digits[8:10]}"
 
         return formatted_phone
@@ -600,8 +644,9 @@ class AdminPropertyEditForm(forms.ModelForm):
     class Meta:
         model = Property
         fields = ['title', 'description', 'property_type', 'category', 'city',
-                  'address', 'price_per_hour', 'capacity', 'area', 'floor',
-                  'amenities', 'is_featured', 'status', 'landlord']
+                  'address', 'price_per_hour', 'price_per_day', 'price_per_week',
+                  'price_per_month', 'capacity', 'area', 'floor', 'amenities',
+                  'is_featured', 'status', 'landlord']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
@@ -610,6 +655,9 @@ class AdminPropertyEditForm(forms.ModelForm):
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.TextInput(attrs={'class': 'form-control'}),
             'price_per_hour': forms.NumberInput(attrs={'class': 'form-control'}),
+            'price_per_day': forms.NumberInput(attrs={'class': 'form-control'}),
+            'price_per_week': forms.NumberInput(attrs={'class': 'form-control'}),
+            'price_per_month': forms.NumberInput(attrs={'class': 'form-control'}),
             'capacity': forms.NumberInput(attrs={'class': 'form-control'}),
             'area': forms.NumberInput(attrs={'class': 'form-control'}),
             'floor': forms.NumberInput(attrs={'class': 'form-control'}),

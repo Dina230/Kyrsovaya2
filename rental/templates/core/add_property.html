@@ -164,37 +164,69 @@
                                     </div>
                                 </div>
                                 
+                                <!-- ДОБАВЛЕНО: Цена за день -->
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="price_per_day" class="form-label">
+                                            Цена за день (₽)
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control"
+                                                   name="price_per_day"
+                                                   id="price_per_day"
+                                                   min="0"
+                                                   step="0.01"
+                                                   placeholder="Рассчитывается автоматически">
+                                            <span class="input-group-text">₽</span>
+                                        </div>
+                                        <div class="form-text">
+                                            Оставьте пустым для автоматического расчета (цена за час × 8)<br>
+                                            Рекомендуется сделать скидку при аренде на день
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.area.id_for_label }}" class="form-label">
+                                            Площадь (м²)
+                                        </label>
+                                        <div class="input-group">
+                                            {{ form.area }}
+                                            <span class="input-group-text">м²</span>
+                                        </div>
+                                        {% if form.area.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.area.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Кнопка для авторасчета -->
                                 <div class="mb-3">
-                                    <label for="{{ form.area.id_for_label }}" class="form-label">
-                                        Площадь (м²)
-                                    </label>
-                                    <div class="input-group">
-                                        {{ form.area }}
-                                        <span class="input-group-text">м²</span>
-                                    </div>
-                                    {% if form.area.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.area.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="calculateDailyPrice()">
+                                        <i class="bi bi-calculator"></i> Рассчитать цену за день
+                                    </button>
+                                    <small class="form-text text-muted">
+                                        Нажмите, чтобы автоматически рассчитать цену за день (цена за час × 8)
+                                    </small>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-4">
                             <div class="col-md-12">
                                 <h5>Удобства и особенности</h5>
                                 <hr>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Удобства</label>
                                     <div class="row">
                                         {% for amenity in form.amenities.field.queryset %}
                                         <div class="col-md-4 mb-2">
                                             <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
+                                                <input class="form-check-input" type="checkbox"
                                                        name="amenities" value="{{ amenity.id }}"
                                                        id="amenity_{{ amenity.id }}">
                                                 <label class="form-check-label" for="amenity_{{ amenity.id }}">
@@ -217,7 +249,7 @@
                                     {% endif %}
                                     <div class="form-text">Выберите доступные удобства в помещении</div>
                                 </div>
-                                
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <div class="form-check">
@@ -230,7 +262,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-6 mb-3">
                                         <label for="{{ form.status.id_for_label }}" class="form-label">
                                             Статус *
@@ -248,17 +280,17 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-4">
                             <div class="col-md-12">
                                 <h5>Изображения</h5>
                                 <hr>
-                                
+
                                 <div class="mb-3">
                                     <label for="{{ form.images.id_for_label }}" class="form-label">
                                         Изображения помещения *
                                     </label>
-                                    <input type="file" class="form-control" id="{{ form.images.id_for_label }}" 
+                                    <input type="file" class="form-control" id="{{ form.images.id_for_label }}"
                                            name="images" multiple accept="image/*">
                                     {% if form.images.errors %}
                                     <div class="invalid-feedback d-block">
@@ -272,12 +304,12 @@
                                         Первое загруженное изображение станет главным.
                                     </div>
                                 </div>
-                                
+
                                 <!-- Предпросмотр изображений -->
                                 <div id="image-preview" class="row mt-3"></div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="d-flex justify-content-between">
@@ -293,7 +325,7 @@
                     </form>
                 </div>
             </div>
-            
+
             <!-- Подсказки -->
             <div class="card mt-4">
                 <div class="card-header bg-info text-white">
@@ -307,6 +339,7 @@
                         <li>Подробно опишите все особенности и оборудование</li>
                         <li>Укажите реальную вместимость и площадь</li>
                         <li>Установите конкурентную цену, исходя из расположения и удобств</li>
+                        <li>Укажите цену за день - это привлечет клиентов, которым нужно помещение на целый день</li>
                         <li>Отметьте все доступные удобства для привлечения большего числа клиентов</li>
                     </ul>
                 </div>
@@ -325,13 +358,13 @@
         inputs.forEach(input => {
             input.classList.add('form-control');
         });
-        
+
         // Чекбоксы
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(cb => {
             cb.classList.add('form-check-input');
         });
-        
+
         // Добавляем валидацию формы
         const forms = document.querySelectorAll('.needs-validation');
         Array.from(forms).forEach(form => {
@@ -343,7 +376,7 @@
                 form.classList.add('was-validated');
             }, false);
         });
-        
+
         // Предпросмотр изображений перед загрузкой
         const imageInput = document.getElementById('{{ form.images.id_for_label }}');
         if (imageInput) {
@@ -351,44 +384,44 @@
                 const files = e.target.files;
                 const previewContainer = document.getElementById('image-preview');
                 previewContainer.innerHTML = '';
-                
+
                 if (files.length > 0) {
                     const title = document.createElement('h6');
                     title.className = 'mb-3';
                     title.textContent = 'Предпросмотр (' + files.length + ' изображений):';
                     previewContainer.appendChild(title);
                 }
-                
+
                 for (let file of files) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const col = document.createElement('div');
                         col.className = 'col-md-2 mb-3';
-                        
+
                         const card = document.createElement('div');
                         card.className = 'card h-100';
-                        
+
                         const img = document.createElement('img');
                         img.src = e.target.result;
                         img.className = 'card-img-top';
                         img.style.height = '100px';
                         img.style.objectFit = 'cover';
-                        
+
                         const cardBody = document.createElement('div');
                         cardBody.className = 'card-body p-2 text-center';
-                        
+
                         const fileName = document.createElement('small');
                         fileName.className = 'text-muted d-block text-truncate';
                         fileName.title = file.name;
                         fileName.textContent = file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name;
-                        
+
                         const fileSize = document.createElement('small');
                         fileSize.className = 'text-muted d-block';
                         fileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
-                        
+
                         cardBody.appendChild(fileName);
                         cardBody.appendChild(fileSize);
-                        
+
                         card.appendChild(img);
                         card.appendChild(cardBody);
                         col.appendChild(card);
@@ -398,7 +431,74 @@
                 }
             });
         }
+
+        // Автоматический расчет цены за день при изменении цены за час
+        const hourlyPriceInput = document.getElementById('{{ form.price_per_hour.id_for_label }}');
+        const dailyPriceInput = document.getElementById('price_per_day');
+
+        if (hourlyPriceInput && dailyPriceInput) {
+            hourlyPriceInput.addEventListener('input', function() {
+                // Если поле цены за день пустое, рассчитываем автоматически
+                if (!dailyPriceInput.value) {
+                    calculateDailyPrice();
+                }
+            });
+
+            // При загрузке страницы показываем рассчитанную цену
+            if (hourlyPriceInput.value && !dailyPriceInput.value) {
+                calculateDailyPrice();
+            }
+        }
     });
+
+    // Функция для расчета цены за день
+    function calculateDailyPrice() {
+        const hourlyPriceInput = document.getElementById('{{ form.price_per_hour.id_for_label }}');
+        const dailyPriceInput = document.getElementById('price_per_day');
+
+        if (hourlyPriceInput && dailyPriceInput) {
+            const hourlyPrice = parseFloat(hourlyPriceInput.value) || 0;
+            // Рассчитываем цену за день как цена за час * 8
+            const calculatedDailyPrice = hourlyPrice * 8;
+
+            if (calculatedDailyPrice > 0) {
+                // Можно добавить скидку, например 10%
+                const discountedPrice = calculatedDailyPrice * 0.9; // 10% скидка
+                dailyPriceInput.value = discountedPrice.toFixed(2);
+                dailyPriceInput.placeholder = `Авторасчет: ${discountedPrice.toFixed(2)} ₽`;
+
+                // Показываем подсказку
+                showPriceHint(hourlyPrice, discountedPrice);
+            }
+        }
+    }
+
+    // Функция для показа подсказки о цене
+    function showPriceHint(hourlyPrice, dailyPrice) {
+        // Создаем или обновляем подсказку
+        let hintElement = document.getElementById('price-hint');
+        if (!hintElement) {
+            hintElement = document.createElement('div');
+            hintElement.id = 'price-hint';
+            hintElement.className = 'alert alert-info mt-2';
+
+            const dailyPriceInput = document.getElementById('price_per_day');
+            dailyPriceInput.parentNode.appendChild(hintElement);
+        }
+
+        const discountPercent = Math.round((1 - (dailyPrice / (hourlyPrice * 8))) * 100);
+        const dailyRatePerHour = (dailyPrice / 8).toFixed(2);
+
+        hintElement.innerHTML = `
+            <i class="bi bi-info-circle"></i>
+            <strong>Рекомендация по цене:</strong><br>
+            • Цена за час: ${hourlyPrice.toFixed(2)} ₽<br>
+            • Цена за 8 часов: ${(hourlyPrice * 8).toFixed(2)} ₽<br>
+            • <strong>Предложенная цена за день: ${dailyPrice.toFixed(2)} ₽</strong> (скидка ${discountPercent}%)<br>
+            • Экономия для клиента: ${((hourlyPrice * 8) - dailyPrice).toFixed(2)} ₽<br>
+            • Фактическая стоимость часа при посуточной аренде: ${dailyRatePerHour} ₽/час
+        `;
+    }
 </script>
 
 <style>
@@ -407,19 +507,30 @@
         min-height: 120px;
         resize: vertical;
     }
-    
+
     .form-control:focus, .form-select:focus {
         border-color: #2563eb;
         box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
     }
-    
+
     .form-check-input:checked {
         background-color: #2563eb;
         border-color: #2563eb;
     }
-    
+
     .invalid-feedback {
         display: block !important;
+    }
+
+    /* Стили для подсказки цены */
+    #price-hint {
+        font-size: 0.9rem;
+    }
+
+    #price-hint i {
+        float: left;
+        margin-right: 10px;
+        font-size: 1.2rem;
     }
     
     /* Адаптивность для предпросмотра изображений */
