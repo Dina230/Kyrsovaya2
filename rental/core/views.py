@@ -251,6 +251,13 @@ def register(request):
                 login(request, user)
                 messages.success(request, 'Регистрация успешно завершена!')
                 return redirect('dashboard')
+            else:
+                messages.error(request, 'Ошибка аутентификации.')
+        else:
+            # Показываем ошибки формы
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
         form = CustomUserCreationForm()
 
@@ -1265,6 +1272,10 @@ def custom_admin_dashboard(request):
             status='completed',
             updated_at__gte=month_ago
         ).aggregate(total=Sum('total_price'))['total'] or 0,
+        'admin_count': User.objects.filter(user_type='admin').count(),
+        'landlord_count': User.objects.filter(user_type='landlord').count(),
+        'tenant_count': User.objects.filter(user_type='tenant').count(),
+        'new_bookings_week': Booking.objects.filter(created_at__gte=week_ago).count(),
     }
 
     # Последние действия
@@ -1272,7 +1283,8 @@ def custom_admin_dashboard(request):
     recent_bookings = Booking.objects.select_related('property', 'tenant').order_by('-created_at')[:5]
     recent_reviews = Review.objects.select_related('property', 'user').order_by('-created_at')[:5]
 
-    return render(request, 'core/admin/dashboard.html', {
+    # Исправленный путь к шаблону - убрано 'core/'
+    return render(request, 'admin/dashboard.html', {
         'stats': stats,
         'recent_users': recent_users,
         'recent_bookings': recent_bookings,
@@ -1354,7 +1366,7 @@ def admin_user_management(request):
 
         return redirect('admin_user_management')
 
-    return render(request, 'core/admin/user_management.html', {
+    return render(request, 'admin/user_management.html', {
         'users': users_page,
         'stats': stats,
         'search_query': search_query,
@@ -1380,7 +1392,7 @@ def admin_add_user(request):
     else:
         form = CustomUserCreationForm()
 
-    return render(request, 'core/admin/add_user.html', {
+    return render(request, 'admin/add_user.html', {
         'form': form,
         'title': 'Добавление пользователя'
     })
@@ -1404,7 +1416,7 @@ def admin_edit_user(request, user_id):
     else:
         form = CustomUserChangeForm(instance=user)
 
-    return render(request, 'core/admin/edit_user.html', {
+    return render(request, 'admin/edit_user.html', {
         'form': form,
         'user_obj': user,
         'title': 'Редактирование пользователя'
@@ -1437,7 +1449,7 @@ def admin_property_management(request):
     page = request.GET.get('page')
     properties_page = paginator.get_page(page)
 
-    return render(request, 'core/admin/property_management.html', {
+    return render(request, 'admin/property_management.html', {
         'properties': properties_page,
         'title': 'Управление помещениями'
     })
@@ -1469,7 +1481,7 @@ def admin_booking_management(request):
     page = request.GET.get('page')
     bookings_page = paginator.get_page(page)
 
-    return render(request, 'core/admin/booking_management.html', {
+    return render(request, 'admin/booking_management.html', {
         'bookings': bookings_page,
         'title': 'Управление бронированиями'
     })
@@ -1525,7 +1537,7 @@ def admin_review_management(request):
 
         return redirect('admin_review_management')
 
-    return render(request, 'core/admin/review_management.html', {
+    return render(request, 'admin/review_management.html', {
         'reviews': reviews_page,
         'title': 'Управление отзывами'
     })
@@ -1586,7 +1598,7 @@ def admin_add_property(request):
     else:
         form = PropertyForm()
 
-    return render(request, 'core/admin/add_property.html', {
+    return render(request, 'admin/add_property.html', {
         'form': form,
         'title': 'Добавление помещения'
     })
@@ -1616,7 +1628,7 @@ def admin_edit_property(request, property_id):
     else:
         form = PropertyForm(instance=property_obj)
 
-    return render(request, 'core/admin/edit_property.html', {
+    return render(request, 'admin/edit_property.html', {
         'form': form,
         'property': property_obj,
         'existing_images': property_obj.images.all(),
@@ -1644,7 +1656,7 @@ def admin_edit_booking(request, booking_id):
         from .forms import BookingForm
         form = BookingForm(instance=booking)
 
-    return render(request, 'core/admin/edit_booking.html', {
+    return render(request, 'admin/edit_booking.html', {
         'form': form,
         'booking': booking,
         'title': 'Редактирование бронирования'
@@ -1671,7 +1683,7 @@ def admin_edit_review(request, review_id):
         from .forms import ReviewForm
         form = ReviewForm(instance=review)
 
-    return render(request, 'core/admin/edit_review.html', {
+    return render(request, 'admin/edit_review.html', {
         'form': form,
         'review': review,
         'title': 'Редактирование отзыва'
@@ -1685,6 +1697,6 @@ def admin_system_settings(request):
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
 
-    return render(request, 'core/admin/system_settings.html', {
+    return render(request, 'admin/system_settings.html', {
         'title': 'Настройки системы'
     })

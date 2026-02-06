@@ -3,11 +3,18 @@ from django.contrib.auth.forms import UserCreationForm, UserChangeForm, Password
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import datetime, timedelta
+import re
 from .models import User, Property, Booking, Review, Favorite, Category, Amenity
 
 
 class CustomUserCreationForm(UserCreationForm):
     """Форма регистрации пользователя"""
+    # Убираем admin из выбора для обычной регистрации
+    USER_TYPE_CHOICES_REGISTRATION = [
+        ('tenant', 'Арендатор'),
+        ('landlord', 'Арендодатель'),
+    ]
+
     email = forms.EmailField(
         required=True,
         widget=forms.EmailInput(attrs={
@@ -49,7 +56,7 @@ class CustomUserCreationForm(UserCreationForm):
         })
     )
     user_type = forms.ChoiceField(
-        choices=User.USER_TYPE_CHOICES,
+        choices=USER_TYPE_CHOICES_REGISTRATION,  # Используем исправленный список
         widget=forms.Select(attrs={
             'class': 'form-select'
         })
@@ -79,9 +86,47 @@ class CustomUserCreationForm(UserCreationForm):
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
-        if phone and User.objects.filter(phone=phone).exists():
+
+        # Если телефон не указан - пропускаем
+        if not phone:
+            return phone
+
+        # Очищаем номер от всех символов, кроме цифр
+        phone_digits = re.sub(r'\D', '', phone)
+
+        # Проверяем длину номера
+        if len(phone_digits) < 10:
+            raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
+
+        # Проверяем формат (должен начинаться с 7 или 8)
+        if phone_digits[0] not in ['7', '8']:
+            raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
+
+        # Проверяем уникальность телефона
+        if User.objects.filter(phone__endswith=phone_digits[-10:]).exists():
             raise ValidationError('Пользователь с таким телефоном уже существует.')
-        return phone
+
+        # Форматируем номер в стандартный вид: +7 (XXX) XXX-XX-XX
+        if len(phone_digits) == 11:
+            # Если номер с 7 или 8 в начале (11 цифр)
+            phone_digits = phone_digits[1:]  # Убираем первую цифру (7 или 8)
+
+        # Оставляем только 10 цифр
+        phone_digits = phone_digits[:10]
+
+        # Форматируем в красивый вид
+        formatted_phone = f"+7 ({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:8]}-{phone_digits[8:10]}"
+
+        return formatted_phone
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Дополнительная проверка - не позволяем регистрироваться как admin через форму
+        if user.user_type == 'admin':
+            user.user_type = 'tenant'  # Устанавливаем значение по умолчанию
+        if commit:
+            user.save()
+        return user
 
 
 class CustomUserChangeForm(UserChangeForm):
@@ -117,6 +162,37 @@ class CustomUserChangeForm(UserChangeForm):
                 'class': 'form-control'
             }),
         }
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+
+        # Если телефон не указан - пропускаем
+        if not phone:
+            return phone
+
+        # Очищаем номер от всех символов, кроме цифр
+        phone_digits = re.sub(r'\D', '', phone)
+
+        # Проверяем длину номера
+        if len(phone_digits) < 10:
+            raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
+
+        # Проверяем формат (должен начинаться с 7 или 8)
+        if phone_digits[0] not in ['7', '8']:
+            raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
+
+        # Форматируем номер в стандартный вид: +7 (XXX) XXX-XX-XX
+        if len(phone_digits) == 11:
+            # Если номер с 7 или 8 в начале (11 цифр)
+            phone_digits = phone_digits[1:]  # Убираем первую цифру (7 или 8)
+
+        # Оставляем только 10 цифр
+        phone_digits = phone_digits[:10]
+
+        # Форматируем в красивый вид
+        formatted_phone = f"+7 ({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:8]}-{phone_digits[8:10]}"
+
+        return formatted_phone
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -485,6 +561,37 @@ class AdminUserEditForm(UserChangeForm):
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+
+        # Если телефон не указан - пропускаем
+        if not phone:
+            return phone
+
+        # Очищаем номер от всех символов, кроме цифр
+        phone_digits = re.sub(r'\D', '', phone)
+
+        # Проверяем длину номера
+        if len(phone_digits) < 10:
+            raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
+
+        # Проверяем формат (должен начинаться с 7 или 8)
+        if phone_digits[0] not in ['7', '8']:
+            raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
+
+        # Форматируем номер в стандартный вид: +7 (XXX) XXX-XX-XX
+        if len(phone_digits) == 11:
+            # Если номер с 7 или 8 в начале (11 цифр)
+            phone_digits = phone_digits[1:]  # Убираем первую цифру (7 или 8)
+
+        # Оставляем только 10 цифр
+        phone_digits = phone_digits[:10]
+
+        # Форматируем в красивый вид
+        formatted_phone = f"+7 ({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:8]}-{phone_digits[8:10]}"
+
+        return formatted_phone
 
 
 class AdminPropertyEditForm(forms.ModelForm):

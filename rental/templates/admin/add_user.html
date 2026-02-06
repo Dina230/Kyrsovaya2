@@ -1,241 +1,157 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'admin/base_admin.html' %}
 
-{% block title %}Добавление пользователя{% endblock %}
+{% block title %}Добавить пользователя - Админ-панель{% endblock %}
+
+{% block page_title %}Добавить пользователя{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'admin_user_management' %}">Пользователи</a></li>
+<li class="breadcrumb-item active">Добавить</li>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-person-plus"></i> Добавление нового пользователя
-                    </h4>
+<div class="admin-card">
+    <div class="card-header">
+        <h6 class="mb-0">Создание нового пользователя</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" class="admin-form">
+            {% csrf_token %}
+
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>Пожалуйста, исправьте ошибки:</strong>
+                <ul class="mb-0 mt-2">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Логин *</label>
+                    <input type="text" class="form-control" name="username"
+                           value="{{ form.username.value|default:'' }}" required>
+                    <small class="form-text text-muted">Обязательное поле. 150 символов или меньше. Только буквы, цифры и @/./+/-/_</small>
                 </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
 
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> После создания пользователя, он сможет войти используя указанный username и email.
-                        </div>
-
-                        <!-- Вывод ошибок формы -->
-                        {% if form.errors %}
-                        <div class="alert alert-danger">
-                            <strong>Пожалуйста, исправьте ошибки:</strong>
-                            <ul class="mb-0 mt-2">
-                            {% for field in form %}
-                                {% for error in field.errors %}
-                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                                {% endfor %}
-                            {% endfor %}
-                            {% for error in form.non_field_errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.username.id_for_label }}" class="form-label">
-                                        Логин *
-                                    </label>
-                                    {{ form.username }}
-                                    {% if form.username.help_text %}
-                                    <div class="form-text">{{ form.username.help_text }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.email.id_for_label }}" class="form-label">
-                                        Email *
-                                    </label>
-                                    {{ form.email }}
-                                    {% if form.email.help_text %}
-                                    <div class="form-text">{{ form.email.help_text }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
-                                        Имя
-                                    </label>
-                                    {{ form.first_name }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
-                                        Фамилия
-                                    </label>
-                                    {{ form.last_name }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.phone.id_for_label }}" class="form-label">
-                                        Телефон
-                                    </label>
-                                    {{ form.phone }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.company_name.id_for_label }}" class="form-label">
-                                        Название компании
-                                    </label>
-                                    {{ form.company_name }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label for="{{ form.user_type.id_for_label }}" class="form-label">
-                                        Тип пользователя *
-                                    </label>
-                                    {{ form.user_type }}
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-check mb-3">
-                                    {{ form.is_active }}
-                                    <label for="{{ form.is_active.id_for_label }}" class="form-check-label">
-                                        Активный
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-check mb-3">
-                                    {{ form.is_staff }}
-                                    <label for="{{ form.is_staff.id_for_label }}" class="form-check-label">
-                                        Администратор
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-check mb-3">
-                            {{ form.is_superuser }}
-                            <label for="{{ form.is_superuser.id_for_label }}" class="form-check-label">
-                                Суперпользователь
-                            </label>
-                        </div>
-
-                        <!-- Добавим поля для пароля -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="id_password1" class="form-label">
-                                        Пароль *
-                                    </label>
-                                    <input type="password" name="password1" class="form-control" id="id_password1" required>
-                                    <div class="form-text">
-                                        <small>• Пароль не должен быть слишком похож на другую вашу личную информацию.</small><br>
-                                        <small>• Пароль должен содержать как минимум 8 символов.</small><br>
-                                        <small>• Пароль не должен быть слишком простым и распространенным.</small><br>
-                                        <small>• Пароль не может состоять только из цифр.</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="id_password2" class="form-label">
-                                        Подтверждение пароля *
-                                    </label>
-                                    <input type="password" name="password2" class="form-control" id="id_password2" required>
-                                    <div class="form-text">
-                                        Введите тот же пароль, что и выше, для проверки.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'admin_user_management' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Назад
-                            </a>
-                            <div>
-                                <button type="reset" class="btn btn-outline-warning me-2">
-                                    <i class="bi bi-arrow-counterclockwise"></i> Сбросить
-                                </button>
-                                <button type="submit" class="btn btn-success">
-                                    <i class="bi bi-person-add"></i> Создать пользователя
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email *</label>
+                    <input type="email" class="form-control" name="email"
+                           value="{{ form.email.value|default:'' }}" required>
                 </div>
             </div>
-        </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Имя</label>
+                    <input type="text" class="form-control" name="first_name"
+                           value="{{ form.first_name.value|default:'' }}">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Фамилия</label>
+                    <input type="text" class="form-control" name="last_name"
+                           value="{{ form.last_name.value|default:'' }}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Телефон</label>
+                    <input type="text" class="form-control" name="phone"
+                           value="{{ form.phone.value|default:'' }}">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Название компании</label>
+                    <input type="text" class="form-control" name="company_name"
+                           value="{{ form.company_name.value|default:'' }}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Тип пользователя *</label>
+                    <select class="form-select" name="user_type" required>
+                        <option value="" {% if not form.user_type.value %}selected{% endif %}>Выберите тип</option>
+                        <option value="tenant" {% if form.user_type.value == 'tenant' %}selected{% endif %}>Арендатор</option>
+                        <option value="landlord" {% if form.user_type.value == 'landlord' %}selected{% endif %}>Арендодатель</option>
+                        <option value="admin" {% if form.user_type.value == 'admin' %}selected{% endif %}>Администратор</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="form-check mt-4">
+                        <input type="checkbox" class="form-check-input" name="is_active" id="is_active"
+                               {% if form.is_active.value %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">Активный</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="form-check mt-4">
+                        <input type="checkbox" class="form-check-input" name="is_staff" id="is_staff"
+                               {% if form.is_staff.value %}checked{% endif %}>
+                        <label class="form-check-label" for="is_staff">Администратор</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="is_superuser" id="is_superuser"
+                               {% if form.is_superuser.value %}checked{% endif %}>
+                        <label class="form-check-label" for="is_superuser">Суперпользователь</label>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Пароль *</label>
+                    <input type="password" class="form-control" name="password1" id="id_password1" required>
+                    <small class="form-text text-muted">
+                        <ul class="ps-3 mb-0">
+                            <li>Пароль не должен быть слишком похож на другую вашу личную информацию</li>
+                            <li>Пароль должен содержать как минимум 8 символов</li>
+                            <li>Пароль не должен быть слишком простым и распространенным</li>
+                            <li>Пароль не может состоять только из цифр</li>
+                        </ul>
+                    </small>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Подтверждение пароля *</label>
+                    <input type="password" class="form-control" name="password2" id="id_password2" required>
+                    <small class="form-text text-muted">Введите тот же пароль, что и выше, для проверки</small>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'admin_user_management' %}" class="btn btn-admin-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад
+                </a>
+                <div>
+                    <button type="reset" class="btn btn-admin-outline me-2">
+                        <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                    </button>
+                    <button type="submit" class="btn btn-admin-success">
+                        <i class="bi bi-person-add"></i> Создать пользователя
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
-
-<style>
-    .form-control {
-        padding: 0.5rem 0.75rem;
-        font-size: 1rem;
-        border-radius: 0.375rem;
-    }
-
-    .form-check-input {
-        margin-top: 0.25rem;
-    }
-
-    label {
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-    }
-
-    .form-text {
-        font-size: 0.875rem;
-        color: #6c757d;
-    }
-
-    .alert ul {
-        padding-left: 1.5rem;
-    }
-</style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Автофокус на первое поле
-        document.querySelector('#{{ form.username.id_for_label }}').focus();
-
-        // Добавляем стили Bootstrap к элементам формы
-        document.querySelectorAll('input, select, textarea').forEach(element => {
-            if (!element.classList.contains('form-check-input')) {
-                element.classList.add('form-control');
-            }
-        });
-
-        // Для селектов добавляем класс
-        document.querySelectorAll('select').forEach(select => {
-            select.classList.add('form-select');
-        });
-
-        // Для checkbox
-        document.querySelectorAll('.form-check input[type="checkbox"]').forEach(checkbox => {
-            checkbox.classList.add('form-check-input');
-        });
-
-        // Для label checkbox
-        document.querySelectorAll('.form-check label').forEach(label => {
-            label.classList.add('form-check-label');
-        });
-    });
-</script>
 {% endblock %}

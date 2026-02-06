@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Админ-панель | Простор{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --admin-primary: #2c3e50;
+            --admin-secondary: #34495e;
+            --admin-accent: #3a57e8;
+            --admin-success: #198754;
+            --admin-warning: #ffc107;
+            --admin-danger: #dc3545;
+            --admin-light: #f8f9fa;
+        }
+
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .admin-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .admin-sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--admin-primary) 0%, #1a252f 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 3px 0 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .sidebar-brand h3 {
+            margin: 0;
+            color: white;
+            font-weight: 700;
+        }
+
+        .sidebar-brand .brand-subtitle {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 5px;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .sidebar-menu .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 25px;
+            margin: 2px 0;
+            border-left: 4px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-menu .nav-link:hover {
+            color: white;
+            background: rgba(255,255,255,0.1);
+            border-left-color: var(--admin-accent);
+            padding-left: 30px;
+        }
+
+        .sidebar-menu .nav-link.active {
+            color: white;
+            background: rgba(58, 87, 232, 0.25);
+            border-left-color: var(--admin-accent);
+            font-weight: 500;
+        }
+
+        .sidebar-menu .nav-link i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .sidebar-menu .badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            margin-left: auto;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .admin-main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 20px;
+        }
+
+        /* Header */
+        .admin-header {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--admin-primary);
+            font-weight: 700;
+        }
+
+        .page-title .breadcrumb {
+            margin-bottom: 0;
+            background: transparent;
+            padding: 0;
+        }
+
+        .page-title .breadcrumb-item a {
+            color: var(--admin-accent);
+            text-decoration: none;
+        }
+
+        .admin-user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--admin-accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* ===== CARDS ===== */
+        .admin-card {
+            background: white;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .admin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .admin-card .card-header {
+            background: white;
+            border-bottom: 1px solid #eee;
+            padding: 20px 25px;
+            font-weight: 600;
+            color: var(--admin-primary);
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-card .card-body {
+            padding: 25px;
+        }
+
+        /* Stats Cards */
+        .stats-card {
+            padding: 25px;
+            border-left: 5px solid;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(30%, -30%);
+        }
+
+        .stats-users { border-left-color: var(--admin-accent); }
+        .stats-properties { border-left-color: var(--admin-success); }
+        .stats-bookings { border-left-color: var(--admin-warning); }
+        .stats-revenue { border-left-color: var(--admin-danger); }
+
+        .stats-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .stats-users .stats-icon { background: rgba(58, 87, 232, 0.1); color: var(--admin-accent); }
+        .stats-properties .stats-icon { background: rgba(25, 135, 84, 0.1); color: var(--admin-success); }
+        .stats-bookings .stats-icon { background: rgba(255, 193, 7, 0.1); color: var(--admin-warning); }
+        .stats-revenue .stats-icon { background: rgba(220, 53, 69, 0.1); color: var(--admin-danger); }
+
+        .stats-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 5px;
+            color: var(--admin-primary);
+        }
+
+        .stats-label {
+            font-size: 0.95rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        /* ===== TABLES ===== */
+        .admin-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .admin-table thead th {
+            background-color: #f8fafc;
+            color: var(--admin-primary);
+            font-weight: 600;
+            padding: 15px 20px;
+            border-bottom: 2px solid #e9ecef;
+            white-space: nowrap;
+        }
+
+        .admin-table tbody td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+
+        .admin-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* ===== FORMS ===== */
+        .admin-form .form-label {
+            font-weight: 600;
+            color: var(--admin-primary);
+            margin-bottom: 8px;
+        }
+
+        .admin-form .form-control,
+        .admin-form .form-select {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            transition: all 0.3s;
+        }
+
+        .admin-form .form-control:focus,
+        .admin-form .form-select:focus {
+            border-color: var(--admin-accent);
+            box-shadow: 0 0 0 0.25rem rgba(58, 87, 232, 0.25);
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn-admin {
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-weight: 500;
+            border: none;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-admin-primary {
+            background: linear-gradient(135deg, var(--admin-accent) 0%, #2a46d0 100%);
+            color: white;
+        }
+
+        .btn-admin-primary:hover {
+            background: linear-gradient(135deg, #2a46d0 0%, #1a36b0 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(58, 87, 232, 0.3);
+        }
+
+        .btn-admin-secondary {
+            background: var(--admin-secondary);
+            color: white;
+        }
+
+        .btn-admin-success {
+            background: linear-gradient(135deg, var(--admin-success) 0%, #157347 100%);
+            color: white;
+        }
+
+        .btn-admin-warning {
+            background: linear-gradient(135deg, var(--admin-warning) 0%, #e0a800 100%);
+            color: #212529;
+        }
+
+        .btn-admin-danger {
+            background: linear-gradient(135deg, var(--admin-danger) 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-admin-outline {
+            background: transparent;
+            border: 2px solid var(--admin-accent);
+            color: var(--admin-accent);
+        }
+
+        .btn-admin-outline:hover {
+            background: var(--admin-accent);
+            color: white;
+        }
+
+        /* ===== BADGES ===== */
+        .badge-admin {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .badge-status-pending { background: #fff3cd; color: #856404; }
+        .badge-status-confirmed { background: #d1e7dd; color: #0f5132; }
+        .badge-status-cancelled { background: #f8d7da; color: #721c24; }
+        .badge-status-completed { background: #cfe2ff; color: #084298; }
+
+        .badge-type-admin { background: #dc3545; color: white; }
+        .badge-type-landlord { background: #198754; color: white; }
+        .badge-type-tenant { background: #0dcaf0; color: white; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+
+            .admin-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="sidebar-brand">
+                <h3><i class="bi bi-shield-check me-2"></i>Админ-панель</h3>
+                <div class="brand-subtitle">Простор</div>
+            </div>
+
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/admin-panel/dashboard/' %}active{% endif %}"
+                           href="{% url 'custom_admin_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Дашборд</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin-panel/users' in request.path %}active{% endif %}"
+                           href="{% url 'admin_user_management' %}">
+                            <i class="bi bi-people"></i>
+                            <span>Пользователи</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin-panel/properties' in request.path %}active{% endif %}"
+                           href="{% url 'admin_property_management' %}">
+                            <i class="bi bi-buildings"></i>
+                            <span>Помещения</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin-panel/bookings' in request.path %}active{% endif %}"
+                           href="{% url 'admin_booking_management' %}">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>Бронирования</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin-panel/reviews' in request.path %}active{% endif %}"
+                           href="{% url 'admin_review_management' %}">
+                            <i class="bi bi-star"></i>
+                            <span>Отзывы</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin-panel/settings' in request.path %}active{% endif %}"
+                           href="{% url 'admin_system_settings' %}">
+                            <i class="bi bi-gear"></i>
+                            <span>Настройки</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="/admin/" target="_blank">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                            <span>Django Admin</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">
+                            <i class="bi bi-person-circle"></i>
+                            <span>Мой кабинет</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Выйти</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Header -->
+            <header class="admin-header">
+                <div class="page-title">
+                    <h1>{% block page_title %}Админ-панель{% endblock %}</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'custom_admin_dashboard' %}">Главная</a></li>
+                            {% block breadcrumbs %}{% endblock %}
+                        </ol>
+                    </nav>
+                </div>
+
+                <div class="admin-user-info">
+                    <div class="dropdown">
+                        <button class="btn btn-link text-decoration-none dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown">
+                            <div class="user-avatar">
+                                {{ user.get_full_name|default:user.username|first|upper }}
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><span class="dropdown-item-text">{{ user.get_full_name|default:user.username }}</span></li>
+                            <li><span class="dropdown-item-text small text-muted">{{ user.email }}</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="bi bi-person-circle me-2"></i>Мой кабинет</a></li>
+                            <li><a class="dropdown-item" href="/admin/" target="_blank"><i class="bi bi-box-arrow-up-right me-2"></i>Django Admin</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Выйти</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Block -->
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Auto-hide alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                document.querySelectorAll('.alert:not(.alert-permanent)').forEach(alert => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
