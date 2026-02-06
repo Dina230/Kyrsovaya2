@@ -1,36 +1,44 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Аренда коммерческих помещений{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <!-- Hero Section -->
-    <div class="row align-items-center mb-5">
+    <div class="row align-items-center mb-5 animate-fade-in">
         <div class="col-lg-6">
-            <h1 class="display-5 fw-bold mb-4">
+            <h1 class="display-5 fw-bold mb-4 slide-in-left">
                 Найдите идеальное помещение для вашего бизнеса
             </h1>
-            <p class="lead mb-4">
-                Арендуйте коммерческие помещения на любой срок. Офисы, конференц-залы, 
+            <p class="lead mb-4 slide-in-left" style="animation-delay: 0.2s;">
+                Арендуйте коммерческие помещения на любой срок. Офисы, конференц-залы,
                 торговые площади и многое другое в одном месте.
             </p>
-            <div class="d-flex gap-3">
-                <a href="{% url 'property_list' %}" class="btn btn-primary btn-lg">
+            <div class="d-flex gap-3 slide-in-left" style="animation-delay: 0.4s;">
+                <a href="{% url 'property_list' %}" class="btn btn-primary btn-lg btn-hover-glow">
                     <i class="bi bi-search"></i> Найти помещение
                 </a>
                 {% if not user.is_authenticated %}
-                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">
+                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg btn-hover-glow">
                     <i class="bi bi-box-arrow-in-right"></i> Войти
                 </a>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg-6">
-            <div class="card border-0">
-                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+            <div class="card border-0 shadow-lg fade-in-right">
+                {% if hero_photo %}
+                <img src="media/properties/Frame_22.png"
+                     class="card-img-top img-hover-zoom-static"
+                     alt="Коммерческие помещения для аренды"
+                     style="height: 300px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
                      style="height: 300px;">
                     <i class="bi bi-building text-primary" style="font-size: 5rem;"></i>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -38,71 +46,72 @@
     <!-- Features -->
     <div class="row mb-5">
         <div class="col-md-4 text-center mb-4">
-            <div class="card border-0 bg-light p-4 h-100">
-                <i class="bi bi-search display-4 text-primary mb-3"></i>
-                <h4>Поиск</h4>
-                <p>Используйте фильтры для быстрого поиска подходящего помещения</p>
+            <div class="card border-0 bg-light p-4 h-100 hover-card-static">
+                <i class="bi bi-search display-4 text-primary mb-3 icon-pulse"></i>
+                <h4 class="text-fade-in">Поиск</h4>
+                <p class="text-fade-in" style="animation-delay: 0.1s;">Используйте фильтры для быстрого поиска подходящего помещения</p>
             </div>
         </div>
         <div class="col-md-4 text-center mb-4">
-            <div class="card border-0 bg-light p-4 h-100">
-                <i class="bi bi-calendar-check display-4 text-primary mb-3"></i>
-                <h4>Бронирование</h4>
-                <p>Бронируйте онлайн в несколько кликов с подтверждением в реальном времени</p>
+            <div class="card border-0 bg-light p-4 h-100 hover-card-static" style="animation-delay: 0.2s;">
+                <i class="bi bi-calendar-check display-4 text-primary mb-3 icon-pulse"></i>
+                <h4 class="text-fade-in">Бронирование</h4>
+                <p class="text-fade-in" style="animation-delay: 0.3s;">Бронируйте онлайн в несколько кликов с подтверждением в реальном времени</p>
             </div>
         </div>
         <div class="col-md-4 text-center mb-4">
-            <div class="card border-0 bg-light p-4 h-100">
-                <i class="bi bi-shield-check display-4 text-primary mb-3"></i>
-                <h4>Безопасность</h4>
-                <p>Защищенные платежи и официальное подтверждение бронирования</p>
+            <div class="card border-0 bg-light p-4 h-100 hover-card-static" style="animation-delay: 0.4s;">
+                <i class="bi bi-shield-check display-4 text-primary mb-3 icon-pulse"></i>
+                <h4 class="text-fade-in">Безопасность</h4>
+                <p class="text-fade-in" style="animation-delay: 0.5s;">Защищенные платежи и официальное подтверждение бронирования</p>
             </div>
         </div>
     </div>
 
     <!-- Featured Properties -->
-    <h2 class="text-center mb-5">Популярные помещения</h2>
-    
+    <h2 class="text-center mb-5 text-slide-up">Популярные помещения</h2>
+
     {% if properties %}
     <div class="row">
         {% for property in properties %}
         <div class="col-md-4 mb-4">
-            <div class="card property-card h-100">
+            <div class="card property-card h-100 hover-card-static"
+                 style="animation-delay: {{ forloop.counter0|divisibleby:3|yesno:'0,0.2s,0.4s' }}">
                 {% if property.is_featured %}
-                <div class="featured-badge">Рекомендуем</div>
+                <div class="featured-badge badge-pulse">Рекомендуем</div>
                 {% endif %}
-                
+
                 <div class="position-relative">
                     {% if property.images.first %}
-                    <img src="{{ property.images.first.image.url }}" 
-                         class="card-img-top" 
+                    <img src="{{ property.images.first.image.url }}"
+                         class="card-img-top img-hover-zoom-static"
                          alt="{{ property.title }}"
                          style="height: 200px; object-fit: cover;">
                     {% else %}
-                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
                          style="height: 200px;">
-                        <i class="bi bi-building text-secondary" style="font-size: 3rem;"></i>
+                        <i class="bi bi-building text-secondary icon-rotate" style="font-size: 3rem;"></i>
                     </div>
                     {% endif %}
                 </div>
-                
+
                 <div class="card-body">
-                    <h5 class="card-title">{{ property.title }}</h5>
-                    <p class="card-text text-muted">
+                    <h5 class="card-title text-fade-in">{{ property.title }}</h5>
+                    <p class="card-text text-muted text-fade-in" style="animation-delay: 0.1s;">
                         <i class="bi bi-geo-alt"></i> {{ property.city }}
                     </p>
-                    <p class="card-text">{{ property.description|truncatechars:100 }}</p>
-                    
+                    <p class="card-text text-fade-in" style="animation-delay: 0.2s;">{{ property.description|truncatechars:100 }}</p>
+
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <div>
-                            <span class="price-tag">{{ property.price_per_hour|default:"0" }} ₽/час</span>
+                            <span class="price-tag price-glow">{{ property.price_per_hour|default:"0" }} ₽/час</span>
                         </div>
-                        <span class="badge bg-secondary">{{ property.get_property_type_display }}</span>
+                        <span class="badge bg-secondary badge-bounce">{{ property.get_property_type_display }}</span>
                     </div>
                 </div>
-                
+
                 <div class="card-footer bg-white border-0">
-                    <a href="{% url 'property_detail' property.slug %}" class="btn btn-outline-primary w-100">
+                    <a href="{% url 'property_detail' property.slug %}" class="btn btn-outline-primary w-100 btn-hover-glow">
                         Подробнее
                     </a>
                 </div>
@@ -110,18 +119,368 @@
         </div>
         {% endfor %}
     </div>
-    
-    <div class="text-center mt-4">
-        <a href="{% url 'property_list' %}" class="btn btn-primary">
+
+    <div class="text-center mt-4 fade-in-up" style="animation-delay: 0.6s;">
+        <a href="{% url 'property_list' %}" class="btn btn-primary btn-pulse">
             Посмотреть все помещения
         </a>
     </div>
     {% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-building display-1 text-muted"></i>
+    <div class="text-center py-5 fade-in-up">
+        <i class="bi bi-building display-1 text-muted icon-rotate"></i>
         <h3 class="mt-3">Пока нет доступных помещений</h3>
         <p class="text-muted">Загляните позже или свяжитесь с нами</p>
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Анимация появления */
+    .animate-fade-in {
+        opacity: 0;
+        animation: fadeIn 1s ease forwards;
+    }
+
+    @keyframes fadeIn {
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Анимация скольжения слева */
+    .slide-in-left {
+        opacity: 0;
+        transform: translateX(-30px);
+        animation: slideInLeft 0.8s ease forwards;
+    }
+
+    @keyframes slideInLeft {
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Анимация появления справа */
+    .fade-in-right {
+        opacity: 0;
+        transform: translateX(30px);
+        animation: fadeInRight 0.8s ease forwards;
+        animation-delay: 0.3s;
+    }
+
+    @keyframes fadeInRight {
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Анимация появления снизу */
+    .fade-in-up {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.8s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Анимация текста */
+    .text-fade-in {
+        opacity: 0;
+        animation: textFadeIn 0.8s ease forwards;
+    }
+
+    @keyframes textFadeIn {
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Анимация скольжения текста */
+    .text-slide-up {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: textSlideUp 0.8s ease forwards;
+        animation-delay: 0.3s;
+    }
+
+    @keyframes textSlideUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Анимация увеличения изображения (без движения) */
+    .img-hover-zoom-static {
+        transition: transform 0.5s ease, filter 0.3s ease;
+    }
+
+    .img-hover-zoom-static:hover {
+        transform: scale(1.02);
+        filter: brightness(1.05);
+    }
+
+    /* Анимация карточки (без подъема) */
+    .hover-card-static {
+        transition: all 0.3s ease;
+    }
+
+    .hover-card-static:hover {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+        transform: scale(1.01);
+    }
+
+    /* Анимация свечения кнопок */
+    .btn-hover-glow {
+        transition: all 0.3s ease;
+    }
+
+    .btn-hover-glow:hover {
+        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3);
+        transform: translateY(-2px);
+    }
+
+    /* Анимация иконок */
+    .icon-pulse {
+        animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+    }
+
+    .icon-rotate {
+        animation: iconRotate 10s linear infinite;
+    }
+
+    @keyframes iconRotate {
+        0% { transform: rotateY(0); }
+        100% { transform: rotateY(360deg); }
+    }
+
+    /* Анимация цены */
+    .price-glow {
+        animation: priceGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes priceGlow {
+        0%, 100% {
+            color: #2563eb;
+        }
+        50% {
+            color: #1d4ed8;
+            text-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+        }
+    }
+
+    /* Анимация бейджа */
+    .badge-bounce {
+        animation: badgeBounce 2s ease infinite;
+    }
+
+    @keyframes badgeBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+    }
+
+    /* Анимация кнопки */
+    .btn-pulse {
+        animation: btnPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes btnPulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+        }
+    }
+
+    /* Анимация для бейджа "Рекомендуем" */
+    .badge-pulse {
+        animation: badgePulse 2s infinite;
+    }
+
+    @keyframes badgePulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+        }
+    }
+
+    /* Стили для price-tag */
+    .price-tag {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #2563eb;
+        padding: 5px 10px;
+        background: rgba(37, 99, 235, 0.1);
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .hover-card-static:hover .price-tag {
+        background: rgba(37, 99, 235, 0.2);
+    }
+
+    /* Стили для featured-badge */
+    .featured-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ffc107;
+        color: #000;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        z-index: 1;
+    }
+
+    /* Тень для карточек */
+    .shadow-lg {
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Плавные переходы */
+    * {
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Анимация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        // Задержка для последовательной анимации элементов
+        const cards = document.querySelectorAll('.hover-card-static');
+        cards.forEach(function(card, index) {
+            card.style.animationDelay = (index * 0.1) + 's';
+        });
+
+        const texts = document.querySelectorAll('.text-fade-in');
+        texts.forEach(function(text, index) {
+            text.style.animationDelay = (index * 0.1) + 's';
+        });
+
+        // Анимация при наведении на карточки
+        cards.forEach(function(card) {
+            card.addEventListener('mouseenter', function() {
+                const img = this.querySelector('.img-hover-zoom-static');
+                const price = this.querySelector('.price-tag');
+                const badge = this.querySelector('.badge-bounce');
+
+                if (img) {
+                    img.style.transform = 'scale(1.02)';
+                    img.style.filter = 'brightness(1.05)';
+                }
+                if (price) price.classList.add('price-glow');
+                if (badge) badge.style.animation = 'badgeBounce 0.5s ease';
+
+                // Восстанавливаем анимацию после завершения
+                if (badge) {
+                    setTimeout(() => {
+                        badge.style.animation = 'badgeBounce 2s ease infinite';
+                    }, 500);
+                }
+            });
+
+            card.addEventListener('mouseleave', function() {
+                const img = this.querySelector('.img-hover-zoom-static');
+                const price = this.querySelector('.price-tag');
+
+                if (img) {
+                    img.style.transform = 'scale(1)';
+                    img.style.filter = 'brightness(1)';
+                }
+                if (price) price.classList.remove('price-glow');
+            });
+        });
+
+        // Эффект ripple для кнопок
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                if (this.classList.contains('btn-hover-glow')) {
+                    // Создаем эффект волны
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+
+                    ripple.style.cssText = `
+                        position: absolute;
+                        border-radius: 50%;
+                        background: rgba(255, 255, 255, 0.5);
+                        transform: scale(0);
+                        animation: ripple-animation 0.6s linear;
+                        width: ${size}px;
+                        height: ${size}px;
+                        left: ${x}px;
+                        top: ${y}px;
+                        pointer-events: none;
+                    `;
+
+                    this.appendChild(ripple);
+
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                }
+            });
+        });
+
+        // Добавляем стили для ripple эффекта
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple-animation {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+
+            .btn {
+                position: relative;
+                overflow: hidden;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Параллакс эффект для hero секции (очень легкий)
+        const heroSection = document.querySelector('.animate-fade-in');
+        window.addEventListener('scroll', function() {
+            if (heroSection) {
+                const scrolled = window.pageYOffset;
+                const rate = scrolled * -0.5;
+                heroSection.style.transform = `translateY(${rate}px)`;
+            }
+        });
+    });
+</script>
 {% endblock %}
