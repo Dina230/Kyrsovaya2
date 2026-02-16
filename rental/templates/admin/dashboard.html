@@ -1,4 +1,5 @@
 {% extends 'admin/base_admin.html' %}
+{% load static %}
 
 {% block title %}Дашборд - Админ-панель{% endblock %}
 
@@ -8,64 +9,282 @@
 <li class="breadcrumb-item active">Дашборд</li>
 {% endblock %}
 
+{% block extra_css %}
+<!-- Chart.js -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
+<style>
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+        margin: 10px 0;
+    }
+    .stats-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .filter-badge {
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 8px 16px;
+        border-radius: 20px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+    .filter-badge:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+    }
+    .filter-badge.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    .stat-card-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+    }
+    .stats-users { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stats-properties { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stats-bookings { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .stats-revenue { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .stats-card .card-body {
+        color: white;
+    }
+    .stats-card .stats-icon {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        font-size: 48px;
+        opacity: 0.3;
+    }
+    .stats-card .stats-value {
+        font-size: 32px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .stats-card .stats-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    .stats-card .text-muted {
+        color: rgba(255,255,255,0.8) !important;
+    }
+    .badge-admin {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .badge-type-landlord { background: #e3f2fd; color: #1976d2; }
+    .badge-type-tenant { background: #e8f5e8; color: #388e3c; }
+    .badge-type-admin { background: #f3e5f5; color: #7b1fa2; }
+    .badge-status-pending { background: #fff3e0; color: #f57c00; }
+    .badge-status-confirmed { background: #e8f5e8; color: #388e3c; }
+    .badge-status-cancelled { background: #ffebee; color: #d32f2f; }
+    .badge-status-completed { background: #e8eaf6; color: #3f51b5; }
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .admin-table th {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 2px solid #dee2e6;
+        color: #6c757d;
+        font-weight: 600;
+        font-size: 13px;
+    }
+    .admin-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .admin-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .admin-card .card-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        background: #f8f9fa;
+    }
+    .admin-card .card-body {
+        padding: 20px;
+    }
+    .btn-admin-primary {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    .btn-admin-primary:hover {
+        background: var(--secondary-color);
+        transform: translateY(-2px);
+    }
+    .btn-admin-success {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    .btn-admin-success:hover {
+        background: #218838;
+        transform: translateY(-2px);
+    }
+    .btn-admin-info {
+        background: #17a2b8;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    .btn-admin-info:hover {
+        background: #138496;
+        transform: translateY(-2px);
+    }
+    .btn-admin-warning {
+        background: #ffc107;
+        color: #212529;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    .btn-admin-warning:hover {
+        background: #e0a800;
+        transform: translateY(-2px);
+    }
+    :root {
+        --primary-color: #667eea;
+        --secondary-color: #764ba2;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
-    <!-- Статистика -->
+    <!-- Статистика (кликабельная) -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="admin-card stats-card stats-users">
-            <div class="card-body">
-                <div class="stats-icon">
-                    <i class="bi bi-people"></i>
-                </div>
-                <div class="stats-value">{{ stats.total_users|default:"0" }}</div>
-                <div class="stats-label">Всего пользователей</div>
-                <div class="text-muted small">
-                    <i class="bi bi-plus text-success"></i> {{ stats.new_users_today|default:"0" }} сегодня
+        <a href="{% url 'admin_user_management' %}" class="stat-card-link">
+            <div class="admin-card stats-card stats-users">
+                <div class="card-body position-relative">
+                    <div class="stats-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stats-value">{{ stats.total_users|default:"0" }}</div>
+                    <div class="stats-label">Всего пользователей</div>
+                    <div class="text-muted small">
+                        <i class="bi bi-plus text-white"></i> {{ stats.new_users_today|default:"0" }} сегодня
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="admin-card stats-card stats-properties">
-            <div class="card-body">
-                <div class="stats-icon">
-                    <i class="bi bi-buildings"></i>
-                </div>
-                <div class="stats-value">{{ stats.total_properties|default:"0" }}</div>
-                <div class="stats-label">Всего помещений</div>
-                <div class="text-muted small">
-                    {{ stats.active_properties|default:"0" }} активных
+        <a href="{% url 'admin_property_management' %}" class="stat-card-link">
+            <div class="admin-card stats-card stats-properties">
+                <div class="card-body position-relative">
+                    <div class="stats-icon">
+                        <i class="bi bi-buildings"></i>
+                    </div>
+                    <div class="stats-value">{{ stats.total_properties|default:"0" }}</div>
+                    <div class="stats-label">Всего помещений</div>
+                    <div class="text-muted small">
+                        {{ stats.active_properties|default:"0" }} активных
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="admin-card stats-card stats-bookings">
-            <div class="card-body">
-                <div class="stats-icon">
-                    <i class="bi bi-calendar-check"></i>
-                </div>
-                <div class="stats-value">{{ stats.pending_bookings|default:"0" }}</div>
-                <div class="stats-label">Ожидают подтверждения</div>
-                <div class="text-muted small">
-                    {{ stats.today_bookings|default:"0" }} сегодня
+        <a href="{% url 'admin_booking_management' %}?status=pending" class="stat-card-link">
+            <div class="admin-card stats-card stats-bookings">
+                <div class="card-body position-relative">
+                    <div class="stats-icon">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="stats-value">{{ stats.pending_bookings|default:"0" }}</div>
+                    <div class="stats-label">Ожидают подтверждения</div>
+                    <div class="text-muted small">
+                        {{ stats.today_bookings|default:"0" }} сегодня
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
         <div class="admin-card stats-card stats-revenue">
-            <div class="card-body">
+            <div class="card-body position-relative">
                 <div class="stats-icon">
                     <i class="bi bi-cash-coin"></i>
                 </div>
                 <div class="stats-value">{{ stats.month_revenue|default:"0"|floatformat:0 }} ₽</div>
                 <div class="stats-label">Выручка за 30 дней</div>
                 <div class="text-muted small">
-                    <i class="bi bi-graph-up text-success"></i> {{ stats.new_bookings_week|default:"0" }} за неделю
+                    <i class="bi bi-graph-up text-white"></i> {{ stats.new_bookings_week|default:"0" }} за неделю
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Диаграммы -->
+<div class="row mb-4">
+    <!-- График динамики бронирований -->
+    <div class="col-lg-8 mb-4">
+        <div class="admin-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Динамика бронирований за последние 7 дней</h6>
+                <div>
+                    <span class="badge bg-success me-1">Подтвержденные</span>
+                    <span class="badge bg-warning me-1">В ожидании</span>
+                    <span class="badge bg-danger">Отмененные</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="bookingsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Круговая диаграмма распределения помещений -->
+    <div class="col-lg-4 mb-4">
+        <div class="admin-card h-100">
+            <div class="card-header">
+                <h6 class="mb-0">Распределение помещений по типам</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="propertiesChart"></canvas>
                 </div>
             </div>
         </div>
@@ -272,7 +491,10 @@
                             <div class="me-3">
                                 <i class="bi bi-database text-primary fs-4"></i>
                             </div>
-
+                            <div>
+                                <div class="fw-medium">База данных</div>
+                                <small class="text-muted">Подключена</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -280,4 +502,119 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Данные из контекста Django
+    const chartLabels = JSON.parse('{{ chart_labels|safe }}');
+    const chartConfirmed = JSON.parse('{{ chart_confirmed|safe }}');
+    const chartPending = JSON.parse('{{ chart_pending|safe }}');
+    const chartCancelled = JSON.parse('{{ chart_cancelled|safe }}');
+    const propertyLabels = JSON.parse('{{ property_labels|safe }}');
+    const propertyData = JSON.parse('{{ property_data|safe }}');
+
+    console.log('Chart Labels:', chartLabels);
+    console.log('Property Labels:', propertyLabels);
+
+    // График бронирований
+    const bookingsCtx = document.getElementById('bookingsChart').getContext('2d');
+    new Chart(bookingsCtx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [
+                {
+                    label: 'Подтвержденные',
+                    data: chartConfirmed,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: 'В ожидании',
+                    data: chartPending,
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: 'Отмененные',
+                    data: chartCancelled,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+
+    // Круговая диаграмма помещений
+    const propertiesCtx = document.getElementById('propertiesChart').getContext('2d');
+    new Chart(propertiesCtx, {
+        type: 'doughnut',
+        data: {
+            labels: propertyLabels,
+            datasets: [{
+                data: propertyData,
+                backgroundColor: [
+                    '#667eea',
+                    '#f093fb',
+                    '#4facfe',
+                    '#43e97b',
+                    '#fa709a'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            },
+            cutout: '65%'
+        }
+    });
+});
+</script>
 {% endblock %}

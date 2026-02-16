@@ -1249,7 +1249,7 @@ def booking_calendar(request, property_id):
 
 @login_required
 def custom_admin_dashboard(request):
-    """Кастомная админ-панель"""
+    """Кастомная админ-панель с диаграммами"""
     if not request.user.is_staff:
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
@@ -1259,6 +1259,7 @@ def custom_admin_dashboard(request):
     week_ago = today - timedelta(days=7)
     month_ago = today - timedelta(days=30)
 
+    # Базовая статистика
     stats = {
         'total_users': User.objects.count(),
         'new_users_today': User.objects.filter(date_joined__date=today).count(),
@@ -1278,17 +1279,61 @@ def custom_admin_dashboard(request):
         'new_bookings_week': Booking.objects.filter(created_at__gte=week_ago).count(),
     }
 
-    # Последние действия
+    # ИСПРАВЛЕНИЕ: Данные для графика бронирований по ДАТЕ СОЗДАНИЯ (последние 7 дней)
+    chart_labels = []
+    chart_confirmed = []
+    chart_pending = []
+    chart_cancelled = []
+
+    for i in range(6, -1, -1):
+        date = today - timedelta(days=i)
+        chart_labels.append(date.strftime('%d.%m'))
+
+        # Бронирования созданные в этот день (НЕ ПО ДАТЕ НАЧАЛА!)
+        day_bookings = Booking.objects.filter(created_at__date=date)
+
+        chart_confirmed.append(day_bookings.filter(status='confirmed').count())
+        chart_pending.append(day_bookings.filter(status='pending').count())
+        chart_cancelled.append(day_bookings.filter(status='cancelled').count())
+
+    # Данные для круговой диаграммы помещений
+    property_types = Property.objects.values('property_type').annotate(
+        count=Count('id')
+    ).order_by('-count')
+
+    property_labels = []
+    property_data = []
+
+    type_names = dict(Property.PROPERTY_TYPE_CHOICES)
+    for item in property_types:
+        property_labels.append(type_names.get(item['property_type'], item['property_type']))
+        property_data.append(item['count'])
+
+    # Если нет данных, добавляем тестовые для демонстрации
+    if not property_labels:
+        property_labels = ['Квартиры', 'Дома', 'Коммерческие', 'Офисы']
+        property_data = [45, 23, 12, 8]
+
+    # Последние пользователи
     recent_users = User.objects.order_by('-date_joined')[:5]
+
+    # Последние бронирования
     recent_bookings = Booking.objects.select_related('property', 'tenant').order_by('-created_at')[:5]
+
+    # Последние отзывы
     recent_reviews = Review.objects.select_related('property', 'user').order_by('-created_at')[:5]
 
-    # Исправленный путь к шаблону - убрано 'core/'
     return render(request, 'admin/dashboard.html', {
         'stats': stats,
         'recent_users': recent_users,
         'recent_bookings': recent_bookings,
         'recent_reviews': recent_reviews,
+        'chart_labels': json.dumps(chart_labels),
+        'chart_confirmed': json.dumps(chart_confirmed),
+        'chart_pending': json.dumps(chart_pending),
+        'chart_cancelled': json.dumps(chart_cancelled),
+        'property_labels': json.dumps(property_labels),
+        'property_data': json.dumps(property_data),
         'title': 'Админ-панель'
     })
 
