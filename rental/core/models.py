@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.text import slugify
+from django.utils import timezone
 import uuid
 from datetime import timedelta
 
@@ -144,6 +145,7 @@ class Property(models.Model):
         ('draft', 'Черновик'),
         ('pending', 'На модерации'),
         ('active', 'Активно'),
+        ('rejected', 'Отклонено'),
         ('inactive', 'Неактивно'),
     ]
 
@@ -256,6 +258,11 @@ class Property(models.Model):
         default='draft',
         verbose_name='Статус'
     )
+    moderation_comment = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Комментарий модератора'
+    )
     views_count = models.PositiveIntegerField(
         default=0,
         verbose_name='Количество просмотров'
@@ -321,7 +328,8 @@ class PropertyImage(models.Model):
 class Booking(models.Model):
     """Модель бронирования"""
     STATUS_CHOICES = [
-        ('pending', 'Ожидание'),
+        ('pending', 'Ожидание оплаты'),
+        ('paid', 'Оплачено'),
         ('confirmed', 'Подтверждено'),
         ('cancelled', 'Отменено'),
         ('completed', 'Завершено'),
@@ -371,6 +379,15 @@ class Booking(models.Model):
         default='pending',
         verbose_name='Статус'
     )
+    is_paid = models.BooleanField(
+        default=False,
+        verbose_name='Оплачено'
+    )
+    payment_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Дата оплаты'
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата создания'
@@ -392,8 +409,8 @@ class Booking(models.Model):
         if not self.booking_id:
             self.booking_id = f"B{self.property.id:04d}-{uuid.uuid4().hex[:6].upper()}"
 
-        # Расчет стоимости
-        if self.start_datetime and self.end_datetime:
+        # Расчет стоимости, если не указана
+        if self.start_datetime and self.end_datetime and not self.total_price:
             duration_hours = (self.end_datetime - self.start_datetime).total_seconds() / 3600
             self.total_price = round(float(self.property.price_per_hour) * duration_hours, 2)
 
@@ -407,6 +424,101 @@ class Booking(models.Model):
             minutes = (duration.seconds % 3600) // 60
             return {'hours': hours, 'minutes': minutes, 'total_hours': duration.total_seconds() / 3600}
         return {'hours': 0, 'minutes': 0, 'total_hours': 0}
+
+
+class Cart(models.Model):
+    """Модель корзины для множественного бронирования"""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cart_items',
+        verbose_name='Пользователь'
+    )
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        verbose_name='Помещение'
+    )
+    start_datetime = models.DateTimeField(
+        verbose_name='Начало бронирования'
+    )
+    end_datetime = models.DateTimeField(
+        verbose_name='Окончание бронирования'
+    )
+    guests = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Количество гостей'
+    )
+    special_requests = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Особые пожелания'
+    )
+    added_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата добавления'
+    )
+
+    class Meta:
+        verbose_name = 'Корзина'
+        verbose_name_plural = 'Корзина'
+        unique_together = ['user', 'property', 'start_datetime', 'end_datetime']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.property.title}"
+
+    def get_total_price(self):
+        """Получить стоимость этого элемента корзины"""
+        duration_hours = (self.end_datetime - self.start_datetime).total_seconds() / 3600
+        return round(float(self.property.price_per_hour) * duration_hours, 2)
+
+
+class Contract(models.Model):
+    """Модель договора аренды"""
+    booking = models.OneToOneField(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='contract',
+        verbose_name='Бронирование'
+    )
+    contract_number = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name='Номер договора'
+    )
+    generated_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата генерации'
+    )
+    pdf_file = models.FileField(
+        upload_to='contracts/%Y/%m/%d/',
+        verbose_name='PDF файл',
+        blank=True,
+        null=True
+    )
+    signed_by_tenant = models.BooleanField(
+        default=False,
+        verbose_name='Подписан арендатором'
+    )
+    signed_by_landlord = models.BooleanField(
+        default=False,
+        verbose_name='Подписан арендодателем'
+    )
+
+    class Meta:
+        verbose_name = 'Договор'
+        verbose_name_plural = 'Договоры'
+
+    def __str__(self):
+        return f"Договор №{self.contract_number}"
+
+    def save(self, *args, **kwargs):
+        if not self.contract_number:
+            # Генерация номера: CON-ГОД-МЕСЯЦ-ID
+            from datetime import datetime
+            now = datetime.now()
+            self.contract_number = f"CON-{now.year}-{now.month:02d}-{self.booking.id:06d}"
+        super().save(*args, **kwargs)
 
 
 class Review(models.Model):
@@ -428,6 +540,14 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name='reviews',
         verbose_name='Пользователь'
+    )
+    booking = models.OneToOneField(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='review',
+        null=True,
+        blank=True,
+        verbose_name='Бронирование'
     )
     rating = models.PositiveIntegerField(
         verbose_name='Рейтинг',
@@ -468,7 +588,7 @@ class Review(models.Model):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         ordering = ['-created_at']
-        unique_together = ['property', 'user']
+        unique_together = ['property', 'user', 'booking']
 
     def __str__(self):
         return f'Отзыв от {self.user} на {self.property} ({self.rating}/5)'
@@ -507,8 +627,11 @@ class Notification(models.Model):
     """Модель уведомлений"""
     NOTIFICATION_TYPES = [
         ('booking_created', 'Новое бронирование'),
+        ('booking_paid', 'Бронирование оплачено'),
         ('booking_confirmed', 'Бронирование подтверждено'),
         ('booking_cancelled', 'Бронирование отменено'),
+        ('booking_completed', 'Бронирование завершено'),
+        ('contract_signed', 'Договор подписан'),
         ('review_added', 'Добавлен отзыв'),
         ('message_received', 'Новое сообщение'),
         ('system', 'Системное уведомление'),

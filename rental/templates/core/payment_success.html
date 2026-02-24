@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оплата прошла успешно{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card text-center">
+                <div class="card-body py-5">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                    </div>
+                    <h2 class="mb-3">Оплата прошла успешно!</h2>
+                    <p class="lead mb-4">
+                        Бронирование #{{ booking.booking_id }} оплачено.
+                    </p>
+                    <p class="mb-4">
+                        Договор аренды доступен для скачивания в личном кабинете.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'booking_detail' booking.id %}" class="btn btn-primary">
+                            <i class="bi bi-calendar-check"></i> Перейти к бронированию
+                        </a>
+                        <a href="{% url 'download_contract' booking.id %}" class="btn btn-outline-success">
+                            <i class="bi bi-file-pdf"></i> Скачать договор
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-house"></i> В личный кабинет
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

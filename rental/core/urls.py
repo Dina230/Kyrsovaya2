@@ -35,6 +35,15 @@ urlpatterns = [
     path('bookings/<int:booking_id>/', views.booking_detail, name='booking_detail'),
     path('bookings/<int:booking_id>/cancel/', views.cancel_booking, name='cancel_booking'),
     path('bookings/<int:booking_id>/review/', views.add_review, name='add_review'),
+    path('bookings/<int:booking_id>/payment/', views.payment, name='payment'),
+    path('bookings/<int:booking_id>/payment/success/', views.payment_success, name='payment_success'),
+    path('bookings/<int:booking_id>/contract/download/', views.download_contract, name='download_contract'),
+
+    # Корзина (новый функционал)
+    path('cart/', views.cart_detail, name='cart_detail'),
+    path('cart/add/<int:property_id>/', views.cart_add, name='cart_add'),
+    path('cart/remove/<int:item_id>/', views.cart_remove, name='cart_remove'),
+    path('checkout/', views.checkout, name='checkout'),
 
     # Для арендодателя
     path('my-properties/', views.my_properties, name='my_properties'),
@@ -54,24 +63,16 @@ urlpatterns = [
     path('properties/<int:property_id>/book/', views.create_booking, name='create_booking'),
     path('api/properties/<int:property_id>/book-ajax/', views.ajax_create_booking, name='ajax_create_booking'),
 
-    # Кастомная админка (ПРЕФИКС admin-panel/)
+    # Кастомная админка
     path('admin-panel/dashboard/', views.custom_admin_dashboard, name='custom_admin_dashboard'),
     path('admin-panel/users/', views.admin_user_management, name='admin_user_management'),
     path('admin-panel/users/export/', views.export_users_csv, name='export_users_csv'),
-    path('admin-panel/users/add/', views.admin_add_user, name='admin_add_user'),
-    path('admin-panel/users/edit/<int:user_id>/', views.admin_edit_user, name='admin_edit_user'),
     path('admin-panel/properties/', views.admin_property_management, name='admin_property_management'),
-    path('admin-panel/properties/add/', views.admin_add_property, name='admin_add_property'),
-    path('admin-panel/properties/edit/<int:property_id>/', views.admin_edit_property, name='admin_edit_property'),
     path('admin-panel/bookings/', views.admin_booking_management, name='admin_booking_management'),
-    path('admin-panel/bookings/edit/<int:booking_id>/', views.admin_edit_booking, name='admin_edit_booking'),
     path('admin-panel/reviews/', views.admin_review_management, name='admin_review_management'),
-    path('admin-panel/reviews/edit/<int:review_id>/', views.admin_edit_review, name='admin_edit_review'),
-    path('admin-panel/settings/', views.admin_system_settings, name='admin_system_settings'),
 
     # Встроенные Django представления для сброса пароля
-    path('password-reset/',
-         auth_views.PasswordResetView.as_view(template_name='core/password_reset.html'),
+    path('password-reset/', auth_views.PasswordResetView.as_view(template_name='core/password_reset.html'),
          name='password_reset'),
     path('password-reset/done/',
          auth_views.PasswordResetDoneView.as_view(template_name='core/password_reset_done.html'),

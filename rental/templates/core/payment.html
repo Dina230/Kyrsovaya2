@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оплата бронирования{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Оплата бронирования #{{ booking.booking_id }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">Сумма к оплате:</h5>
+                        <h2 class="text-primary">{{ booking.total_price }} ₽</h2>
+                        <hr>
+                        <p class="mb-0">
+                            <strong>Помещение:</strong> {{ booking.property.title }}<br>
+                            <strong>Дата:</strong> {{ booking.start_datetime|date:"d.m.Y H:i" }} - {{ booking.end_datetime|date:"d.m.Y H:i" }}
+                        </p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">Данные карты (имитация)</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Номер карты</label>
+                            <input type="text" class="form-control" name="card_number" 
+                                   placeholder="4242 4242 4242 4242" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Срок действия</label>
+                                <input type="text" class="form-control" name="expiry" 
+                                       placeholder="MM/YY" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">CVV</label>
+                                <input type="text" class="form-control" name="cvv" 
+                                       placeholder="123" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Метод оплаты</label>
+                            <select class="form-select" name="payment_method">
+                                <option value="card">Банковская карта</option>
+                                <option value="sbp">СБП</option>
+                                <option value="cash">Наличными при встрече</option>
+                            </select>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Это демонстрационная оплата. Введите любые данные для теста.
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-credit-card"></i> Оплатить {{ booking.total_price }} ₽
+                            </button>
+                            <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
+                                Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

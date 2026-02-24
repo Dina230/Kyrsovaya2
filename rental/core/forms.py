@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import datetime, timedelta
 import re
-from .models import User, Property, Booking, Review, Favorite, Category, Amenity
+from .models import User, Property, Booking, Review, Favorite, Category, Amenity, Cart
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -196,7 +196,7 @@ class PropertyForm(forms.ModelForm):
         label='Изображения'
     )
 
-    # Добавляем поля для цены за день, неделю, месяц
+    # Поля для цен
     price_per_day = forms.DecimalField(
         required=False,
         min_value=0,
@@ -310,16 +310,13 @@ class PropertyForm(forms.ModelForm):
         # Устанавливаем начальные значения для цен при редактировании
         if self.instance and self.instance.pk:
             if not self.initial.get('price_per_day') and self.instance.price_per_hour:
-                # Автоматический расчет если нет цены за день
                 self.initial['price_per_day'] = self.instance.price_per_hour * 8
 
             if not self.initial.get('price_per_week') and self.instance.price_per_hour:
-                # Автоматический расчет если нет цены за неделю
-                self.initial['price_per_week'] = self.instance.price_per_hour * 8 * 5  # 5 рабочих дней
+                self.initial['price_per_week'] = self.instance.price_per_hour * 8 * 5
 
             if not self.initial.get('price_per_month') and self.instance.price_per_hour:
-                # Автоматический расчет если нет цены за месяц
-                self.initial['price_per_month'] = self.instance.price_per_hour * 8 * 20  # 20 рабочих дней
+                self.initial['price_per_month'] = self.instance.price_per_hour * 8 * 20
 
 
 class BookingForm(forms.ModelForm):
@@ -471,7 +468,7 @@ class BookingForm(forms.ModelForm):
         if self.property_obj:
             conflicting_bookings = Booking.objects.filter(
                 property=self.property_obj,
-                status__in=['confirmed', 'pending'],
+                status__in=['pending', 'paid', 'confirmed'],
                 start_datetime__lt=end_datetime,
                 end_datetime__gt=start_datetime
             ).exclude(id=self.instance.id if self.instance else None)
@@ -508,7 +505,7 @@ class BookingForm(forms.ModelForm):
                 if self.property_obj.price_per_week:
                     price = float(self.property_obj.price_per_week) * weeks
                 elif self.property_obj.price_per_day:
-                    price = float(self.property_obj.price_per_day) * 5 * weeks  # 5 рабочих дней в неделю
+                    price = float(self.property_obj.price_per_day) * 5 * weeks
                 else:
                     price = float(self.property_obj.price_per_hour) * 8 * 5 * weeks
             elif booking_type == 'monthly':
@@ -516,9 +513,9 @@ class BookingForm(forms.ModelForm):
                 if self.property_obj.price_per_month:
                     price = float(self.property_obj.price_per_month) * months
                 elif self.property_obj.price_per_week:
-                    price = float(self.property_obj.price_per_week) * 4 * months  # 4 недели в месяц
+                    price = float(self.property_obj.price_per_week) * 4 * months
                 elif self.property_obj.price_per_day:
-                    price = float(self.property_obj.price_per_day) * 20 * months  # 20 рабочих дней в месяц
+                    price = float(self.property_obj.price_per_day) * 20 * months
                 else:
                     price = float(self.property_obj.price_per_hour) * 8 * 20 * months
 
@@ -537,6 +534,124 @@ class BookingForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class CartBookingForm(forms.Form):
+    """Форма для добавления в корзину"""
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'id': 'cart_start_date'
+        }),
+        label='Дата начала'
+    )
+    end_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'id': 'cart_end_date'
+        }),
+        label='Дата окончания'
+    )
+    start_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'type': 'time',
+            'class': 'form-control',
+            'id': 'cart_start_time'
+        }),
+        label='Время начала',
+        initial='09:00'
+    )
+    end_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'type': 'time',
+            'class': 'form-control',
+            'id': 'cart_end_time'
+        }),
+        label='Время окончания',
+        initial='18:00'
+    )
+    guests = forms.IntegerField(
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': 1,
+            'id': 'cart_guests'
+        }),
+        label='Количество гостей'
+    )
+    special_requests = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Особые пожелания (необязательно)',
+            'id': 'cart_special_requests'
+        }),
+        label='Особые пожелания'
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.property_obj = kwargs.pop('property_obj', None)
+        super().__init__(*args, **kwargs)
+
+        today = timezone.now().date().strftime('%Y-%m-%d')
+        self.fields['start_date'].widget.attrs['min'] = today
+        self.fields['end_date'].widget.attrs['min'] = today
+
+        tomorrow = timezone.now() + timedelta(days=1)
+        self.fields['start_date'].initial = tomorrow.date()
+        self.fields['end_date'].initial = tomorrow.date()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        guests = cleaned_data.get('guests')
+
+        if not all([start_date, end_date, start_time, end_time]):
+            raise ValidationError('Все даты и времена должны быть заполнены.')
+
+        start_datetime = timezone.make_aware(datetime.combine(start_date, start_time))
+        end_datetime = timezone.make_aware(datetime.combine(end_date, end_time))
+
+        if start_datetime < timezone.now():
+            raise ValidationError({'start_date': 'Нельзя бронировать на прошедшие даты.'})
+
+        if end_datetime <= start_datetime:
+            raise ValidationError({'end_date': 'Дата окончания должна быть позже даты начала.'})
+
+        if self.property_obj:
+            conflicting_bookings = Booking.objects.filter(
+                property=self.property_obj,
+                status__in=['pending', 'paid', 'confirmed'],
+                start_datetime__lt=end_datetime,
+                end_datetime__gt=start_datetime
+            ).exists()
+
+            if conflicting_bookings:
+                raise ValidationError('Выбранное время уже занято другим бронированием.')
+
+            if guests and guests > self.property_obj.capacity:
+                raise ValidationError(
+                    {'guests': f'Превышена вместимость помещения. Максимум: {self.property_obj.capacity} человек.'})
+
+        cleaned_data['start_datetime'] = start_datetime
+        cleaned_data['end_datetime'] = end_datetime
+
+        return cleaned_data
+
+
+class CheckoutForm(forms.Form):
+    """Форма оформления заказа"""
+    agree_to_terms = forms.BooleanField(
+        required=True,
+        label='Я согласен с условиями аренды'
+    )
 
 
 class ReviewForm(forms.ModelForm):
@@ -646,7 +761,7 @@ class AdminPropertyEditForm(forms.ModelForm):
         fields = ['title', 'description', 'property_type', 'category', 'city',
                   'address', 'price_per_hour', 'price_per_day', 'price_per_week',
                   'price_per_month', 'capacity', 'area', 'floor', 'amenities',
-                  'is_featured', 'status', 'landlord']
+                  'is_featured', 'status', 'landlord', 'moderation_comment']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
@@ -665,6 +780,7 @@ class AdminPropertyEditForm(forms.ModelForm):
             'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'landlord': forms.Select(attrs={'class': 'form-select'}),
+            'moderation_comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
 
@@ -674,7 +790,7 @@ class AdminBookingEditForm(forms.ModelForm):
     class Meta:
         model = Booking
         fields = ['property', 'tenant', 'start_datetime', 'end_datetime',
-                  'guests', 'special_requests', 'total_price', 'status']
+                  'guests', 'special_requests', 'total_price', 'status', 'is_paid']
         widgets = {
             'property': forms.Select(attrs={'class': 'form-select'}),
             'tenant': forms.Select(attrs={'class': 'form-select'}),
@@ -693,6 +809,7 @@ class AdminBookingEditForm(forms.ModelForm):
             }),
             'total_price': forms.NumberInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'is_paid': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -759,31 +876,26 @@ class SearchForm(forms.Form):
             'placeholder': 'Макс. цена'
         })
     )
-
-
-class FilterForm(forms.Form):
-    """Форма фильтрации"""
-    status = forms.ChoiceField(
-        required=False,
-        choices=[('', 'Все статусы'), ('active', 'Активные'), ('inactive', 'Неактивные')],
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    user_type = forms.ChoiceField(
-        required=False,
-        choices=[('', 'Все типы')] + list(User.USER_TYPE_CHOICES),
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    date_from = forms.DateField(
+    date = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={
             'type': 'date',
             'class': 'form-control'
-        })
+        }),
+        label='Дата'
     )
-    date_to = forms.DateField(
+    time = forms.TimeField(
         required=False,
-        widget=forms.DateInput(attrs={
-            'type': 'date',
+        widget=forms.TimeInput(attrs={
+            'type': 'time',
             'class': 'form-control'
-        })
+        }),
+        label='Время'
+    )
+    available_only = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input'
+        }),
+        label='Только доступные'
     )

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Бронирование #{{ booking.booking_id }}{% endblock %}
 
@@ -8,12 +9,20 @@
         font-size: 0.9rem;
         padding: 0.5rem 1rem;
         border-radius: 50px;
+        display: inline-block;
+        font-weight: 600;
     }
 
     .status-pending {
         background-color: #fff3cd;
         color: #856404;
         border: 1px solid #ffeaa7;
+    }
+
+    .status-paid {
+        background-color: #cce5ff;
+        color: #004085;
+        border: 1px solid #b8daff;
     }
 
     .status-confirmed {
@@ -77,47 +86,106 @@
         box-shadow: 0 0 0 2px #007bff;
     }
 
+    .timeline-item.completed::before {
+        background-color: #28a745;
+        box-shadow: 0 0 0 2px #28a745;
+    }
+
+    .timeline-item.current::before {
+        background-color: #ffc107;
+        box-shadow: 0 0 0 2px #ffc107;
+    }
+
     .btn-action {
         min-width: 120px;
+    }
+
+    .property-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .contract-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .contract-card .btn {
+        background: white;
+        color: #667eea;
+        border: none;
+    }
+
+    .contract-card .btn:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+    }
+
+    .payment-timer {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #dc3545;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <!-- Breadcrumbs -->
+    <!-- Хлебные крошки -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'my_bookings' %}">Мои бронирования</a></li>
+            <li class="breadcrumb-item">
+                {% if user.user_type == 'tenant' %}
+                <a href="{% url 'my_bookings' %}">Мои бронирования</a>
+                {% elif user.user_type == 'landlord' %}
+                <a href="{% url 'landlord_bookings' %}">Бронирования</a>
+                {% endif %}
+            </li>
             <li class="breadcrumb-item active">Бронирование #{{ booking.booking_id }}</li>
         </ol>
     </nav>
 
-    <!-- Header -->
+    <!-- Заголовок и статус -->
     <div class="row mb-4">
         <div class="col-md-8">
-            <h1 class="h2 mb-2">Бронирование #{{ booking.booking_id }}</h1>
-            <div class="d-flex align-items-center">
-                <span class="booking-status status-{{ booking.status }} me-3">
-                    <i class="fas fa-clock me-1"></i>
-                    {{ booking.get_status_display }}
+            <div class="d-flex align-items-center flex-wrap gap-3">
+                <h1 class="h2 mb-0">Бронирование #{{ booking.booking_id }}</h1>
+                <span class="booking-status status-{{ booking.status }}">
+                    {% if booking.status == 'pending' %}
+                        <i class="bi bi-hourglass-split"></i> Ожидает оплаты
+                    {% elif booking.status == 'paid' %}
+                        <i class="bi bi-credit-card"></i> Оплачено
+                    {% elif booking.status == 'confirmed' %}
+                        <i class="bi bi-check-circle"></i> Подтверждено
+                    {% elif booking.status == 'cancelled' %}
+                        <i class="bi bi-x-circle"></i> Отменено
+                    {% elif booking.status == 'completed' %}
+                        <i class="bi bi-check-all"></i> Завершено
+                    {% endif %}
                 </span>
-                <small class="text-muted">
-                    <i class="fas fa-calendar-alt me-1"></i>
-                    Создано: {{ booking.created_at|date:"d.m.Y H:i" }}
-                </small>
             </div>
+            <p class="text-muted mt-2">
+                <i class="bi bi-calendar"></i> Создано: {{ booking.created_at|date:"d.m.Y H:i" }}
+            </p>
         </div>
         <div class="col-md-4 text-md-end mt-3 mt-md-0">
             <div class="btn-group" role="group">
                 <a href="{% url 'property_detail' booking.property.slug %}"
                    class="btn btn-outline-primary">
-                    <i class="fas fa-building"></i> К помещению
+                    <i class="bi bi-building"></i> К помещению
                 </a>
                 {% if can_cancel %}
-                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
-                    <i class="fas fa-times-circle"></i> Отменить
+                <button type="button" class="btn btn-outline-danger"
+                        data-bs-toggle="modal" data-bs-target="#cancelModal">
+                    <i class="bi bi-x-circle"></i> Отменить
                 </button>
                 {% endif %}
             </div>
@@ -125,55 +193,69 @@
     </div>
 
     <div class="row">
-        <!-- Left Column - Booking Details -->
+        <!-- Левая колонка - Детали бронирования -->
         <div class="col-lg-8">
-            <!-- Property Info Card -->
+            <!-- Карточка помещения -->
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-building me-2"></i>
-                        Помещение
+                        <i class="bi bi-building me-2"></i>
+                        Информация о помещении
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             {% if booking.property.get_main_image %}
                             <img src="{{ booking.property.get_main_image.image.url }}"
-                                 class="img-fluid rounded"
+                                 class="property-image"
                                  alt="{{ booking.property.title }}">
                             {% else %}
-                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 150px;">
-                                <i class="fas fa-building text-muted fa-2x"></i>
+                            <div class="property-image bg-light d-flex align-items-center justify-content-center">
+                                <i class="bi bi-building text-muted fs-1"></i>
                             </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-9">
-                            <h5>
+                        <div class="col-md-8">
+                            <h4>
                                 <a href="{% url 'property_detail' booking.property.slug %}"
                                    class="text-decoration-none">
                                     {{ booking.property.title }}
                                 </a>
-                            </h5>
-                            <p class="text-muted mb-2">
-                                <i class="fas fa-map-marker-alt"></i> {{ booking.property.address }}, {{ booking.property.city }}
+                            </h4>
+                            <p class="text-muted mb-3">
+                                <i class="bi bi-geo-alt"></i>
+                                {{ booking.property.address }}, {{ booking.property.city }}
                             </p>
-                            <div class="row">
+
+                            <div class="row g-3">
                                 <div class="col-6 col-md-3">
-                                    <small class="text-muted d-block">Площадь</small>
-                                    <strong>{{ booking.property.area }} м²</strong>
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <i class="bi bi-arrows-fullscreen text-primary"></i>
+                                        <div class="small text-muted">Площадь</div>
+                                        <strong>{{ booking.property.area }} м²</strong>
+                                    </div>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <small class="text-muted d-block">Вместимость</small>
-                                    <strong>{{ booking.property.capacity }} чел.</strong>
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <i class="bi bi-people text-primary"></i>
+                                        <div class="small text-muted">Вместимость</div>
+                                        <strong>{{ booking.property.capacity }} чел.</strong>
+                                    </div>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <small class="text-muted d-block">Тип</small>
-                                    <strong>{{ booking.property.get_property_type_display }}</strong>
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <i class="bi bi-tag text-primary"></i>
+                                        <div class="small text-muted">Тип</div>
+                                        <strong>{{ booking.property.get_property_type_display }}</strong>
+                                    </div>
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <small class="text-muted d-block">Владелец</small>
-                                    <strong>{{ booking.property.landlord.get_full_name_or_username }}</strong>
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <i class="bi bi-person text-primary"></i>
+                                        <div class="small text-muted">Владелец</div>
+                                        <strong>{{ booking.property.landlord.get_full_name_or_username }}</strong>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -181,283 +263,273 @@
                 </div>
             </div>
 
-            <!-- Booking Timeline -->
+            <!-- Таймлайн бронирования -->
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-calendar-check me-2"></i>
+                        <i class="bi bi-clock-history me-2"></i>
                         Детали бронирования
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="timeline">
-                        <div class="timeline-item">
-                            <h6 class="mb-1">Начало бронирования</h6>
+                        <div class="timeline-item {% if booking.status != 'pending' %}completed{% endif %}">
+                            <h6 class="mb-1">Создание бронирования</h6>
                             <p class="mb-0 text-muted">
-                                <i class="fas fa-calendar me-1"></i>
-                                {{ booking.start_datetime|date:"d.m.Y" }}
-                                <i class="fas fa-clock ms-3 me-1"></i>
-                                {{ booking.start_datetime|date:"H:i" }}
+                                <i class="bi bi-calendar-check me-1"></i>
+                                {{ booking.created_at|date:"d.m.Y H:i" }}
                             </p>
                         </div>
 
-                        <div class="timeline-item">
-                            <h6 class="mb-1">Окончание бронирования</h6>
+                        <div class="timeline-item {% if booking.status == 'paid' or booking.status == 'confirmed' or booking.status == 'completed' %}completed{% elif booking.status == 'pending' %}current{% endif %}">
+                            <h6 class="mb-1">Оплата</h6>
+                            {% if booking.is_paid %}
                             <p class="mb-0 text-muted">
-                                <i class="fas fa-calendar me-1"></i>
-                                {{ booking.end_datetime|date:"d.m.Y" }}
-                                <i class="fas fa-clock ms-3 me-1"></i>
-                                {{ booking.end_datetime|date:"H:i" }}
+                                <i class="bi bi-check-circle text-success me-1"></i>
+                                Оплачено {{ booking.payment_date|date:"d.m.Y H:i" }}
                             </p>
-                        </div>
-
-                        <div class="timeline-item">
-                            <h6 class="mb-1">Длительность</h6>
-                            <p class="mb-0">
-                                {% if hours_count >= 24 %}
-                                <span class="badge bg-info fs-6">
-                                    {{ days_count }} дней ({{ hours_count|floatformat:1 }} часов)
-                                </span>
+                            {% else %}
+                            <p class="mb-0 text-muted">
+                                {% if booking.status == 'pending' %}
+                                <span class="text-warning">Ожидает оплаты</span>
                                 {% else %}
-                                <span class="badge bg-info fs-6">
-                                    {{ hours_count|floatformat:1 }} часов
-                                </span>
+                                <span class="text-danger">Не оплачено</span>
                                 {% endif %}
                             </p>
+                            {% endif %}
                         </div>
 
-                        <div class="timeline-item">
-                            <h6 class="mb-1">Количество гостей</h6>
-                            <p class="mb-0">
-                                <span class="badge bg-secondary fs-6">
-                                    {{ booking.guests }} человек
-                                </span>
+                        <div class="timeline-item {% if booking.status == 'confirmed' or booking.status == 'completed' %}completed{% elif booking.status == 'paid' %}current{% endif %}">
+                            <h6 class="mb-1">Подтверждение владельцем</h6>
+                            {% if booking.status == 'confirmed' or booking.status == 'completed' %}
+                            <p class="mb-0 text-muted">
+                                <i class="bi bi-check-circle text-success me-1"></i>
+                                Подтверждено
                             </p>
+                            {% elif booking.status == 'paid' %}
+                            <p class="mb-0 text-muted">
+                                <span class="text-warning">Ожидает подтверждения</span>
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-muted">
+                                <span class="text-secondary">Ожидает оплаты</span>
+                            </p>
+                            {% endif %}
                         </div>
 
-                        {% if booking.special_requests %}
-                        <div class="timeline-item">
-                            <h6 class="mb-1">Особые пожелания</h6>
-                            <p class="mb-0">{{ booking.special_requests }}</p>
+                        <div class="timeline-item {% if booking.status == 'completed' %}completed{% endif %}">
+                            <h6 class="mb-1">Завершение</h6>
+                            {% if booking.status == 'completed' %}
+                            <p class="mb-0 text-muted">
+                                <i class="bi bi-check-circle text-success me-1"></i>
+                                Завершено {{ booking.updated_at|date:"d.m.Y H:i" }}
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-muted">
+                                {{ booking.end_datetime|date:"d.m.Y H:i" }}
+                            </p>
+                            {% endif %}
                         </div>
-                        {% endif %}
                     </div>
-                </div>
-            </div>
 
-            <!-- Status History -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-history me-2"></i>
-                        История статусов
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Дата</th>
-                                    <th>Статус</th>
-                                    <th>Комментарий</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>{{ booking.created_at|date:"d.m.Y H:i" }}</td>
-                                    <td>
-                                        <span class="badge bg-warning">Создано</span>
-                                    </td>
-                                    <td>Бронирование создано</td>
-                                </tr>
-                                {% if booking.status == 'confirmed' %}
-                                <tr>
-                                    <td>{{ booking.updated_at|date:"d.m.Y H:i" }}</td>
-                                    <td>
-                                        <span class="badge bg-success">Подтверждено</span>
-                                    </td>
-                                    <td>Подтверждено владельцем</td>
-                                </tr>
-                                {% elif booking.status == 'cancelled' %}
-                                <tr>
-                                    <td>{{ booking.updated_at|date:"d.m.Y H:i" }}</td>
-                                    <td>
-                                        <span class="badge bg-danger">Отменено</span>
-                                    </td>
-                                    <td>Бронирование отменено</td>
-                                </tr>
-                                {% elif booking.status == 'completed' %}
-                                <tr>
-                                    <td>{{ booking.updated_at|date:"d.m.Y H:i" }}</td>
-                                    <td>
-                                        <span class="badge bg-info">Завершено</span>
-                                    </td>
-                                    <td>Бронирование завершено</td>
-                                </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-calendar"></i> Дата и время</h6>
+                            <p class="mb-2">
+                                <strong>Начало:</strong> {{ booking.start_datetime|date:"d.m.Y H:i" }}<br>
+                                <strong>Окончание:</strong> {{ booking.end_datetime|date:"d.m.Y H:i" }}
+                            </p>
+                            <p>
+                                <span class="badge bg-info">
+                                    Длительность:
+                                    {% if hours_count >= 24 %}
+                                        {{ days_count }} дн. ({{ hours_count|floatformat:1 }} ч)
+                                    {% else %}
+                                        {{ hours_count|floatformat:1 }} ч
+                                    {% endif %}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-people"></i> Гости</h6>
+                            <p class="mb-2">{{ booking.guests }} человек</p>
+
+                            {% if booking.special_requests %}
+                            <h6 class="mt-3"><i class="bi bi-chat"></i> Особые пожелания</h6>
+                            <p class="mb-0">{{ booking.special_requests }}</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
 
             {% if can_review %}
-            <!-- Review Section -->
-            <div class="card">
+            <!-- Блок для отзыва -->
+            <div class="card mb-4">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-star me-2"></i>
+                        <i class="bi bi-star me-2"></i>
                         Оставить отзыв
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p>Бронирование завершено. Вы можете оставить отзыв о помещении.</p>
+                    <p>Бронирование завершено. Поделитесь своим мнением о помещении.</p>
                     <a href="{% url 'add_review' booking.id %}" class="btn btn-success">
-                        <i class="fas fa-pen"></i> Написать отзыв
+                        <i class="bi bi-pencil-square"></i> Написать отзыв
                     </a>
                 </div>
             </div>
             {% endif %}
         </div>
 
-        <!-- Right Column - Summary & Actions -->
+        <!-- Правая колонка - Стоимость и действия -->
         <div class="col-lg-4">
-            <!-- Price Summary -->
+            <!-- Карточка стоимости -->
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-money-bill-wave me-2"></i>
+                        <i class="bi bi-cash-coin me-2"></i>
                         Стоимость
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Цена за час:</span>
-                            <span>{{ booking.property.price_per_hour }} ₽</span>
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Длительность:</span>
-                            <span>
-                                {% if hours_count >= 24 %}
-                                    {{ days_count }} дн. ({{ hours_count|floatformat:1 }} ч)
-                                {% else %}
-                                    {{ hours_count|floatformat:1 }} ч
-                                {% endif %}
-                            </span>
-                        </div>
-
-                        <hr>
-
-                        <div class="d-flex justify-content-between fs-5">
-                            <strong>Итого:</strong>
-                            <strong class="text-primary">{{ booking.total_price }} ₽</strong>
-                        </div>
+                    <div class="text-center mb-4">
+                        <h2 class="text-primary">{{ booking.total_price|floatformat:2 }} ₽</h2>
+                        <p class="text-muted mb-0">Итого к оплате</p>
                     </div>
 
-                    {% if booking.status == 'pending' %}
-                    <div class="alert alert-warning small mb-0">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Ожидает подтверждения владельцем
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Цена за час:</span>
+                        <strong>{{ booking.property.price_per_hour }} ₽</strong>
                     </div>
-                    {% elif booking.status == 'confirmed' %}
-                    <div class="alert alert-success small mb-0">
-                        <i class="fas fa-check-circle me-1"></i>
-                        Подтверждено владельцем
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Количество часов:</span>
+                        <strong>{{ hours_count|floatformat:1 }}</strong>
                     </div>
-                    {% elif booking.status == 'cancelled' %}
-                    <div class="alert alert-danger small mb-0">
-                        <i class="fas fa-times-circle me-1"></i>
-                        Бронирование отменено
-                    </div>
-                    {% elif booking.status == 'completed' %}
-                    <div class="alert alert-info small mb-0">
-                        <i class="fas fa-check-circle me-1"></i>
-                        Бронирование завершено
+                    {% if booking.property.price_per_day %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Цена за день:</span>
+                        <strong>{{ booking.property.price_per_day }} ₽</strong>
                     </div>
                     {% endif %}
+
+                    <hr>
+
+                    <div class="alert alert-{% if booking.is_paid %}success{% else %}warning{% endif %} mb-0">
+                        <i class="bi bi-{% if booking.is_paid %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+                        {% if booking.is_paid %}
+                            Оплачено {{ booking.payment_date|date:"d.m.Y H:i" }}
+                        {% else %}
+                            {% if booking.status == 'pending' %}
+                                Ожидает оплаты
+                            {% else %}
+                                Не оплачено
+                            {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
-            <!-- Contact Info -->
+            <!-- Карточка договора (если доступен) -->
+            {% if can_download_contract %}
+            <div class="card mb-4 contract-card">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-pdf fs-1 mb-3"></i>
+                    <h5 class="mb-3">Договор аренды</h5>
+                    <p class="mb-3">Договор доступен для скачивания</p>
+                    <a href="{% url 'download_contract' booking.id %}" class="btn btn-light w-100">
+                        <i class="bi bi-download"></i> Скачать договор
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Контакты владельца -->
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-user-tie me-2"></i>
+                        <i class="bi bi-person-circle me-2"></i>
                         Контакты
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <h6 class="text-muted mb-2">Владелец помещения</h6>
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="flex-shrink-0">
-                                {% if booking.property.landlord.avatar %}
-                                <img src="{{ booking.property.landlord.avatar.url }}"
-                                     class="rounded-circle"
-                                     width="50"
-                                     height="50"
-                                     alt="{{ booking.property.landlord.get_full_name_or_username }}">
-                                {% else %}
-                                <i class="fas fa-user-circle fa-2x text-primary"></i>
-                                {% endif %}
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-0">{{ booking.property.landlord.get_full_name_or_username }}</h6>
-                                <small class="text-muted">Владелец</small>
-                            </div>
+                    <div class="d-flex align-items-center mb-3">
+                        {% if booking.property.landlord.avatar %}
+                        <img src="{{ booking.property.landlord.avatar.url }}"
+                             class="rounded-circle me-3"
+                             width="50" height="50"
+                             alt="{{ booking.property.landlord.get_full_name_or_username }}">
+                        {% else %}
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                             style="width: 50px; height: 50px;">
+                            {{ booking.property.landlord.get_full_name_or_username|first|upper }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-0">{{ booking.property.landlord.get_full_name_or_username }}</h6>
+                            <small class="text-muted">Владелец помещения</small>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <h6 class="text-muted mb-2">Контактная информация</h6>
-                        {% if booking.property.landlord.phone %}
-                        <p class="mb-1">
-                            <i class="fas fa-phone me-2"></i>
+                    {% if booking.property.landlord.phone %}
+                    <p class="mb-2">
+                        <i class="bi bi-telephone"></i>
+                        <a href="tel:{{ booking.property.landlord.phone }}" class="text-decoration-none">
                             {{ booking.property.landlord.phone }}
-                        </p>
-                        {% endif %}
+                        </a>
+                    </p>
+                    {% endif %}
 
-                        {% if booking.property.landlord.email %}
-                        <p class="mb-0">
-                            <i class="fas fa-envelope me-2"></i>
+                    {% if booking.property.landlord.email %}
+                    <p class="mb-3">
+                        <i class="bi bi-envelope"></i>
+                        <a href="mailto:{{ booking.property.landlord.email }}" class="text-decoration-none">
                             {{ booking.property.landlord.email }}
-                        </p>
-                        {% endif %}
-                    </div>
+                        </a>
+                    </p>
+                    {% endif %}
 
                     {% if user == booking.tenant %}
-                    <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#contactModal">
-                        <i class="fas fa-comments"></i> Связаться с владельцем
-                    </button>
+                    <a href="{% url 'send_message' booking.property.landlord.id %}"
+                       class="btn btn-outline-primary w-100">
+                        <i class="bi bi-chat-dots"></i> Написать владельцу
+                    </a>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Quick Actions -->
+            <!-- Быстрые действия -->
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-bolt me-2"></i>
+                        <i class="bi bi-lightning me-2"></i>
                         Быстрые действия
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{% url 'property_detail' booking.property.slug %}" class="btn btn-outline-primary">
-                            <i class="fas fa-eye"></i> Посмотреть помещение
+                        <a href="{% url 'property_detail' booking.property.slug %}"
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-eye"></i> Посмотреть помещение
                         </a>
 
+                        {% if can_pay %}
+                        <a href="{% url 'payment' booking.id %}" class="btn btn-success">
+                            <i class="bi bi-credit-card"></i> Перейти к оплате
+                        </a>
+                        {% endif %}
+
                         {% if can_cancel %}
-                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
-                            <i class="fas fa-times-circle"></i> Отменить бронирование
+                        <button type="button" class="btn btn-outline-danger"
+                                data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="bi bi-x-circle"></i> Отменить бронирование
                         </button>
                         {% endif %}
 
-                        <a href="{% url 'my_bookings' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-list"></i> Все бронирования
+                        <a href="{% url 'property_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-search"></i> Найти другие помещения
                         </a>
                     </div>
                 </div>
@@ -466,26 +538,27 @@
     </div>
 </div>
 
-<!-- Cancel Modal -->
-<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+<!-- Модальное окно отмены бронирования -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="cancelModalLabel">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
                     Отмена бронирования
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Вы уверены, что хотите отменить бронирование <strong>#{{ booking.booking_id }}</strong>?</p>
+                <p>Вы уверены, что хотите отменить бронирование
+                   <strong>#{{ booking.booking_id }}</strong>?</p>
 
-                <form method="post" action="{% url 'cancel_booking' booking.id %}">
+                <form method="post" action="{% url 'cancel_booking' booking.id %}" id="cancelForm">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="cancelReason" class="form-label">Причина отмены (необязательно)</label>
-                        <textarea class="form-control" id="cancelReason" name="reason" rows="3"
-                                  placeholder="Укажите причину отмены..."></textarea>
+                        <textarea class="form-control" id="cancelReason" name="reason"
+                                  rows="2" placeholder="Укажите причину отмены..."></textarea>
                     </div>
 
                     <div class="form-check mb-3">
@@ -494,80 +567,64 @@
                             Я подтверждаю отмену бронирования
                         </label>
                     </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-arrow-left"></i> Вернуться
-                        </button>
-                        <button type="submit" class="btn btn-danger" id="confirmCancelBtn" disabled>
-                            <i class="fas fa-times-circle"></i> Подтвердить отмену
-                        </button>
-                    </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-arrow-left"></i> Назад
+                </button>
+                <button type="submit" form="cancelForm" class="btn btn-danger" id="confirmCancelBtn" disabled>
+                    <i class="bi bi-check-circle"></i> Подтвердить отмену
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Contact Modal -->
-<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="contactModalLabel">Связаться с владельцем</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Отправить сообщение владельцу помещения по бронированию #{{ booking.booking_id }}</p>
-
-                <form id="contactForm" action="{% url 'send_message_property' booking.property.id %}" method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="contactSubject" class="form-label">Тема</label>
-                        <input type="text" class="form-control" id="contactSubject" name="subject"
-                               value="Бронирование #{{ booking.booking_id }} - {{ booking.property.title|truncatechars:30 }}">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="contactMessage" class="form-label">Сообщение</label>
-                        <textarea class="form-control" id="contactMessage" name="message" rows="4" required
-                                  placeholder="Здравствуйте! У меня есть вопрос по бронированию #{{ booking.booking_id }}..."></textarea>
-                    </div>
-
-                    <div class="alert alert-info small">
-                        <i class="fas fa-info-circle"></i> Владелец получит ваше сообщение на email
-                    </div>
-
-                    <div class="modal-footer px-0">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i> Отправить
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
+<!-- JavaScript -->
 <script>
-    $(document).ready(function() {
-        // Enable/disable cancel button based on checkbox
-        $('#confirmCancel').change(function() {
-            $('#confirmCancelBtn').prop('disabled', !$(this).is(':checked'));
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    // Активация кнопки подтверждения отмены
+    const confirmCheckbox = document.getElementById('confirmCancel');
+    const confirmBtn = document.getElementById('confirmCancelBtn');
 
-        // Contact form handler
-        $('#contactForm').on('submit', function(e) {
-            const message = $('#contactMessage').val().trim();
-            if (!message) {
-                e.preventDefault();
-                alert('Пожалуйста, введите сообщение');
-                return;
-            }
+    if (confirmCheckbox && confirmBtn) {
+        confirmCheckbox.addEventListener('change', function() {
+            confirmBtn.disabled = !this.checked;
         });
+    }
+
+    // Таймер для неоплаченных бронирований (если нужно)
+    {% if booking.status == 'pending' and not booking.is_paid %}
+    function updatePaymentTimer() {
+        const created = new Date('{{ booking.created_at|date:"Y-m-d H:i:s" }}').getTime();
+        const now = new Date().getTime();
+        const diff = now - created;
+        const timeLeft = 30 * 60 * 1000 - diff; // 30 минут
+
+        if (timeLeft <= 0) {
+            location.reload();
+            return;
+        }
+
+        const minutes = Math.floor(timeLeft / (60 * 1000));
+        const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+
+        const timerElement = document.getElementById('paymentTimer');
+        if (timerElement) {
+            timerElement.innerHTML = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+
+    // Обновляем каждую секунду
+    setInterval(updatePaymentTimer, 1000);
+    {% endif %}
+
+    // Инициализация тултипов
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+});
 </script>
 {% endblock %}

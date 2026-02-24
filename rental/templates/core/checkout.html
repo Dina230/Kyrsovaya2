@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Оформление заказа</h1>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Подтверждение бронирования</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Вы бронируете:</h6>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Помещение</th>
+                                    <th>Дата и время</th>
+                                    <th>Гости</th>
+                                    <th>Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in cart_items %}
+                                <tr>
+                                    <td>{{ item.property.title }}</td>
+                                    <td>
+                                        {{ item.start_datetime|date:"d.m.Y H:i" }} - 
+                                        {{ item.end_datetime|date:"d.m.Y H:i" }}
+                                    </td>
+                                    <td>{{ item.guests }}</td>
+                                    <td>{{ item.get_total_price }} ₽</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3" class="text-end">Итого:</th>
+                                    <th class="text-primary">{{ total_price|floatformat:2 }} ₽</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post" class="card">
+                {% csrf_token %}
+                <div class="card-body">
+                    <h5 class="mb-3">Подтверждение</h5>
+                    
+                    <div class="form-check mb-3">
+                        {{ form.agree_to_terms }}
+                        <label class="form-check-label" for="{{ form.agree_to_terms.id_for_label }}">
+                            Я согласен с условиями аренды и договором оферты
+                        </label>
+                        {% if form.agree_to_terms.errors %}
+                        <div class="text-danger">
+                            {{ form.agree_to_terms.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        После оформления заказа вы будете перенаправлены на страницу оплаты.
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'cart_detail' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Вернуться в корзину
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Подтвердить и перейти к оплате
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Ваши данные</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Имя:</strong> {{ user.get_full_name|default:user.username }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    {% if user.phone %}
+                    <p><strong>Телефон:</strong> {{ user.phone }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
