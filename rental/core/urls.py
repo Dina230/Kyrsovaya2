@@ -39,11 +39,7 @@ urlpatterns = [
     path('bookings/<int:booking_id>/payment/success/', views.payment_success, name='payment_success'),
     path('bookings/<int:booking_id>/contract/download/', views.download_contract, name='download_contract'),
 
-    # Корзина (новый функционал)
-    path('cart/', views.cart_detail, name='cart_detail'),
-    path('cart/add/<int:property_id>/', views.cart_add, name='cart_add'),
-    path('cart/remove/<int:item_id>/', views.cart_remove, name='cart_remove'),
-    path('checkout/', views.checkout, name='checkout'),
+    path('messages/unread-count/', views.get_unread_messages_count, name='get_unread_messages_count'),
 
     # Для арендодателя
     path('my-properties/', views.my_properties, name='my_properties'),

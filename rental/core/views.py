@@ -1296,6 +1296,17 @@ def get_unread_count(request):
         return JsonResponse({'count': count})
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+@login_required
+def get_unread_messages_count(request):
+    """Получить количество непрочитанных сообщений (AJAX)"""
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        count = Message.objects.filter(
+            recipient=request.user,
+            is_read=False
+        ).count()
+        return JsonResponse({'count': count})
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 
 # ============================================================================
 # СООБЩЕНИЯ
