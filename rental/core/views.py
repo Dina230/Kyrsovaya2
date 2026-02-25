@@ -21,7 +21,6 @@ from .models import (
     User, Property, Booking, Review, Favorite,
     Category, Amenity, Notification, Message, Cart, Contract
 )
-
 # Импорты форм
 from .forms import (
     CustomUserCreationForm, CustomUserChangeForm,
@@ -39,6 +38,26 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ============================================================================
+
+def get_time_ago(dt):
+    """Возвращает красивое представление времени для AJAX-превью"""
+    if not dt:
+        return 'только что'
+
+    now = timezone.now()
+    diff = now - dt
+
+    if diff < timedelta(minutes=1):
+        return 'только что'
+    elif diff < timedelta(hours=1):
+        return f'{diff.seconds // 60} мин. назад'
+    elif diff < timedelta(days=1):
+        return f'{diff.seconds // 3600} ч. назад'
+    elif diff < timedelta(days=7):
+        return f'{diff.days} дн. назад'
+    else:
+        return dt.strftime('%d.%m.%Y')
+
 
 def create_notification(user, notification_type, title, message,
                         related_object_id=None, related_object_type=None):
@@ -79,6 +98,7 @@ def create_booking_notification(booking, notification_type):
         'booking_cancelled': f'Бронирование #{booking.booking_id} отменено',
         'booking_completed': f'Бронирование #{booking.booking_id} завершено. Пожалуйста, оставьте отзыв.',
     }
+
     return create_notification(
         user=user,
         notification_type=notification_type,
@@ -134,7 +154,6 @@ def generate_contract_pdf(booking):
         # Информация о сторонах
         landlord = booking.property.landlord
         tenant = booking.tenant
-
         landlord_info = f"Арендодатель: {landlord.get_full_name_or_username()}, {landlord.email or 'Email не указан'}, {landlord.phone or 'Тел. не указан'}"
         tenant_info = f"Арендатор: {tenant.get_full_name_or_username()}, {tenant.email or 'Email не указан'}, {tenant.phone or 'Тел. не указан'}"
 
@@ -198,16 +217,13 @@ def generate_contract_pdf(booking):
         contract, created = Contract.objects.get_or_create(booking=booking)
         if not created and contract.pdf_file:
             contract.pdf_file.delete(save=False)
-
         filename = f"contract_{booking.booking_id}.pdf"
         contract.pdf_file.save(filename, ContentFile(buffer.getvalue()), save=True)
-
         return contract
 
     except ImportError:
         # Если reportlab не установлен, создаем текстовый файл
         contract, created = Contract.objects.get_or_create(booking=booking)
-
         content = f"""
 ДОГОВОР АРЕНДЫ №{booking.booking_id}
 Дата: {timezone.now().strftime('%d.%m.%Y')}
@@ -229,12 +245,10 @@ def generate_contract_pdf(booking):
 5. ПОДПИСИ СТОРОН
 Арендодатель: ______________________
 Арендатор: ______________________
-        """
-
+"""
         from django.core.files.base import ContentFile
         filename = f"contract_{booking.booking_id}.txt"
         contract.pdf_file.save(filename, ContentFile(content.encode('utf-8')), save=True)
-
         return contract
 
 
@@ -247,13 +261,10 @@ def auto_cancel_expired_bookings():
         status='pending',
         created_at__lte=expiration_time
     )
-
     count = expired_bookings.count()
-
     for booking in expired_bookings:
         booking.status = 'cancelled'
         booking.save()
-
         # Создаем уведомление для арендатора
         create_notification(
             user=booking.tenant,
@@ -263,12 +274,10 @@ def auto_cancel_expired_bookings():
             related_object_id=booking.id,
             related_object_type='booking'
         )
-
         logger.info(f"Booking #{booking.booking_id} auto-cancelled (created at {booking.created_at})")
 
     if count > 0:
         logger.info(f"Auto-cancelled {count} expired bookings")
-
     return count
 
 
@@ -290,7 +299,6 @@ def home(request):
         'properties': properties,
         'title': 'Аренда коммерческих помещений'
     }
-
     return render(request, 'core/home.html', context)
 
 
@@ -345,7 +353,6 @@ def property_list(request):
                 start_datetime__lt=end_datetime,
                 end_datetime__gt=start_datetime
             ).values_list('property_id', flat=True)
-
             properties = properties.exclude(id__in=booked_property_ids)
         except ValueError:
             pass
@@ -555,7 +562,6 @@ def dashboard(request):
 
         # Мои помещения (максимум 5)
         safe_properties = properties[:5]
-
         # Новые бронирования (максимум 5)
         new_bookings = list(bookings.filter(status='pending').order_by('-created_at')[:5])
         # Активные бронирования (максимум 5)
@@ -744,15 +750,18 @@ def my_properties(request):
 def toggle_favorite(request, property_id):
     """Добавить/удалить помещение из избранного"""
     property_obj = get_object_or_404(Property, id=property_id)
+
     favorite, created = Favorite.objects.get_or_create(
         user=request.user,
         property=property_obj
     )
+
     if not created:
         favorite.delete()
         messages.success(request, 'Удалено из избранного')
     else:
         messages.success(request, 'Добавлено в избранное')
+
     return redirect('property_detail', slug=property_obj.slug)
 
 
@@ -1001,6 +1010,7 @@ def checkout(request):
         return redirect('cart_detail')
 
     cart_items = Cart.objects.filter(user=request.user).select_related('property')
+
     if not cart_items.exists():
         messages.warning(request, 'Ваша корзина пуста.')
         return redirect('cart_detail')
@@ -1053,7 +1063,6 @@ def checkout(request):
 # ============================================================================
 
 @login_required
-@login_required
 def payment(request, booking_id):
     """Страница оплаты бронирования"""
     booking = get_object_or_404(Booking, id=booking_id)
@@ -1072,7 +1081,6 @@ def payment(request, booking_id):
 
     if request.method == 'POST':
         form = PaymentCardForm(request.POST)
-
         if form.is_valid():
             payment_method = form.cleaned_data['payment_method']
 
@@ -1091,7 +1099,6 @@ def payment(request, booking_id):
                 booking.save()
 
                 create_booking_notification(booking, 'booking_paid')
-
                 create_notification(
                     user=booking.property.landlord,
                     notification_type='booking_paid',
@@ -1123,7 +1130,6 @@ def payment(request, booking_id):
                     related_object_id=booking.id,
                     related_object_type='booking'
                 )
-
                 # Уведомление арендатору
                 create_notification(
                     user=booking.tenant,
@@ -1137,10 +1143,10 @@ def payment(request, booking_id):
                 messages.success(request,
                                  'Бронирование создано! Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.')
                 return redirect('booking_detail', booking_id=booking.id)
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{error}')
+            else:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f'{error}')
     else:
         form = PaymentCardForm()
 
@@ -1215,7 +1221,7 @@ def download_contract(request, booking_id):
 
 
 # ============================================================================
-# УВЕДОМЛЕНИЯ
+# УВЕДОМЛЕНИЯ (ИСПРАВЛЕНО ДЛЯ AJAX)
 # ============================================================================
 
 @login_required
@@ -1223,7 +1229,39 @@ def notifications_list(request):
     """Страница со списком уведомлений с пагинацией (5 на странице)"""
     notifications = request.user.notifications.all().order_by('-created_at')
 
-    # Пагинация - 5 элементов на странице
+    # === AJAX ОБРАБОТКА ДЛЯ ПРЕВЬЮ В DROPDOWN ===
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('ajax'):
+        limit = int(request.GET.get('limit', 5))
+        notifications_qs = notifications[:limit]
+
+        notifications_data = []
+        for notif in notifications_qs:
+            # Определяем URL для перехода
+            url = '#'
+            if notif.related_object_type == 'booking' and notif.related_object_id:
+                url = reverse_lazy('booking_detail', args=[notif.related_object_id])
+            elif notif.related_object_type == 'message' and notif.related_object_id:
+                url = reverse_lazy('messages_list')
+            elif notif.notification_type == 'system':
+                url = reverse_lazy('dashboard')
+
+            notifications_data.append({
+                'id': notif.id,
+                'title': notif.title or 'Уведомление',
+                'message': notif.message or '',
+                'is_read': notif.is_read,
+                'url': url,
+                'time_ago': get_time_ago(notif.created_at),
+                'notification_type': notif.notification_type,
+            })
+
+        return JsonResponse({
+            'notifications': notifications_data,
+            'unread_count': notifications.filter(is_read=False).count()
+        })
+    # === КОНЕЦ AJAX ОБРАБОТКИ ===
+
+    # Пагинация - 5 элементов на странице (для HTML-страницы)
     paginator = Paginator(notifications, 5)
     page = request.GET.get('page')
     notifications_page = paginator.get_page(page)
@@ -1285,7 +1323,7 @@ def delete_all_notifications(request):
     if request.method == 'POST':
         request.user.notifications.all().delete()
         messages.success(request, 'Все уведомления удалены.')
-    return redirect('notifications_list')
+        return redirect('notifications_list')
 
 
 @login_required
@@ -1295,6 +1333,7 @@ def get_unread_count(request):
         count = request.user.notifications.filter(is_read=False).count()
         return JsonResponse({'count': count})
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
 
 @login_required
 def get_unread_messages_count(request):
@@ -1309,12 +1348,57 @@ def get_unread_messages_count(request):
 
 
 # ============================================================================
-# СООБЩЕНИЯ
+# СООБЩЕНИЯ (ИСПРАВЛЕНО ДЛЯ AJAX)
 # ============================================================================
 
 @login_required
 def messages_list(request):
     """Страница со списком сообщений/диалогов с пагинацией (5 на странице)"""
+
+    # === AJAX ОБРАБОТКА ДЛЯ ПРЕВЬЮ В DROPDOWN ===
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('ajax'):
+        limit = int(request.GET.get('limit', 5))
+
+        # Получаем последние сообщения пользователя
+        messages_qs = Message.objects.filter(
+            Q(sender=request.user) | Q(recipient=request.user)
+        ).select_related('sender', 'recipient', 'property').order_by('-created_at')[:limit]
+
+        messages_data = []
+        for msg in messages_qs:
+            # Определяем отправителя для отображения
+            sender = msg.sender if msg.sender != request.user else msg.recipient
+
+            # Определяем URL для перехода
+            url = reverse_lazy('messages_list')
+            if msg.property:
+                url = reverse_lazy('property_detail', args=[msg.property.slug])
+
+            # Обрезаем текст сообщения для превью
+            preview_text = msg.message[:100] + '...' if len(msg.message) > 100 else msg.message
+
+            messages_data.append({
+                'id': msg.id,
+                'sender': sender.get_full_name_or_username() if sender else 'Пользователь',
+                'message': preview_text,
+                'is_read': msg.is_read if msg.recipient == request.user else True,
+                'url': url,
+                'time_ago': get_time_ago(msg.created_at),
+                'subject': msg.subject or '',
+            })
+
+        unread_count = Message.objects.filter(
+            recipient=request.user,
+            is_read=False
+        ).count()
+
+        return JsonResponse({
+            'messages': messages_data,
+            'unread_count': unread_count
+        })
+    # === КОНЕЦ AJAX ОБРАБОТКИ ===
+
+    # Обычная логика для HTML-страницы
     sent_messages = Message.objects.filter(sender=request.user).values('recipient').distinct()
     received_messages = Message.objects.filter(recipient=request.user).values('sender').distinct()
 
@@ -1385,11 +1469,13 @@ def send_message(request, user_id=None, property_id=None):
     if request.method == 'POST':
         subject = request.POST.get('subject', '')
         message_text = request.POST.get('message', '')
+
         if not message_text:
             messages.error(request, 'Сообщение не может быть пустым.')
         else:
             if not subject and property_obj:
                 subject = f'Вопрос по помещению: {property_obj.title}'
+
             message = Message.objects.create(
                 sender=request.user,
                 recipient=recipient,
@@ -1399,6 +1485,7 @@ def send_message(request, user_id=None, property_id=None):
             )
             create_message_notification(message)
             messages.success(request, 'Сообщение отправлено.')
+
             if property_obj:
                 return redirect('property_detail', slug=property_obj.slug)
             else:
@@ -1409,6 +1496,7 @@ def send_message(request, user_id=None, property_id=None):
         Q(sender=recipient, recipient=request.user)
     ).order_by('created_at')
 
+    # Помечаем сообщения как прочитанные
     Message.objects.filter(
         sender=recipient,
         recipient=request.user,
@@ -1485,9 +1573,11 @@ def edit_property(request, property_id):
         form = PropertyForm(request.POST, request.FILES, instance=property_obj)
         if form.is_valid():
             property_obj = form.save()
+
             images = request.FILES.getlist('images')
             for image in images:
                 property_obj.images.create(image=image)
+
             messages.success(request, 'Помещение успешно обновлено.')
             return redirect('my_properties')
     else:
@@ -1614,8 +1704,7 @@ def add_property_image(request, property_id):
         from .models import PropertyImage
         PropertyImage.objects.create(property=property_obj, image=request.FILES['image'])
         messages.success(request, 'Изображение успешно добавлено.')
-
-    return redirect('edit_property', property_id=property_id)
+        return redirect('edit_property', property_id=property_id)
 
 
 # ============================================================================
@@ -1978,6 +2067,7 @@ def ajax_create_booking(request, property_id):
             special_requests=data.get('special_requests', ''),
             status='pending'
         )
+
         create_booking_notification(booking, 'booking_created')
 
         return JsonResponse({
@@ -2022,6 +2112,7 @@ def booking_calendar(request, property_id):
     import calendar
     cal = calendar.Calendar()
     calendar_weeks = []
+
     for week in cal.monthdatescalendar(current_month.year, current_month.month):
         week_days = []
         for day in week:
