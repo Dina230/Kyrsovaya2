@@ -128,10 +128,85 @@
         transform: translateY(-2px);
     }
 
+    /* Стили для таймера */
+    .payment-timer-container {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+    }
+
+    .payment-timer-label {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+
     .payment-timer {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #dc3545;
+        font-size: 3rem;
+        font-weight: 700;
+        font-family: monospace;
+        line-height: 1.2;
+        text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .payment-timer-warning {
+        color: #fff3cd;
+        animation: pulse 1s infinite;
+    }
+
+    .payment-timer-critical {
+        color: #ffffff;
+        animation: pulse-critical 0.5s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    @keyframes pulse-critical {
+        0%, 100% {
+            opacity: 1;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        50% {
+            opacity: 0.5;
+            text-shadow: 0 0 20px rgba(255,255,255,0.8);
+        }
+    }
+
+    .timer-progress {
+        height: 6px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 3px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+
+    .timer-progress-bar {
+        height: 100%;
+        background: white;
+        width: 100%;
+        transition: width 1s linear;
+    }
+
+    .expired-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        text-align: center;
+        border: 1px solid #f5c6cb;
+    }
+
+    .expired-message i {
+        font-size: 2rem;
+        margin-bottom: 10px;
     }
 </style>
 {% endblock %}
@@ -152,6 +227,32 @@
             <li class="breadcrumb-item active">Бронирование #{{ booking.booking_id }}</li>
         </ol>
     </nav>
+
+    <!-- Таймер для неоплаченных бронирований -->
+    {% if booking.status == 'pending' and not booking.is_paid %}
+    <div class="payment-timer-container" id="timerContainer">
+        <div class="payment-timer-label">
+            <i class="bi bi-hourglass-split"></i> Осталось времени для оплаты
+        </div>
+        <div class="payment-timer" id="paymentTimer">--:--</div>
+        <div class="timer-progress">
+            <div class="timer-progress-bar" id="timerProgress" style="width: 100%"></div>
+        </div>
+        <small class="d-block mt-2">
+            <i class="bi bi-info-circle"></i>
+            Бронирование будет автоматически отменено через 30 минут после создания
+        </small>
+    </div>
+    {% endif %}
+
+    <!-- Сообщение для отмененных бронирований -->
+    {% if booking.status == 'cancelled' and booking.is_paid == False %}
+    <div class="expired-message">
+        <i class="bi bi-clock-history"></i>
+        <h5>Время для оплаты истекло</h5>
+        <p class="mb-0">Бронирование автоматически отменено. Вы можете создать новое бронирование.</p>
+    </div>
+    {% endif %}
 
     <!-- Заголовок и статус -->
     <div class="row mb-4">
@@ -581,7 +682,7 @@
     </div>
 </div>
 
-<!-- JavaScript -->
+<!-- JavaScript для таймера -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Активация кнопки подтверждения отмены
@@ -594,33 +695,77 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Таймер для неоплаченных бронирований (если нужно)
+    // Таймер для неоплаченных бронирований
     {% if booking.status == 'pending' and not booking.is_paid %}
-    function updatePaymentTimer() {
-        const created = new Date('{{ booking.created_at|date:"Y-m-d H:i:s" }}').getTime();
-        const now = new Date().getTime();
-        const diff = now - created;
-        const timeLeft = 30 * 60 * 1000 - diff; // 30 минут
+    const timerElement = document.getElementById('paymentTimer');
+    const timerProgress = document.getElementById('timerProgress');
+    const timerContainer = document.getElementById('timerContainer');
 
-        if (timeLeft <= 0) {
-            location.reload();
-            return;
+    if (timerElement) {
+        // Получаем время создания бронирования
+        const createdStr = '{{ booking.created_at|date:"Y-m-d H:i:s" }}';
+        const created = new Date(createdStr.replace(' ', 'T')).getTime();
+        const totalTime = 30 * 60 * 1000; // 30 минут в миллисекундах
+
+        function updateTimer() {
+            const now = new Date().getTime();
+            const elapsed = now - created;
+            const timeLeft = totalTime - elapsed;
+
+            if (timeLeft <= 0) {
+                // Время истекло
+                timerElement.textContent = '00:00';
+                timerProgress.style.width = '0%';
+                timerElement.classList.add('payment-timer-critical');
+
+                // Показываем сообщение об истечении времени
+                if (timerContainer) {
+                    timerContainer.innerHTML = `
+                        <div class="expired-message">
+                            <i class="bi bi-clock-history"></i>
+                            <h5>Время для оплаты истекло</h5>
+                            <p class="mb-0">Страница будет обновлена...</p>
+                        </div>
+                    `;
+                }
+
+                // Обновляем страницу через 3 секунды
+                setTimeout(function() {
+                    location.reload();
+                }, 3000);
+
+                return;
+            }
+
+            // Рассчитываем минуты и секунды
+            const minutes = Math.floor(timeLeft / (60 * 1000));
+            const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+
+            // Форматируем вывод
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerElement.textContent = timeString;
+
+            // Обновляем прогресс бар
+            const progressPercent = (timeLeft / totalTime) * 100;
+            timerProgress.style.width = `${progressPercent}%`;
+
+            // Меняем класс в зависимости от оставшегося времени
+            timerElement.classList.remove('payment-timer-warning', 'payment-timer-critical');
+
+            if (timeLeft < 60 * 1000) { // Меньше минуты
+                timerElement.classList.add('payment-timer-critical');
+            } else if (timeLeft < 5 * 60 * 1000) { // Меньше 5 минут
+                timerElement.classList.add('payment-timer-warning');
+            }
         }
 
-        const minutes = Math.floor(timeLeft / (60 * 1000));
-        const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
-
-        const timerElement = document.getElementById('paymentTimer');
-        if (timerElement) {
-            timerElement.innerHTML = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
+        // Обновляем каждую секунду
+        updateTimer(); // сразу показываем
+        setInterval(updateTimer, 1000);
     }
-
-    // Обновляем каждую секунду
-    setInterval(updatePaymentTimer, 1000);
     {% endif %}
 
-    // Инициализация тултипов
+    // Инициализация тултипов Bootstrap
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function(tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);

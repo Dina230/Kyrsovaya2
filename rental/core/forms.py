@@ -8,7 +8,7 @@ from .models import User, Property, Booking, Review, Favorite, Category, Amenity
 
 
 class CustomUserCreationForm(UserCreationForm):
-    """Форма регистрации пользователя"""
+    """Форма регистрации пользователя с валидацией телефона"""
     USER_TYPE_CHOICES_REGISTRATION = [
         ('tenant', 'Арендатор'),
         ('landlord', 'Арендодатель'),
@@ -89,18 +89,20 @@ class CustomUserCreationForm(UserCreationForm):
             return phone
 
         phone_digits = re.sub(r'\D', '', phone)
+
         if len(phone_digits) < 10:
             raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
-        if phone_digits[0] not in ['7', '8']:
-            raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
-
-        if User.objects.filter(phone__endswith=phone_digits[-10:]).exists():
-            raise ValidationError('Пользователь с таким телефоном уже существует.')
 
         if len(phone_digits) == 11:
+            if phone_digits[0] not in ['7', '8']:
+                raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
             phone_digits = phone_digits[1:]
 
         phone_digits = phone_digits[:10]
+
+        if User.objects.filter(phone__endswith=phone_digits).exists():
+            raise ValidationError('Пользователь с таким телефоном уже существует.')
+
         formatted_phone = f"+7 ({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:8]}-{phone_digits[8:10]}"
 
         return formatted_phone
@@ -154,18 +156,164 @@ class CustomUserChangeForm(UserChangeForm):
             return phone
 
         phone_digits = re.sub(r'\D', '', phone)
+
         if len(phone_digits) < 10:
             raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
-        if phone_digits[0] not in ['7', '8']:
-            raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
 
         if len(phone_digits) == 11:
+            if phone_digits[0] not in ['7', '8']:
+                raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
             phone_digits = phone_digits[1:]
 
         phone_digits = phone_digits[:10]
+
+        if User.objects.filter(phone__endswith=phone_digits).exclude(id=self.instance.id).exists():
+            raise ValidationError('Пользователь с таким телефоном уже существует.')
+
         formatted_phone = f"+7 ({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:8]}-{phone_digits[8:10]}"
 
         return formatted_phone
+
+
+class PaymentCardForm(forms.Form):
+    """Форма для валидации данных банковской карты"""
+    PAYMENT_METHODS = [
+        ('card', 'Банковская карта'),
+        ('cash', 'Наличными при встрече'),
+    ]
+
+    payment_method = forms.ChoiceField(
+        choices=PAYMENT_METHODS,
+        widget=forms.RadioSelect(attrs={
+            'class': 'form-check-input payment-method-radio',
+        }),
+        initial='card',
+        label='Способ оплаты'
+    )
+
+    card_number = forms.CharField(
+        max_length=19,
+        min_length=16,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control card-number-input',
+            'placeholder': '4242 4242 4242 4242',
+            'id': 'card-number',
+            'autocomplete': 'off',
+        }),
+        label='Номер карты'
+    )
+
+    card_holder = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'IVAN IVANOV',
+            'id': 'card-holder',
+            'autocomplete': 'off'
+        }),
+        label='Владелец карты'
+    )
+
+    expiry_month = forms.ChoiceField(
+        choices=[('', 'ММ')] + [(str(i).zfill(2), str(i).zfill(2)) for i in range(1, 13)],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'expiry-month'
+        }),
+        label='Месяц'
+    )
+
+    expiry_year = forms.ChoiceField(
+        choices=[('', 'ГГГГ')] + [(str(i), str(i)) for i in range(2025, 2036)],
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'expiry-year'
+        }),
+        label='Год'
+    )
+
+    cvv = forms.CharField(
+        max_length=4,
+        min_length=3,
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control cvv-input',
+            'placeholder': '123',
+            'id': 'cvv',
+            'autocomplete': 'off',
+            'maxlength': '4'
+        }),
+        label='CVV/CVC'
+    )
+
+    card_type = forms.ChoiceField(
+        choices=[('visa', 'Visa'), ('mastercard', 'MasterCard'), ('mir', 'Мир'), ('other', 'Другая')],
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'card-type'
+        }),
+        label='Тип карты',
+        required=False
+    )
+
+    save_card = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input',
+            'id': 'save-card'
+        }),
+        label='Сохранить карту для будущих платежей'
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        payment_method = cleaned_data.get('payment_method')
+
+        if payment_method == 'card':
+            # Валидация для карты
+            card_number = cleaned_data.get('card_number')
+            card_holder = cleaned_data.get('card_holder')
+            expiry_month = cleaned_data.get('expiry_month')
+            expiry_year = cleaned_data.get('expiry_year')
+            cvv = cleaned_data.get('cvv')
+
+            if not card_number:
+                self.add_error('card_number', 'Номер карты обязателен для оплаты картой')
+            if not card_holder:
+                self.add_error('card_holder', 'Имя владельца обязательно для оплаты картой')
+            if not expiry_month or expiry_month == '':
+                self.add_error('expiry_month', 'Срок действия обязателен для оплаты картой')
+            if not expiry_year or expiry_year == '':
+                self.add_error('expiry_year', 'Срок действия обязателен для оплаты картой')
+            if not cvv:
+                self.add_error('cvv', 'CVV код обязателен для оплаты картой')
+
+            # Проверка номера карты по алгоритму Луна
+            if card_number:
+                import re
+                card_digits = re.sub(r'\D', '', card_number)
+                if len(card_digits) == 16 and not self.luhn_check(card_digits):
+                    self.add_error('card_number', 'Некорректный номер карты (ошибка в контрольной сумме)')
+
+        return cleaned_data
+
+    def luhn_check(self, card_number):
+        """Алгоритм Луна для проверки номера карты"""
+
+        def digits_of(n):
+            return [int(d) for d in str(n)]
+
+        digits = digits_of(card_number)
+        odd_digits = digits[-1::-2]
+        even_digits = digits[-2::-2]
+        checksum = sum(odd_digits)
+        for d in even_digits:
+            checksum += sum(digits_of(d * 2))
+        return checksum % 10 == 0
 
 
 class MultipleFileInput(forms.ClearableFileInput):
@@ -196,7 +344,6 @@ class PropertyForm(forms.ModelForm):
         label='Изображения'
     )
 
-    # Поля для цен
     price_per_day = forms.DecimalField(
         required=False,
         min_value=0,
@@ -299,7 +446,6 @@ class PropertyForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['amenities'].queryset = Amenity.objects.all()
 
-        # Делаем некоторые поля необязательными
         self.fields['category'].required = False
         self.fields['area'].required = False
         self.fields['floor'].required = False
@@ -307,7 +453,6 @@ class PropertyForm(forms.ModelForm):
         self.fields['price_per_week'].required = False
         self.fields['price_per_month'].required = False
 
-        # Устанавливаем начальные значения для цен при редактировании
         if self.instance and self.instance.pk:
             if not self.initial.get('price_per_day') and self.instance.price_per_hour:
                 self.initial['price_per_day'] = self.instance.price_per_hour * 8
@@ -403,12 +548,10 @@ class BookingForm(forms.ModelForm):
         self.property_obj = kwargs.pop('property_obj', None)
         super().__init__(*args, **kwargs)
 
-        # Устанавливаем минимальную дату - сегодня
         today = timezone.now().date().strftime('%Y-%m-%d')
         self.fields['start_date'].widget.attrs['min'] = today
         self.fields['end_date'].widget.attrs['min'] = today
 
-        # Устанавливаем начальные значения
         tomorrow = timezone.now() + timedelta(days=1)
         self.fields['start_date'].initial = tomorrow.date()
         self.fields['end_date'].initial = tomorrow.date()
@@ -420,33 +563,26 @@ class BookingForm(forms.ModelForm):
         start_time = cleaned_data.get('start_time')
         end_time = cleaned_data.get('end_time')
         booking_type = cleaned_data.get('booking_type')
-        days_count = cleaned_data.get('days_count', 1)
         guests = cleaned_data.get('guests')
 
         if not all([start_date, end_date, start_time, end_time]):
             raise ValidationError('Все даты и времена должны быть заполнены.')
 
-        # Создаем полные datetime объекты
         start_datetime = datetime.combine(start_date, start_time)
         end_datetime = datetime.combine(end_date, end_time)
 
-        # Конвертируем в aware datetime
         start_datetime = timezone.make_aware(start_datetime)
         end_datetime = timezone.make_aware(end_datetime)
 
-        # Для посуточного, недельного и месячного бронирования
         if booking_type in ['daily', 'weekly', 'monthly']:
             end_datetime = end_datetime.replace(hour=23, minute=59)
 
-        # Проверка на прошедшие даты
         if start_datetime < timezone.now():
             raise ValidationError({'start_date': 'Нельзя бронировать на прошедшие даты.'})
 
-        # Проверка что окончание позже начала
         if end_datetime <= start_datetime:
             raise ValidationError({'end_date': 'Дата окончания должна быть позже даты начала.'})
 
-        # Проверка минимальной продолжительности
         duration = end_datetime - start_datetime
         if booking_type == 'hourly' and duration < timedelta(hours=1):
             raise ValidationError({'end_time': 'Минимальное время бронирования - 1 час.'})
@@ -457,14 +593,12 @@ class BookingForm(forms.ModelForm):
         if booking_type == 'monthly' and duration < timedelta(days=28):
             raise ValidationError({'end_date': 'Минимальное время бронирования - 28 дней.'})
 
-        # Проверка рабочего времени для почасового бронирования
         if booking_type == 'hourly':
             if start_datetime.hour < 9 or start_datetime.hour >= 22:
                 raise ValidationError({'start_time': 'Рабочее время с 9:00 до 22:00.'})
             if end_datetime.hour > 22 or (end_datetime.hour == 22 and end_datetime.minute > 0):
                 raise ValidationError({'end_time': 'Рабочее время до 22:00.'})
 
-        # Проверка доступности помещения
         if self.property_obj:
             conflicting_bookings = Booking.objects.filter(
                 property=self.property_obj,
@@ -476,7 +610,6 @@ class BookingForm(forms.ModelForm):
             if conflicting_bookings.exists():
                 raise ValidationError('Выбранное время уже занято другим бронированием.')
 
-        # Проверка количества гостей
         if guests:
             if guests < 1:
                 raise ValidationError({'guests': 'Минимум 1 гость.'})
@@ -484,11 +617,9 @@ class BookingForm(forms.ModelForm):
                 raise ValidationError(
                     {'guests': f'Превышена вместимость помещения. Максимум: {self.property_obj.capacity} человек.'})
 
-        # Сохраняем рассчитанные datetime
         cleaned_data['calculated_start_datetime'] = start_datetime
         cleaned_data['calculated_end_datetime'] = end_datetime
 
-        # Рассчитываем стоимость
         if self.property_obj:
             duration_days = (end_date - start_date).days + 1
 
@@ -650,6 +781,9 @@ class CheckoutForm(forms.Form):
     """Форма оформления заказа"""
     agree_to_terms = forms.BooleanField(
         required=True,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input'
+        }),
         label='Я согласен с условиями аренды'
     )
 
@@ -677,22 +811,48 @@ class ReviewForm(forms.ModelForm):
             'comment': 'Комментарий'
         }
 
+    def clean_rating(self):
+        rating = self.cleaned_data.get('rating')
+        if rating < 1 or rating > 5:
+            raise ValidationError('Оценка должна быть от 1 до 5')
+        return rating
+
 
 class ContactForm(forms.Form):
     """Форма обратной связи"""
+    name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ваше имя'
+        }),
+        label='Имя'
+    )
+
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'your@email.com'
+        }),
+        label='Email'
+    )
+
     subject = forms.CharField(
         max_length=200,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Тема сообщения'
-        })
+        }),
+        label='Тема'
     )
+
     message = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 5,
             'placeholder': 'Ваше сообщение...'
-        })
+        }),
+        label='Сообщение'
     )
 
 
@@ -741,10 +901,9 @@ class AdminUserEditForm(UserChangeForm):
         phone_digits = re.sub(r'\D', '', phone)
         if len(phone_digits) < 10:
             raise ValidationError('Номер телефона должен содержать не менее 10 цифр.')
-        if phone_digits[0] not in ['7', '8']:
-            raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
-
         if len(phone_digits) == 11:
+            if phone_digits[0] not in ['7', '8']:
+                raise ValidationError('Номер телефона должен начинаться с 7 или 8.')
             phone_digits = phone_digits[1:]
 
         phone_digits = phone_digits[:10]
@@ -761,7 +920,7 @@ class AdminPropertyEditForm(forms.ModelForm):
         fields = ['title', 'description', 'property_type', 'category', 'city',
                   'address', 'price_per_hour', 'price_per_day', 'price_per_week',
                   'price_per_month', 'capacity', 'area', 'floor', 'amenities',
-                  'is_featured', 'status', 'landlord', 'moderation_comment']
+                  'is_featured', 'status', 'landlord']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
@@ -780,7 +939,6 @@ class AdminPropertyEditForm(forms.ModelForm):
             'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'landlord': forms.Select(attrs={'class': 'form-select'}),
-            'moderation_comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
 

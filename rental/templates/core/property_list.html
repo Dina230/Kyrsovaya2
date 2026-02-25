@@ -62,6 +62,55 @@
             margin-top: 0;
         }
     }
+
+    /* Pagination styles */
+    .pagination {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .page-link {
+        color: #007bff;
+        border-radius: 5px;
+        margin: 0 3px;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s;
+    }
+
+    .page-link:hover {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,123,255,0.2);
+    }
+
+    .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+    }
+
+    .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+
+    .pagination-info {
+        text-align: center;
+        color: #6c757d;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .results-count {
+        background: #e9ecef;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
 </style>
 {% endblock %}
 
@@ -78,7 +127,16 @@
     <div class="row mb-4">
         <div class="col">
             <h1 class="mb-2">Помещения для аренды</h1>
-            <p class="text-muted">Найдено {{ properties.paginator.count }} помещений</p>
+            <div class="d-flex align-items-center gap-2">
+                <span class="results-count">
+                    <i class="bi bi-building"></i> Найдено: {{ properties.paginator.count }}
+                </span>
+                {% if properties.paginator.count > 0 %}
+                <span class="text-muted">
+                    ({{ properties.start_index }}-{{ properties.end_index }} из {{ properties.paginator.count }})
+                </span>
+                {% endif %}
+            </div>
         </div>
     </div>
 
@@ -279,14 +337,31 @@
         {% endfor %}
     </div>
 
-    <!-- Пагинация -->
+    <!-- ПАГИНАЦИЯ -->
     {% if properties.has_other_pages %}
     <nav aria-label="Пагинация" class="mt-4">
         <ul class="pagination justify-content-center">
+            <!-- Кнопка "Первая" -->
+            {% if properties.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1
+                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   aria-label="Первая">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
+            </li>
+            {% endif %}
+
+            <!-- Кнопка "Предыдущая" -->
             {% if properties.has_previous %}
             <li class="page-item">
                 <a class="page-link" href="?page={{ properties.previous_page_number }}
-                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   aria-label="Предыдущая">
                     <i class="bi bi-chevron-left"></i>
                 </a>
             </li>
@@ -296,6 +371,7 @@
             </li>
             {% endif %}
 
+            <!-- Номера страниц -->
             {% for num in properties.paginator.page_range %}
                 {% if properties.number == num %}
                 <li class="page-item active">
@@ -311,10 +387,12 @@
                 {% endif %}
             {% endfor %}
 
+            <!-- Кнопка "Следующая" -->
             {% if properties.has_next %}
             <li class="page-item">
                 <a class="page-link" href="?page={{ properties.next_page_number }}
-                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   aria-label="Следующая">
                     <i class="bi bi-chevron-right"></i>
                 </a>
             </li>
@@ -323,11 +401,29 @@
                 <span class="page-link"><i class="bi bi-chevron-right"></i></span>
             </li>
             {% endif %}
+
+            <!-- Кнопка "Последняя" -->
+            {% if properties.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ properties.paginator.num_pages }}
+                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   aria-label="Последняя">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
+            </li>
+            {% endif %}
         </ul>
-        <div class="text-center text-muted mt-2">
+
+        <!-- Информация о пагинации -->
+        <div class="pagination-info">
             <small>
-                Страница {{ properties.number }} из {{ properties.paginator.num_pages }}
-                | Показано {{ properties.start_index }} - {{ properties.end_index }} из {{ properties.paginator.count }}
+                Страница {{ properties.number }} из {{ properties.paginator.num_pages }} |
+                Показано {{ properties.start_index }} - {{ properties.end_index }}
+                из {{ properties.paginator.count }} помещений
             </small>
         </div>
     </nav>
@@ -345,9 +441,10 @@
     {% endif %}
 </div>
 
-<!-- JavaScript для автоматической отправки формы при изменении select -->
+<!-- JavaScript для автоматической отправки формы при изменении select и сохранения скролла -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Автоматическая отправка при изменении select
     const filterSelects = document.querySelectorAll('select[name="property_type"]');
     filterSelects.forEach(select => {
         select.addEventListener('change', function() {
@@ -373,6 +470,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 maxPrice.value = '';
             }
         });
+    }
+
+    // Сохранение позиции скролла при переходе по страницам
+    const paginationLinks = document.querySelectorAll('.page-link');
+    paginationLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Сохраняем текущую позицию скролла в sessionStorage
+            sessionStorage.setItem('scrollPosition', window.scrollY);
+        });
+    });
+
+    // Восстановление позиции скролла после загрузки страницы
+    const savedPosition = sessionStorage.getItem('scrollPosition');
+    if (savedPosition) {
+        window.scrollTo(0, parseInt(savedPosition));
+        sessionStorage.removeItem('scrollPosition');
     }
 });
 </script>

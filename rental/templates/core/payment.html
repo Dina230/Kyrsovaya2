@@ -1,77 +1,1036 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Оплата бронирования{% endblock %}
+{% block title %}Оплата бронирования #{{ booking.booking_id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-timer {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .timer-display {
+        font-size: 3rem;
+        font-weight: 700;
+        font-family: monospace;
+    }
+
+    .timer-warning {
+        color: #ffc107;
+    }
+
+    .timer-danger {
+        color: #dc3545;
+        animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    /* Стили для способов оплаты */
+    .payment-methods {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .payment-method-card {
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+        position: relative;
+    }
+
+    .payment-method-card:hover {
+        border-color: #007bff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,123,255,0.1);
+    }
+
+    .payment-method-card.active {
+        border-color: #28a745;
+        background-color: #f0fff0;
+        border-width: 2px;
+    }
+
+    .payment-method-radio {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .payment-method-content {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    .payment-method-icon {
+        font-size: 2.5rem;
+        margin-right: 20px;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 50%;
+        color: #495057;
+    }
+
+    .payment-method-card.active .payment-method-icon {
+        background: #28a745;
+        color: white;
+    }
+
+    .payment-method-info {
+        flex-grow: 1;
+    }
+
+    .payment-method-title {
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+        color: #212529;
+    }
+
+    .payment-method-desc {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .payment-method-check {
+        width: 30px;
+        height: 30px;
+        border: 2px solid #dee2e6;
+        border-radius: 50%;
+        margin-left: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+    }
+
+    .payment-method-card.active .payment-method-check {
+        background: #28a745;
+        border-color: #28a745;
+    }
+
+    .payment-method-card.active .payment-method-check i {
+        display: block;
+    }
+
+    .payment-method-check i {
+        display: none;
+    }
+
+    .card-details {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+        border: 1px solid #dee2e6;
+    }
+
+    .cash-details {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 30px;
+        margin-top: 20px;
+        text-align: center;
+        animation: fadeIn 0.5s ease;
+    }
+
+    .cash-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+    }
+
+    .cash-instruction {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .cash-note {
+        background: rgba(255,255,255,0.2);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        text-align: left;
+    }
+
+    .cash-note h5 {
+        color: white;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
+
+    .cash-note p {
+        margin-bottom: 5px;
+        font-size: 0.95rem;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-preview {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        position: relative;
+        min-height: 200px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .card-preview .card-number {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+        font-family: monospace;
+        position: absolute;
+        bottom: 60px;
+        left: 20px;
+        word-break: break-all;
+        max-width: 80%;
+    }
+
+    .card-preview .card-holder {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        max-width: 60%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .card-preview .card-expiry {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        font-size: 0.9rem;
+        background: rgba(255,255,255,0.2);
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+
+    .card-preview .card-type {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 2rem;
+    }
+
+    .card-preview.visa { background: linear-gradient(135deg, #1a1f71 0%, #0d47a1 100%); }
+    .card-preview.mastercard { background: linear-gradient(135deg, #eb001b 0%, #f79e1b 100%); }
+    .card-preview.mir { background: linear-gradient(135deg, #0b3b2c 0%, #1b5e20 100%); }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 10px 15px;
+        transition: all 0.3s;
+        width: 100%;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+    }
+
+    .form-control.is-invalid {
+        border-color: #dc3545;
+    }
+
+    .invalid-feedback {
+        display: block;
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .row-custom {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 1rem;
+    }
+
+    .row-custom > div {
+        flex: 1;
+    }
+
+    .secure-badge {
+        background: #e9ecef;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin: 20px 0;
+        color: #495057;
+    }
+
+    .secure-badge i {
+        color: #28a745;
+        margin-right: 5px;
+    }
+
+    .card-number-input {
+        font-family: monospace;
+        font-size: 1.2rem;
+        letter-spacing: 1px;
+    }
+
+    .cvv-input {
+        font-family: monospace;
+        font-size: 1.2rem;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        padding: 12px 20px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-outline-secondary {
+        padding: 12px 20px;
+        font-size: 1.1rem;
+    }
+
+    .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 15px;
+        border-radius: 8px;
+    }
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
+        <div class="col-md-8">
+            <!-- Таймер оплаты -->
+            <div class="payment-timer" id="paymentTimer">
+                <h4 class="mb-3">Осталось времени для оплаты</h4>
+                <div class="timer-display" id="timer">
+                    {{ time_left_minutes|stringformat:"02d" }}:{{ time_left_seconds|stringformat:"02d" }}
+                </div>
+                <p class="mt-3 mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    Бронирование будет автоматически отменено через 30 минут после создания
+                </p>
+            </div>
+
+            <!-- Информация о бронировании -->
+            <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Оплата бронирования #{{ booking.booking_id }}</h4>
+                    <h5 class="mb-0">Детали бронирования #{{ booking.booking_id }}</h5>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info mb-4">
-                        <h5 class="alert-heading">Сумма к оплате:</h5>
-                        <h2 class="text-primary">{{ booking.total_price }} ₽</h2>
-                        <hr>
-                        <p class="mb-0">
-                            <strong>Помещение:</strong> {{ booking.property.title }}<br>
-                            <strong>Дата:</strong> {{ booking.start_datetime|date:"d.m.Y H:i" }} - {{ booking.end_datetime|date:"d.m.Y H:i" }}
-                        </p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Помещение:</strong> {{ booking.property.title }}</p>
+                            <p><strong>Дата:</strong> {{ booking.start_datetime|date:"d.m.Y H:i" }} - {{ booking.end_datetime|date:"d.m.Y H:i" }}</p>
+                            <p><strong>Гостей:</strong> {{ booking.guests }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Сумма к оплате:</strong></p>
+                            <h2 class="text-primary">{{ booking.total_price|floatformat:2 }} ₽</h2>
+                            {% if booking.special_requests %}
+                            <p><small class="text-muted">Пожелания: {{ booking.special_requests|truncatechars:50 }}</small></p>
+                            {% endif %}
+                        </div>
                     </div>
-                    
-                    <form method="post">
+                </div>
+            </div>
+
+            <!-- Форма оплаты -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Выберите способ оплаты</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="paymentForm" novalidate>
                         {% csrf_token %}
-                        
-                        <h5 class="mb-3">Данные карты (имитация)</h5>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Номер карты</label>
-                            <input type="text" class="form-control" name="card_number" 
-                                   placeholder="4242 4242 4242 4242" required>
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Срок действия</label>
-                                <input type="text" class="form-control" name="expiry" 
-                                       placeholder="MM/YY" required>
+                        {% endif %}
+
+                        <!-- Способы оплаты -->
+                        <div class="payment-methods">
+                            <!-- Оплата картой -->
+                            <div class="payment-method-card {% if form.payment_method.value == 'card' or not form.payment_method.value %}active{% endif %}"
+                                 data-method="card"
+                                 id="methodCard"
+                                 onclick="document.getElementById('method_card').click();">
+                                <input type="radio"
+                                       name="payment_method"
+                                       value="card"
+                                       id="method_card"
+                                       class="payment-method-radio"
+                                       {% if form.payment_method.value == 'card' or not form.payment_method.value %}checked{% endif %}>
+                                <div class="payment-method-content">
+                                    <div class="payment-method-icon">
+                                        <i class="bi bi-credit-card"></i>
+                                    </div>
+                                    <div class="payment-method-info">
+                                        <div class="payment-method-title">Банковская карта</div>
+                                        <div class="payment-method-desc">
+                                            Visa, MasterCard, Мир. Мгновенное подтверждение бронирования.
+                                        </div>
+                                    </div>
+                                    <div class="payment-method-check">
+                                        <i class="bi bi-check-lg"></i>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">CVV</label>
-                                <input type="text" class="form-control" name="cvv" 
-                                       placeholder="123" required>
+
+                            <!-- Оплата наличными -->
+                            <div class="payment-method-card {% if form.payment_method.value == 'cash' %}active{% endif %}"
+                                 data-method="cash"
+                                 id="methodCash"
+                                 onclick="document.getElementById('method_cash').click();">
+                                <input type="radio"
+                                       name="payment_method"
+                                       value="cash"
+                                       id="method_cash"
+                                       class="payment-method-radio"
+                                       {% if form.payment_method.value == 'cash' %}checked{% endif %}>
+                                <div class="payment-method-content">
+                                    <div class="payment-method-icon">
+                                        <i class="bi bi-cash"></i>
+                                    </div>
+                                    <div class="payment-method-info">
+                                        <div class="payment-method-title">Наличными при встрече</div>
+                                        <div class="payment-method-desc">
+                                            Оплатите наличными при встрече с владельцем. Бронирование будет подтверждено после оплаты.
+                                        </div>
+                                    </div>
+                                    <div class="payment-method-check">
+                                        <i class="bi bi-check-lg"></i>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Метод оплаты</label>
-                            <select class="form-select" name="payment_method">
-                                <option value="card">Банковская карта</option>
-                                <option value="sbp">СБП</option>
-                                <option value="cash">Наличными при встрече</option>
-                            </select>
+
+                        <!-- Блок для оплаты картой -->
+                        <div id="cardPaymentBlock" class="card-details"
+                             style="{% if form.payment_method.value == 'cash' %}display: none;{% endif %}">
+                            <!-- Превью карты -->
+                            <div class="card-preview" id="cardPreview">
+                                <div class="card-number" id="previewNumber">•••• •••• •••• ••••</div>
+                                <div class="card-holder" id="previewHolder">ИМЯ ВЛАДЕЛЬЦА</div>
+                                <div class="card-expiry" id="previewExpiry">ММ/ГГ</div>
+                                <div class="card-type" id="previewType">
+                                    <i class="bi bi-credit-card"></i>
+                                </div>
+                            </div>
+
+                            <!-- Номер карты -->
+                            <div class="form-group">
+                                <label for="card-number">
+                                    <i class="bi bi-credit-card"></i> Номер карты
+                                </label>
+                                <input type="text"
+                                       name="card_number"
+                                       class="form-control card-number-input"
+                                       id="card-number"
+                                       placeholder="4242 4242 4242 4242"
+                                       value="{{ form.card_number.value|default:'' }}"
+                                       {% if form.payment_method.value != 'cash' %}required{% endif %}>
+                                {% if form.card_number.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.card_number.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">Формат: 4242 4242 4242 4242</small>
+                            </div>
+
+                            <!-- Владелец карты -->
+                            <div class="form-group">
+                                <label for="card-holder">
+                                    <i class="bi bi-person"></i> Владелец карты
+                                </label>
+                                <input type="text"
+                                       name="card_holder"
+                                       class="form-control"
+                                       id="card-holder"
+                                       placeholder="IVAN IVANOV"
+                                       value="{{ form.card_holder.value|default:'' }}"
+                                       {% if form.payment_method.value != 'cash' %}required{% endif %}>
+                                {% if form.card_holder.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.card_holder.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">Как на карте (латиницей)</small>
+                            </div>
+
+                            <!-- Срок действия и CVV -->
+                            <div class="row-custom">
+                                <div class="form-group">
+                                    <label>Месяц</label>
+                                    <select name="expiry_month" class="form-select" id="expiry-month"
+                                            {% if form.payment_method.value != 'cash' %}required{% endif %}>
+                                        <option value="">ММ</option>
+                                        <option value="01">01</option>
+                                        <option value="02">02</option>
+                                        <option value="03">03</option>
+                                        <option value="04">04</option>
+                                        <option value="05">05</option>
+                                        <option value="06">06</option>
+                                        <option value="07">07</option>
+                                        <option value="08">08</option>
+                                        <option value="09">09</option>
+                                        <option value="10">10</option>
+                                        <option value="11">11</option>
+                                        <option value="12">12</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Год</label>
+                                    <select name="expiry_year" class="form-select" id="expiry-year"
+                                            {% if form.payment_method.value != 'cash' %}required{% endif %}>
+                                        <option value="">ГГГГ</option>
+                                        <option value="2025">2025</option>
+                                        <option value="2026">2026</option>
+                                        <option value="2027">2027</option>
+                                        <option value="2028">2028</option>
+                                        <option value="2029">2029</option>
+                                        <option value="2030">2030</option>
+                                        <option value="2031">2031</option>
+                                        <option value="2032">2032</option>
+                                        <option value="2033">2033</option>
+                                        <option value="2034">2034</option>
+                                        <option value="2035">2035</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cvv">
+                                        <i class="bi bi-shield-lock"></i> CVV
+                                    </label>
+                                    <input type="password"
+                                           name="cvv"
+                                           class="form-control cvv-input"
+                                           id="cvv"
+                                           placeholder="123"
+                                           maxlength="4"
+                                           {% if form.payment_method.value != 'cash' %}required{% endif %}>
+                                    {% if form.cvv.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.cvv.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Тип карты (скрытое поле) -->
+                            <input type="hidden" name="card_type" id="card-type" value="other">
+
+                            <!-- Сохранить карту -->
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" name="save_card" id="save-card">
+                                <label class="form-check-label" for="save-card">
+                                    Сохранить карту для будущих платежей
+                                </label>
+                            </div>
                         </div>
-                        
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            Это демонстрационная оплата. Введите любые данные для теста.
+
+                        <!-- Блок для оплаты наличными -->
+                        <div id="cashPaymentBlock" class="cash-details"
+                             style="{% if form.payment_method.value != 'cash' %}display: none;{% endif %}">
+                            <div class="cash-icon">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+                            <h4 class="cash-instruction">Оплата наличными при встрече</h4>
+                            <p>Вы выбрали оплату наличными при встрече с владельцем.</p>
+                            <div class="cash-note">
+                                <h5><i class="bi bi-info-circle"></i> Что дальше?</h5>
+                                <p class="mb-2">1. Ваше бронирование будет создано со статусом "Ожидает оплаты"</p>
+                                <p class="mb-2">2. Владелец получит уведомление о вашем бронировании</p>
+                                <p class="mb-2">3. Свяжитесь с владельцем для согласования времени встречи</p>
+                                <p class="mb-2">4. Оплатите наличными при встрече</p>
+                                <p class="mb-0">5. После получения оплаты владелец подтвердит бронирование</p>
+                            </div>
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Бронирование будет подтверждено только после получения оплаты владельцем.
+                            </div>
                         </div>
-                        
+
+                        <!-- Безопасность -->
+                        <div class="secure-badge">
+                            <i class="bi bi-lock-fill"></i>
+                            Ваши данные защищены шифрованием SSL
+                        </div>
+
+                        <!-- Кнопки -->
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-credit-card"></i> Оплатить {{ booking.total_price }} ₽
+                            <button type="submit" class="btn btn-success btn-lg" id="payButton">
+                                {% if form.payment_method.value == 'cash' %}
+                                <i class="bi bi-cash"></i> Подтвердить бронирование (оплата наличными)
+                                {% else %}
+                                <i class="bi bi-credit-card"></i> Оплатить картой
+                                {% endif %}
                             </button>
                             <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-secondary">
-                                Отмена
+                                <i class="bi bi-arrow-left"></i> Вернуться к бронированию
                             </a>
                         </div>
                     </form>
                 </div>
             </div>
+
+            <!-- Предупреждение -->
+            <div class="alert alert-warning mt-4">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Это демонстрационная оплата.</strong> Для теста можно использовать любые данные.
+            </div>
         </div>
     </div>
 </div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Получаем элементы
+    const timerElement = document.getElementById('timer');
+    const paymentTimerContainer = document.getElementById('paymentTimer'); // Весь контейнер таймера
+    const totalSeconds = {{ time_left_total }};
+    const methodCard = document.getElementById('methodCard');
+    const methodCash = document.getElementById('methodCash');
+    const cardRadio = document.getElementById('method_card');
+    const cashRadio = document.getElementById('method_cash');
+    const cardPaymentBlock = document.getElementById('cardPaymentBlock');
+    const cashPaymentBlock = document.getElementById('cashPaymentBlock');
+    const payButton = document.getElementById('payButton');
+
+    // Поля карты
+    const cardNumberInput = document.getElementById('card-number');
+    const cardHolderInput = document.getElementById('card-holder');
+    const expiryMonthSelect = document.getElementById('expiry-month');
+    const expiryYearSelect = document.getElementById('expiry-year');
+    const cvvInput = document.getElementById('cvv');
+
+    let timerInterval = null;
+
+    // Функция запуска таймера
+    function startTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+
+        if (!timerElement || !paymentTimerContainer) return;
+
+        // Показываем контейнер таймера
+        paymentTimerContainer.style.display = 'block';
+
+        let timeLeft = totalSeconds;
+
+        timerInterval = setInterval(function() {
+            timeLeft--;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerElement.textContent = '00:00';
+                timerElement.classList.add('timer-danger');
+
+                // Если время истекло при выборе карты, показываем сообщение
+                if (cardRadio && cardRadio.checked) {
+                    setTimeout(function() {
+                        alert('Время для оплаты истекло. Вы будете перенаправлены.');
+                        window.location.href = "{% url 'booking_detail' booking.id %}";
+                    }, 3000);
+                }
+            } else {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerElement.textContent =
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                timerElement.classList.remove('timer-warning', 'timer-danger');
+
+                if (timeLeft < 60) {
+                    timerElement.classList.add('timer-danger');
+                } else if (timeLeft < 180) {
+                    timerElement.classList.add('timer-warning');
+                }
+            }
+        }, 1000);
+    }
+
+    // Функция остановки таймера
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        if (timerElement) {
+            timerElement.textContent = '--:--';
+        }
+    }
+
+    // Функция обновления интерфейса
+    function updatePaymentMethod(method) {
+        if (method === 'card') {
+            // Обновляем классы
+            methodCard.classList.add('active');
+            methodCash.classList.remove('active');
+
+            // Показываем/скрываем блоки
+            cardPaymentBlock.style.display = 'block';
+            cashPaymentBlock.style.display = 'none';
+
+            // Обновляем кнопку
+            payButton.innerHTML = '<i class="bi bi-credit-card"></i> Оплатить картой';
+
+            // Делаем поля карты обязательными
+            cardNumberInput.required = true;
+            cardHolderInput.required = true;
+            cvvInput.required = true;
+            expiryMonthSelect.required = true;
+            expiryYearSelect.required = true;
+
+            // ПОКАЗЫВАЕМ И ЗАПУСКАЕМ ТАЙМЕР
+            if (paymentTimerContainer) {
+                paymentTimerContainer.style.display = 'block';
+            }
+            startTimer();
+        } else {
+            // Обновляем классы
+            methodCash.classList.add('active');
+            methodCard.classList.remove('active');
+
+            // Показываем/скрываем блоки
+            cardPaymentBlock.style.display = 'none';
+            cashPaymentBlock.style.display = 'block';
+
+            // Обновляем кнопку
+            payButton.innerHTML = '<i class="bi bi-cash"></i> Подтвердить бронирование (оплата наличными)';
+
+            // Убираем обязательность полей карты
+            cardNumberInput.required = false;
+            cardHolderInput.required = false;
+            cvvInput.required = false;
+            expiryMonthSelect.required = false;
+            expiryYearSelect.required = false;
+
+            // Очищаем ошибки
+            cardNumberInput.classList.remove('is-invalid');
+            cardHolderInput.classList.remove('is-invalid');
+            cvvInput.classList.remove('is-invalid');
+
+            // СКРЫВАЕМ И ОСТАНАВЛИВАЕМ ТАЙМЕР
+            if (paymentTimerContainer) {
+                paymentTimerContainer.style.display = 'none';
+            }
+            stopTimer();
+        }
+
+        // Включаем кнопку
+        payButton.disabled = false;
+    }
+
+    // Обработчики для радио-кнопок
+    if (cardRadio) {
+        cardRadio.addEventListener('change', function() {
+            if (this.checked) {
+                updatePaymentMethod('card');
+            }
+        });
+    }
+
+    if (cashRadio) {
+        cashRadio.addEventListener('change', function() {
+            if (this.checked) {
+                updatePaymentMethod('cash');
+            }
+        });
+    }
+
+    // Клик по карточке
+    if (methodCard) {
+        methodCard.addEventListener('click', function() {
+            cardRadio.checked = true;
+            updatePaymentMethod('card');
+        });
+    }
+
+    if (methodCash) {
+        methodCash.addEventListener('click', function() {
+            cashRadio.checked = true;
+            updatePaymentMethod('cash');
+        });
+    }
+
+    // Инициализация при загрузке
+    if (cardRadio && cardRadio.checked) {
+        updatePaymentMethod('card');
+    } else if (cashRadio && cashRadio.checked) {
+        updatePaymentMethod('cash');
+    } else {
+        // По умолчанию выбираем карту
+        if (cardRadio) {
+            cardRadio.checked = true;
+            updatePaymentMethod('card');
+        }
+    }
+
+    // МАСКА ДЛЯ НОМЕРА КАРТЫ
+    if (cardNumberInput) {
+        cardNumberInput.classList.add('card-number-input');
+
+        function formatCardNumber(value) {
+            let digits = value.replace(/\D/g, '');
+            digits = digits.substring(0, 16);
+
+            let formatted = '';
+            for (let i = 0; i < digits.length; i++) {
+                if (i > 0 && i % 4 === 0) {
+                    formatted += ' ';
+                }
+                formatted += digits[i];
+            }
+
+            return { digits, formatted };
+        }
+
+        cardNumberInput.addEventListener('input', function(e) {
+            const { digits, formatted } = formatCardNumber(e.target.value);
+            e.target.value = formatted;
+
+            // Обновляем превью
+            const previewNumber = document.getElementById('previewNumber');
+            const previewCard = document.getElementById('cardPreview');
+            const cardTypeInput = document.getElementById('card-type');
+
+            if (previewNumber) {
+                if (formatted.length > 0) {
+                    previewNumber.textContent = formatted;
+                } else {
+                    previewNumber.textContent = '•••• •••• •••• ••••';
+                }
+            }
+
+            // Определяем тип карты
+            if (previewCard && cardTypeInput) {
+                if (digits.startsWith('4')) {
+                    cardTypeInput.value = 'visa';
+                    previewCard.className = 'card-preview visa';
+                    document.getElementById('previewType').innerHTML = '<i class="bi bi-credit-card"></i> Visa';
+                } else if (digits.startsWith('5')) {
+                    cardTypeInput.value = 'mastercard';
+                    previewCard.className = 'card-preview mastercard';
+                    document.getElementById('previewType').innerHTML = '<i class="bi bi-credit-card"></i> MasterCard';
+                } else if (digits.startsWith('22') || digits.startsWith('2')) {
+                    cardTypeInput.value = 'mir';
+                    previewCard.className = 'card-preview mir';
+                    document.getElementById('previewType').innerHTML = '<i class="bi bi-credit-card"></i> Мир';
+                } else {
+                    cardTypeInput.value = 'other';
+                    previewCard.className = 'card-preview';
+                    document.getElementById('previewType').innerHTML = '<i class="bi bi-credit-card"></i>';
+                }
+            }
+        });
+
+        cardNumberInput.addEventListener('keydown', function(e) {
+            if ([46, 8, 9, 27, 13, 37, 38, 39, 40, 36, 35].indexOf(e.keyCode) !== -1 ||
+                (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true)) ||
+                (e.keyCode === 67 && (e.ctrlKey === true || e.metaKey === true)) ||
+                (e.keyCode === 86 && (e.ctrlKey === true || e.metaKey === true))) {
+                return;
+            }
+
+            if (e.shiftKey || (e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // Маска для CVV
+    if (cvvInput) {
+        cvvInput.classList.add('cvv-input');
+
+        cvvInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.substring(0, 4);
+            e.target.value = value;
+        });
+
+        cvvInput.addEventListener('keydown', function(e) {
+            if ([46, 8, 9, 27, 13, 37, 38, 39, 40, 36, 35].indexOf(e.keyCode) !== -1 ||
+                (e.keyCode === 65 && (e.ctrlKey === true || e.metaKey === true))) {
+                return;
+            }
+
+            if (e.shiftKey || (e.keyCode < 48 || e.keyCode > 57) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // Обновление имени владельца
+    const previewHolder = document.getElementById('previewHolder');
+    if (cardHolderInput && previewHolder) {
+        cardHolderInput.addEventListener('input', function(e) {
+            let value = e.target.value.toUpperCase();
+            value = value.replace(/[^A-Z\s-]/g, '');
+            e.target.value = value;
+
+            if (value.length > 0) {
+                previewHolder.textContent = value;
+            } else {
+                previewHolder.textContent = 'ИМЯ ВЛАДЕЛЬЦА';
+            }
+        });
+    }
+
+    // Обновление срока действия
+    const previewExpiry = document.getElementById('previewExpiry');
+    function updateExpiry() {
+        if (previewExpiry) {
+            let month = expiryMonthSelect.value;
+            let year = expiryYearSelect.value ? expiryYearSelect.value.slice(-2) : '';
+            if (month && year && month !== '' && year !== '') {
+                previewExpiry.textContent = `${month}/${year}`;
+            } else {
+                previewExpiry.textContent = 'ММ/ГГ';
+            }
+        }
+    }
+
+    if (expiryMonthSelect) {
+        expiryMonthSelect.addEventListener('change', updateExpiry);
+    }
+    if (expiryYearSelect) {
+        expiryYearSelect.addEventListener('change', updateExpiry);
+    }
+
+    // Валидация формы
+    const paymentForm = document.getElementById('paymentForm');
+
+    if (paymentForm) {
+        paymentForm.addEventListener('submit', function(e) {
+            const method = document.querySelector('input[name="payment_method"]:checked').value;
+            let isValid = true;
+            let errorMessage = '';
+
+            if (method === 'card') {
+                const cardNumber = cardNumberInput.value.replace(/\s/g, '');
+                if (cardNumber.length < 16) {
+                    errorMessage += '• Номер карты должен содержать 16 цифр\n';
+                    cardNumberInput.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    cardNumberInput.classList.remove('is-invalid');
+                }
+
+                if (!cardHolderInput.value.trim()) {
+                    errorMessage += '• Укажите имя владельца карты\n';
+                    cardHolderInput.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    cardHolderInput.classList.remove('is-invalid');
+                }
+
+                const cvv = cvvInput.value;
+                if (cvv.length < 3) {
+                    errorMessage += '• CVV должен содержать 3-4 цифры\n';
+                    cvvInput.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    cvvInput.classList.remove('is-invalid');
+                }
+
+                if (!expiryMonthSelect.value || !expiryYearSelect.value) {
+                    errorMessage += '• Укажите срок действия карты\n';
+                    isValid = false;
+                }
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Пожалуйста, исправьте ошибки:\n' + errorMessage);
+            } else {
+                // Останавливаем таймер перед отправкой
+                stopTimer();
+
+                payButton.disabled = true;
+                if (method === 'card') {
+                    payButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Обработка платежа...';
+                } else {
+                    payButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Создание бронирования...';
+                }
+            }
+        });
+    }
+
+    // Добавляем стиль для скрытия таймера при загрузке, если выбран способ "наличные"
+    if (cashRadio && cashRadio.checked) {
+        if (paymentTimerContainer) {
+            paymentTimerContainer.style.display = 'none';
+        }
+        stopTimer();
+    }
+});
+</script>
 {% endblock %}

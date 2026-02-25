@@ -14,17 +14,26 @@ from datetime import datetime, timedelta
 import csv
 import io
 import os
+import logging
 
-# Импорты моделей и форм
-from .models import User, Property, Booking, Review, Favorite, Category, Amenity, Notification, Message, Cart, Contract
+# Импорты моделей
+from .models import (
+    User, Property, Booking, Review, Favorite,
+    Category, Amenity, Notification, Message, Cart, Contract
+)
+
+# Импорты форм
 from .forms import (
     CustomUserCreationForm, CustomUserChangeForm,
     PropertyForm, BookingForm, ReviewForm,
     ContactForm, CartBookingForm, CheckoutForm,
     AdminUserEditForm, AdminPropertyEditForm,
     AdminBookingEditForm, AdminReviewEditForm,
-    SearchForm
+    SearchForm, PaymentCardForm
 )
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -229,26 +238,67 @@ def generate_contract_pdf(booking):
         return contract
 
 
+def auto_cancel_expired_bookings():
+    """
+    Автоматически отменяет бронирования, не оплаченные в течение 30 минут
+    """
+    expiration_time = timezone.now() - timedelta(minutes=30)
+    expired_bookings = Booking.objects.filter(
+        status='pending',
+        created_at__lte=expiration_time
+    )
+
+    count = expired_bookings.count()
+
+    for booking in expired_bookings:
+        booking.status = 'cancelled'
+        booking.save()
+
+        # Создаем уведомление для арендатора
+        create_notification(
+            user=booking.tenant,
+            notification_type='booking_cancelled',
+            title='Бронирование отменено',
+            message=f'Бронирование #{booking.booking_id} автоматически отменено из-за истечения времени оплаты.',
+            related_object_id=booking.id,
+            related_object_type='booking'
+        )
+
+        logger.info(f"Booking #{booking.booking_id} auto-cancelled (created at {booking.created_at})")
+
+    if count > 0:
+        logger.info(f"Auto-cancelled {count} expired bookings")
+
+    return count
+
+
 # ============================================================================
 # ПУБЛИЧНЫЕ СТРАНИЦЫ
 # ============================================================================
 
 def home(request):
     """Главная страница"""
+    # Проверяем просроченные бронирования
+    auto_cancel_expired_bookings()
+
     properties = Property.objects.filter(
         status='active',
         is_featured=True
-    ).select_related('landlord', 'category')[:6]
+    ).select_related('landlord', 'category')[:5]
 
     context = {
         'properties': properties,
         'title': 'Аренда коммерческих помещений'
     }
+
     return render(request, 'core/home.html', context)
 
 
 def property_list(request):
-    """Список всех помещений"""
+    """Список всех помещений с пагинацией (5 на странице)"""
+    # Проверяем просроченные бронирования
+    auto_cancel_expired_bookings()
+
     properties = Property.objects.filter(status='active').select_related('landlord', 'category')
 
     # Фильтрация по параметрам
@@ -300,8 +350,8 @@ def property_list(request):
         except ValueError:
             pass
 
-    # Пагинация
-    paginator = Paginator(properties, 12)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(properties, 6)
     page = request.GET.get('page')
     properties_page = paginator.get_page(page)
 
@@ -329,11 +379,16 @@ def property_detail(request, slug):
     property_obj.save()
     property_obj.refresh_from_db()
 
-    # Получаем только одобренные отзывы
+    # Получаем только одобренные отзывы с пагинацией (5 на странице)
     reviews = Review.objects.filter(
         property=property_obj,
         status='approved'
     ).select_related('user').order_by('-created_at')
+
+    # Пагинация для отзывов - 5 на странице
+    reviews_paginator = Paginator(reviews, 5)
+    reviews_page = request.GET.get('reviews_page')
+    reviews_page_obj = reviews_paginator.get_page(reviews_page)
 
     # Проверяем, добавлено ли помещение в избранное
     is_favorite = False
@@ -374,16 +429,16 @@ def property_detail(request, slug):
             'bookings': bookings.filter(start_datetime__date=current_date).exists()
         })
 
-    # Похожие помещения
+    # Похожие помещения (максимум 5)
     similar_properties = Property.objects.filter(
         status='active',
         property_type=property_obj.property_type,
         city=property_obj.city
-    ).exclude(id=property_obj.id).select_related('landlord')[:4]
+    ).exclude(id=property_obj.id).select_related('landlord')[:5]
 
     context = {
         'property': property_obj,
-        'reviews': reviews,
+        'reviews': reviews_page_obj,
         'is_favorite': is_favorite,
         'in_cart': in_cart,
         'calendar_data': calendar_data,
@@ -431,6 +486,9 @@ def register(request):
 @login_required
 def dashboard(request):
     """Личный кабинет"""
+    # Проверяем просроченные бронирования
+    auto_cancel_expired_bookings()
+
     context = {'title': 'Личный кабинет'}
     user = request.user
 
@@ -451,7 +509,9 @@ def dashboard(request):
             'cart_count': Cart.objects.filter(user=user).count(),
         }
 
-        favorite_properties = list(user.favorites.select_related('property').all()[:4])
+        # Избранные помещения (максимум 5)
+        favorite_properties = list(user.favorites.select_related('property').all()[:5])
+        # Активные бронирования (максимум 5)
         safe_active_bookings = list(active_bookings[:5])
 
         context.update({
@@ -493,13 +553,16 @@ def dashboard(request):
             ).count(),
         }
 
-        safe_properties = properties[:6]
+        # Мои помещения (максимум 5)
+        safe_properties = properties[:5]
 
-        new_bookings = list(bookings.filter(status='pending').order_by('-created_at')[:10])
+        # Новые бронирования (максимум 5)
+        new_bookings = list(bookings.filter(status='pending').order_by('-created_at')[:5])
+        # Активные бронирования (максимум 5)
         active_bookings = list(bookings.filter(
             status__in=['paid', 'confirmed'],
             start_datetime__gte=timezone.now()
-        ).order_by('start_datetime')[:10])
+        ).order_by('start_datetime')[:5])
 
         context.update({
             'stats': stats,
@@ -528,6 +591,7 @@ def dashboard(request):
             ).aggregate(total=Sum('total_price'))['total'] or 0,
         }
 
+        # Последние записи (максимум 5)
         recent_users = User.objects.order_by('-date_joined')[:5]
         recent_bookings = Booking.objects.select_related('property', 'tenant').order_by('-created_at')[:5]
         recent_reviews = Review.objects.select_related('property', 'user').order_by('-created_at')[:5]
@@ -584,50 +648,75 @@ def change_password(request):
 
 @login_required
 def my_bookings(request):
-    """Мои бронирования"""
+    """Мои бронирования с пагинацией (5 на странице)"""
     if request.user.user_type != 'tenant':
         messages.error(request, 'Эта страница доступна только арендаторам.')
         return redirect('dashboard')
 
+    # Проверяем просроченные бронирования
+    auto_cancel_expired_bookings()
+
     bookings = request.user.bookings_as_tenant.select_related('property').order_by('-created_at')
 
+    # Фильтрация по статусу
     status_filter = request.GET.get('status')
     if status_filter:
         bookings = bookings.filter(status=status_filter)
 
-    paginator = Paginator(bookings, 10)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(bookings, 5)
     page = request.GET.get('page')
     bookings_page = paginator.get_page(page)
 
+    # Статистика по статусам для фильтра
+    status_stats = {
+        'total': bookings.count(),
+        'pending': bookings.filter(status='pending').count(),
+        'paid': bookings.filter(status='paid').count(),
+        'confirmed': bookings.filter(status='confirmed').count(),
+        'completed': bookings.filter(status='completed').count(),
+        'cancelled': bookings.filter(status='cancelled').count(),
+    }
+
     return render(request, 'core/my_bookings.html', {
         'bookings': bookings_page,
+        'status_stats': status_stats,
+        'current_status': status_filter,
         'title': 'Мои бронирования'
     })
 
 
 @login_required
 def my_favorites(request):
-    """Избранные помещения"""
-    favorites = request.user.favorites.select_related('property').all()
+    """Избранные помещения с пагинацией (5 на странице)"""
+    favorites = request.user.favorites.select_related('property').all().order_by('-created_at')
+
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(favorites, 5)
+    page = request.GET.get('page')
+    favorites_page = paginator.get_page(page)
+
     return render(request, 'core/my_favorites.html', {
-        'favorites': favorites,
+        'favorites': favorites_page,
         'title': 'Избранное'
     })
 
 
 @login_required
 def my_properties(request):
-    """Мои помещения (для арендодателей)"""
+    """Мои помещения (для арендодателей) с пагинацией (5 на странице)"""
     if request.user.user_type != 'landlord':
         messages.error(request, 'Эта страница доступна только арендодателям.')
         return redirect('dashboard')
 
-    properties = request.user.properties.select_related('category').all()
+    properties = request.user.properties.select_related('category').all().order_by('-created_at')
 
+    # Фильтрация по статусу
     status_filter = request.GET.get('status')
     if status_filter:
         properties = properties.filter(status=status_filter)
 
+    # Статистика
     stats = {
         'active_count': properties.filter(status='active').count(),
         'pending_count': properties.filter(status='pending').count(),
@@ -638,13 +727,15 @@ def my_properties(request):
         ).count(),
     }
 
-    paginator = Paginator(properties, 10)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(properties, 5)
     page = request.GET.get('page')
     properties_page = paginator.get_page(page)
 
     return render(request, 'core/my_properties.html', {
         'properties': properties_page,
         'stats': stats,
+        'current_status': status_filter,
         'title': 'Мои помещения'
     })
 
@@ -674,6 +765,9 @@ def create_booking(request, property_id):
         messages.error(request, 'Только арендаторы могут создавать бронирования.')
         return redirect('property_detail', slug=property_obj.slug)
 
+    # Проверяем просроченные бронирования
+    auto_cancel_expired_bookings()
+
     if request.method == 'POST':
         form = BookingForm(request.POST, property_obj=property_obj)
         if form.is_valid():
@@ -684,7 +778,7 @@ def create_booking(request, property_id):
             booking.save()
 
             create_booking_notification(booking, 'booking_created')
-            messages.success(request, 'Бронирование создано. Перейдите к оплате.')
+            messages.success(request, 'Бронирование создано. Перейдите к оплате в течение 30 минут.')
             return redirect('payment', booking_id=booking.id)
         else:
             for field, errors in form.errors.items():
@@ -704,6 +798,9 @@ def create_booking(request, property_id):
 @login_required
 def booking_detail(request, booking_id):
     """Детали бронирования"""
+    # Проверяем просроченные бронирования
+    auto_cancel_expired_bookings()
+
     booking = get_object_or_404(
         Booking.objects.select_related('property', 'property__landlord', 'tenant'),
         id=booking_id
@@ -740,6 +837,12 @@ def booking_detail(request, booking_id):
     days_count = (booking.end_datetime.date() - booking.start_datetime.date()).days + 1
     hours_count = (booking.end_datetime - booking.start_datetime).total_seconds() / 3600
 
+    # Рассчитываем оставшееся время для оплаты
+    time_left = None
+    if booking.status == 'pending':
+        time_elapsed = timezone.now() - booking.created_at
+        time_left = max(0, 30 - time_elapsed.total_seconds() / 60)
+
     return render(request, 'core/booking_detail.html', {
         'booking': booking,
         'can_cancel': can_cancel,
@@ -749,6 +852,7 @@ def booking_detail(request, booking_id):
         'has_contract': has_contract,
         'days_count': days_count,
         'hours_count': hours_count,
+        'time_left': time_left,
         'title': f'Бронирование #{booking.booking_id}'
     })
 
@@ -816,7 +920,7 @@ def add_review(request, booking_id):
 
 
 # ============================================================================
-# КОРЗИНА (НОВЫЙ ФУНКЦИОНАЛ)
+# КОРЗИНА
 # ============================================================================
 
 @login_required
@@ -929,7 +1033,6 @@ def checkout(request):
                 return redirect('payment', booking_id=bookings_created[0].id)
             else:
                 messages.success(request, f'Создано {len(bookings_created)} бронирований. Перейдите к оплате.')
-                # Перенаправляем на страницу со списком всех созданных бронирований
                 return redirect('my_bookings')
     else:
         form = CheckoutForm()
@@ -946,9 +1049,10 @@ def checkout(request):
 
 
 # ============================================================================
-# ОПЛАТА (ИМИТАЦИЯ)
+# ОПЛАТА
 # ============================================================================
 
+@login_required
 @login_required
 def payment(request, booking_id):
     """Страница оплаты бронирования"""
@@ -962,32 +1066,101 @@ def payment(request, booking_id):
         messages.warning(request, 'Это бронирование уже оплачено или обработано.')
         return redirect('booking_detail', booking_id=booking.id)
 
+    # Проверка времени (30 минут) - только для оплаты картой
+    time_elapsed = timezone.now() - booking.created_at
+    time_left = timedelta(minutes=30) - time_elapsed
+
     if request.method == 'POST':
-        # Имитация оплаты
-        payment_method = request.POST.get('payment_method')
-        card_number = request.POST.get('card_number', '')
+        form = PaymentCardForm(request.POST)
 
-        # Простая валидация для демонстрации
-        if not card_number or len(card_number.replace(' ', '')) < 16:
-            messages.error(request, 'Введите корректный номер карты.')
+        if form.is_valid():
+            payment_method = form.cleaned_data['payment_method']
+
+            if payment_method == 'card':
+                # Проверка времени только для карты
+                if time_elapsed > timedelta(minutes=30):
+                    booking.status = 'cancelled'
+                    booking.save()
+                    messages.error(request, 'Время для оплаты истекло. Бронирование автоматически отменено.')
+                    return redirect('booking_detail', booking_id=booking.id)
+
+                # Оплата картой
+                booking.status = 'paid'
+                booking.is_paid = True
+                booking.payment_date = timezone.now()
+                booking.save()
+
+                create_booking_notification(booking, 'booking_paid')
+
+                create_notification(
+                    user=booking.property.landlord,
+                    notification_type='booking_paid',
+                    title='Бронирование оплачено',
+                    message=f'Бронирование #{booking.booking_id} для помещения "{booking.property.title}" оплачено картой и ожидает подтверждения.',
+                    related_object_id=booking.id,
+                    related_object_type='booking'
+                )
+
+                try:
+                    generate_contract_pdf(booking)
+                except Exception as e:
+                    logger.error(f"Error generating contract: {e}")
+
+                messages.success(request,
+                                 'Оплата прошла успешно! Договор будет доступен после подтверждения бронирования владельцем.')
+                return redirect('payment_success', booking_id=booking.id)
+
+            elif payment_method == 'cash':
+                # Оплата наличными при встрече - таймер не проверяем
+                # Просто создаем бронирование без оплаты
+
+                # Уведомление владельцу
+                create_notification(
+                    user=booking.property.landlord,
+                    notification_type='booking_created',
+                    title='Новое бронирование (оплата наличными)',
+                    message=f'Новое бронирование #{booking.booking_id} для помещения "{booking.property.title}". Клиент оплатит наличными при встрече.',
+                    related_object_id=booking.id,
+                    related_object_type='booking'
+                )
+
+                # Уведомление арендатору
+                create_notification(
+                    user=booking.tenant,
+                    notification_type='booking_created',
+                    title='Бронирование создано (оплата наличными)',
+                    message=f'Ваше бронирование #{booking.booking_id} создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.',
+                    related_object_id=booking.id,
+                    related_object_type='booking'
+                )
+
+                messages.success(request,
+                                 'Бронирование создано! Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.')
+                return redirect('booking_detail', booking_id=booking.id)
         else:
-            # Обновляем статус бронирования
-            booking.status = 'paid'
-            booking.is_paid = True
-            booking.payment_date = timezone.now()
-            booking.save()
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
+    else:
+        form = PaymentCardForm()
 
-            # Создаем уведомление
-            create_booking_notification(booking, 'booking_paid')
+    # Для GET запроса показываем таймер только если не истекло время
+    if time_elapsed > timedelta(minutes=30):
+        booking.status = 'cancelled'
+        booking.save()
+        messages.error(request, 'Время для оплаты истекло. Бронирование автоматически отменено.')
+        return redirect('booking_detail', booking_id=booking.id)
 
-            # Генерируем договор
-            generate_contract_pdf(booking)
-
-            messages.success(request, 'Оплата прошла успешно! Договор доступен для скачивания.')
-            return redirect('booking_detail', booking_id=booking.id)
+    time_left_seconds = max(0, int(time_left.total_seconds()))
+    minutes_left = time_left_seconds // 60
+    seconds_left = time_left_seconds % 60
 
     context = {
         'booking': booking,
+        'form': form,
+        'time_left_minutes': minutes_left,
+        'time_left_seconds': seconds_left,
+        'time_left_total': time_left_seconds,
         'title': f'Оплата бронирования #{booking.booking_id}'
     }
     return render(request, 'core/payment.html', context)
@@ -1047,10 +1220,11 @@ def download_contract(request, booking_id):
 
 @login_required
 def notifications_list(request):
-    """Страница со списком уведомлений"""
+    """Страница со списком уведомлений с пагинацией (5 на странице)"""
     notifications = request.user.notifications.all().order_by('-created_at')
 
-    paginator = Paginator(notifications, 20)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(notifications, 5)
     page = request.GET.get('page')
     notifications_page = paginator.get_page(page)
 
@@ -1129,7 +1303,7 @@ def get_unread_count(request):
 
 @login_required
 def messages_list(request):
-    """Страница со списком сообщений/диалогов"""
+    """Страница со списком сообщений/диалогов с пагинацией (5 на странице)"""
     sent_messages = Message.objects.filter(sender=request.user).values('recipient').distinct()
     received_messages = Message.objects.filter(recipient=request.user).values('sender').distinct()
 
@@ -1164,8 +1338,13 @@ def messages_list(request):
         reverse=True
     )
 
+    # Пагинация для диалогов - 5 на странице
+    paginator = Paginator(conversations, 5)
+    page = request.GET.get('page')
+    conversations_page = paginator.get_page(page)
+
     context = {
-        'conversations': conversations,
+        'conversations': conversations_page,
         'title': 'Мои сообщения'
     }
     return render(request, 'core/messages_list.html', context)
@@ -1349,7 +1528,7 @@ def delete_property_image(request, image_id):
 
 @login_required
 def landlord_bookings(request):
-    """Бронирования для арендодателя"""
+    """Бронирования для арендодателя с пагинацией (5 на странице)"""
     if request.user.user_type != 'landlord':
         messages.error(request, 'Эта страница доступна только арендодателям.')
         return redirect('dashboard')
@@ -1358,16 +1537,19 @@ def landlord_bookings(request):
         property__landlord=request.user
     ).select_related('property', 'tenant').order_by('-created_at')
 
+    # Фильтрация по статусу
     status_filter = request.GET.get('status')
     if status_filter:
         bookings = bookings.filter(status=status_filter)
 
-    paginator = Paginator(bookings, 10)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(bookings, 5)
     page = request.GET.get('page')
     bookings_page = paginator.get_page(page)
 
     context = {
         'bookings': bookings_page,
+        'current_status': status_filter,
         'title': 'Бронирования моих помещений'
     }
     return render(request, 'core/landlord_bookings.html', context)
@@ -1506,7 +1688,7 @@ def custom_admin_dashboard(request):
 
 @login_required
 def admin_user_management(request):
-    """Управление пользователями"""
+    """Управление пользователями с пагинацией (5 на странице)"""
     if not request.user.is_staff:
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
@@ -1542,7 +1724,8 @@ def admin_user_management(request):
         'tenant_count': users.filter(user_type='tenant').count(),
     }
 
-    paginator = Paginator(users, 20)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(users, 5)
     page = request.GET.get('page')
     users_page = paginator.get_page(page)
 
@@ -1578,7 +1761,7 @@ def admin_user_management(request):
 
 @login_required
 def admin_property_management(request):
-    """Управление помещениями (админ)"""
+    """Управление помещениями (админ) с пагинацией (5 на странице)"""
     if not request.user.is_staff:
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
@@ -1596,7 +1779,8 @@ def admin_property_management(request):
     if type_filter:
         properties = properties.filter(property_type=type_filter)
 
-    paginator = Paginator(properties, 20)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(properties, 5)
     page = request.GET.get('page')
     properties_page = paginator.get_page(page)
 
@@ -1641,7 +1825,7 @@ def admin_property_management(request):
 
 @login_required
 def admin_booking_management(request):
-    """Управление бронированиями (админ)"""
+    """Управление бронированиями (админ) с пагинацией (5 на странице)"""
     if not request.user.is_staff:
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
@@ -1659,7 +1843,8 @@ def admin_booking_management(request):
     if date_to:
         bookings = bookings.filter(start_datetime__date__lte=date_to)
 
-    paginator = Paginator(bookings, 20)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(bookings, 5)
     page = request.GET.get('page')
     bookings_page = paginator.get_page(page)
 
@@ -1671,7 +1856,7 @@ def admin_booking_management(request):
 
 @login_required
 def admin_review_management(request):
-    """Управление отзывами (админ)"""
+    """Управление отзывами (админ) с пагинацией (5 на странице)"""
     if not request.user.is_staff:
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
@@ -1686,7 +1871,8 @@ def admin_review_management(request):
     if rating_filter:
         reviews = reviews.filter(rating=rating_filter)
 
-    paginator = Paginator(reviews, 20)
+    # Пагинация - 5 элементов на странице
+    paginator = Paginator(reviews, 5)
     page = request.GET.get('page')
     reviews_page = paginator.get_page(page)
 
@@ -1844,7 +2030,7 @@ def booking_calendar(request, property_id):
     upcoming_bookings = property_obj.bookings.filter(
         start_datetime__gte=timezone.now(),
         status__in=['paid', 'confirmed']
-    ).select_related('tenant').order_by('start_datetime')[:10]
+    ).select_related('tenant').order_by('start_datetime')[:5]
 
     month_start = current_month
     month_end = month_start + timedelta(days=calendar.monthrange(current_month.year, current_month.month)[1])
