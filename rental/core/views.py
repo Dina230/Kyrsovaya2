@@ -133,22 +133,70 @@ def generate_contract_pdf(booking):
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
         from reportlab.lib import colors
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
         from django.core.files.base import ContentFile
 
         # Создаем буфер
         buffer = io.BytesIO()
-
         # Создаем PDF документ
         doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+        # === РЕГИСТРАЦИЯ ШРИФТА С КИРИЛЛИЦЕЙ ===
+        # Путь к шрифту в корне проекта
+        font_path = os.path.join(settings.BASE_DIR, 'dejavu-sans-book.ttf')
+
+        if os.path.exists(font_path):
+            # Регистрируем шрифт
+            pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
+            font_name = 'DejaVuSans'
+        else:
+            logger.error(f"Шрифт не найден: {font_path}")
+            font_name = 'Helvetica'  # Запасной вариант (без кириллицы)
+
+        # Создаем стили с кириллическим шрифтом
         styles = getSampleStyleSheet()
+
+        # Добавляем свои стили с правильным шрифтом
+        styles.add(ParagraphStyle(
+            name='NormalCyrillic',
+            parent=styles['Normal'],
+            fontName=font_name,
+            fontSize=10,
+            leading=12,
+            alignment=0
+        ))
+
+        styles.add(ParagraphStyle(
+            name='Heading2Cyrillic',
+            parent=styles['Heading2'],
+            fontName=font_name,
+            fontSize=12,
+            leading=14,
+            spaceBefore=12,
+            spaceAfter=6,
+            alignment=0
+        ))
+
+        styles.add(ParagraphStyle(
+            name='TitleCyrillic',
+            parent=styles['Title'],
+            fontName=font_name,
+            fontSize=14,
+            leading=16,
+            spaceAfter=12,
+            alignment=1  # По центру
+        ))
+        # ===========================================
+
         elements = []
 
         # Заголовок
-        elements.append(Paragraph(f"ДОГОВОР АРЕНДЫ №{booking.booking_id}", styles['Title']))
+        elements.append(Paragraph(f"ДОГОВОР АРЕНДЫ №{booking.booking_id}", styles['TitleCyrillic']))
         elements.append(Spacer(1, 12))
 
         # Дата
-        elements.append(Paragraph(f"г. Москва, {timezone.now().strftime('%d.%m.%Y')}", styles['Normal']))
+        elements.append(Paragraph(f"г. Москва, {timezone.now().strftime('%d.%m.%Y')}", styles['NormalCyrillic']))
         elements.append(Spacer(1, 24))
 
         # Информация о сторонах
@@ -157,55 +205,66 @@ def generate_contract_pdf(booking):
         landlord_info = f"Арендодатель: {landlord.get_full_name_or_username()}, {landlord.email or 'Email не указан'}, {landlord.phone or 'Тел. не указан'}"
         tenant_info = f"Арендатор: {tenant.get_full_name_or_username()}, {tenant.email or 'Email не указан'}, {tenant.phone or 'Тел. не указан'}"
 
-        elements.append(Paragraph("1. СТОРОНЫ ДОГОВОРА", styles['Heading2']))
+        elements.append(Paragraph("1. СТОРОНЫ ДОГОВОРА", styles['Heading2Cyrillic']))
         elements.append(Spacer(1, 6))
-        elements.append(Paragraph(landlord_info, styles['Normal']))
-        elements.append(Paragraph(tenant_info, styles['Normal']))
+        elements.append(Paragraph(landlord_info, styles['NormalCyrillic']))
+        elements.append(Paragraph(tenant_info, styles['NormalCyrillic']))
         elements.append(Spacer(1, 12))
 
         # Предмет договора
-        elements.append(Paragraph("2. ПРЕДМЕТ ДОГОВОРА", styles['Heading2']))
+        elements.append(Paragraph("2. ПРЕДМЕТ ДОГОВОРА", styles['Heading2Cyrillic']))
         elements.append(Spacer(1, 6))
         elements.append(
             Paragraph(f"Арендодатель передает, а Арендатор принимает во временное владение и пользование помещение:",
-                      styles['Normal']))
-        elements.append(Paragraph(f"Название: {booking.property.title}", styles['Normal']))
-        elements.append(Paragraph(f"Адрес: {booking.property.address}, {booking.property.city}", styles['Normal']))
+                      styles['NormalCyrillic']))
+        elements.append(Paragraph(f"Название: {booking.property.title}", styles['NormalCyrillic']))
+        elements.append(
+            Paragraph(f"Адрес: {booking.property.address}, {booking.property.city}", styles['NormalCyrillic']))
         elements.append(
             Paragraph(f"Площадь: {booking.property.area} кв.м., вместимость: {booking.property.capacity} чел.",
-                      styles['Normal']))
+                      styles['NormalCyrillic']))
         elements.append(Spacer(1, 12))
 
         # Срок аренды
-        elements.append(Paragraph("3. СРОК АРЕНДЫ", styles['Heading2']))
+        elements.append(Paragraph("3. СРОК АРЕНДЫ", styles['Heading2Cyrillic']))
         elements.append(Spacer(1, 6))
         start_str = booking.start_datetime.strftime('%d.%m.%Y %H:%M')
         end_str = booking.end_datetime.strftime('%d.%m.%Y %H:%M')
-        elements.append(Paragraph(f"Начало: {start_str}", styles['Normal']))
-        elements.append(Paragraph(f"Окончание: {end_str}", styles['Normal']))
+        elements.append(Paragraph(f"Начало: {start_str}", styles['NormalCyrillic']))
+        elements.append(Paragraph(f"Окончание: {end_str}", styles['NormalCyrillic']))
         elements.append(Spacer(1, 12))
 
         # Платежи
-        elements.append(Paragraph("4. ПЛАТЕЖИ", styles['Heading2']))
+        elements.append(Paragraph("4. ПЛАТЕЖИ", styles['Heading2Cyrillic']))
         elements.append(Spacer(1, 6))
-        elements.append(Paragraph(f"Общая стоимость аренды: {booking.total_price} рублей", styles['Normal']))
+        elements.append(Paragraph(f"Общая стоимость аренды: {booking.total_price} рублей", styles['NormalCyrillic']))
         elements.append(
-            Paragraph(f"Статус оплаты: {'Оплачено' if booking.is_paid else 'Ожидает оплаты'}", styles['Normal']))
+            Paragraph(f"Статус оплаты: {'Оплачено' if booking.is_paid else 'Ожидает оплаты'}",
+                      styles['NormalCyrillic']))
         elements.append(Spacer(1, 12))
 
-        # Подписи
-        elements.append(Paragraph("5. ПОДПИСИ СТОРОН", styles['Heading2']))
-        elements.append(Spacer(1, 20))
+        # Подписи - ИСПРАВЛЕННАЯ ТАБЛИЦА
+        elements.append(Paragraph("5. ПОДПИСИ СТОРОН", styles['Heading2Cyrillic']))
+        elements.append(Spacer(1, 30))
 
+        # Создаем таблицу с правильными отступами
         data = [
             ['Арендодатель:', '______________________', 'Арендатор:', '______________________'],
             ['', f'({landlord.get_full_name_or_username()})', '', f'({tenant.get_full_name_or_username()})']
         ]
-        table = Table(data, colWidths=[60 * mm, 70 * mm, 60 * mm, 70 * mm])
+        table = Table(data, colWidths=[50 * mm, 55 * mm, 50 * mm, 55 * mm])
         table.setStyle(TableStyle([
             ('ALIGN', (1, 0), (1, 0), 'CENTER'),
             ('ALIGN', (3, 0), (3, 0), 'CENTER'),
+            ('ALIGN', (1, 1), (1, 1), 'CENTER'),
+            ('ALIGN', (3, 1), (3, 1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONT', (0, 0), (-1, -1), font_name),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
         ]))
         elements.append(table)
 
@@ -217,13 +276,17 @@ def generate_contract_pdf(booking):
         contract, created = Contract.objects.get_or_create(booking=booking)
         if not created and contract.pdf_file:
             contract.pdf_file.delete(save=False)
+
         filename = f"contract_{booking.booking_id}.pdf"
         contract.pdf_file.save(filename, ContentFile(buffer.getvalue()), save=True)
+
         return contract
 
     except ImportError:
         # Если reportlab не установлен, создаем текстовый файл
         contract, created = Contract.objects.get_or_create(booking=booking)
+        landlord = booking.property.landlord
+        tenant = booking.tenant
         content = f"""
 ДОГОВОР АРЕНДЫ №{booking.booking_id}
 Дата: {timezone.now().strftime('%d.%m.%Y')}

@@ -97,6 +97,7 @@
     .badge-type-tenant { background: #e8f5e8; color: #388e3c; }
     .badge-type-admin { background: #f3e5f5; color: #7b1fa2; }
     .badge-status-pending { background: #fff3e0; color: #f57c00; }
+    .badge-status-paid { background: #cce5ff; color: #004085; }
     .badge-status-confirmed { background: #e8f5e8; color: #388e3c; }
     .badge-status-cancelled { background: #ffebee; color: #d32f2f; }
     .badge-status-completed { background: #e8eaf6; color: #3f51b5; }
@@ -177,6 +178,15 @@
     .btn-admin-warning:hover {
         background: #e0a800;
         transform: translateY(-2px);
+    }
+    .btn-admin-outline {
+        background: transparent;
+        border: 2px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+    .btn-admin-outline:hover {
+        background: var(--primary-color);
+        color: white;
     }
     :root {
         --primary-color: #667eea;
@@ -263,7 +273,7 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">Динамика бронирований за последние 7 дней</h6>
                 <div>
-                    <span class="badge bg-success me-1">Подтвержденные</span>
+                    <span class="badge bg-success me-1">Оплаченные</span>
                     <span class="badge bg-warning me-1">В ожидании</span>
                     <span class="badge bg-danger">Отмененные</span>
                 </div>
@@ -381,6 +391,8 @@
                                 <td>
                                     {% if booking.status == 'pending' %}
                                     <span class="badge-admin badge-status-pending">{{ booking.get_status_display }}</span>
+                                    {% elif booking.status == 'paid' %}
+                                    <span class="badge-admin badge-status-paid">{{ booking.get_status_display }}</span>
                                     {% elif booking.status == 'confirmed' %}
                                     <span class="badge-admin badge-status-confirmed">{{ booking.get_status_display }}</span>
                                     {% elif booking.status == 'cancelled' %}
@@ -413,23 +425,23 @@
     <div class="card-body">
         <div class="row g-3">
             <div class="col-md-3 col-6">
-                <a href="{% url 'admin_add_user' %}" class="btn btn-admin-primary w-100">
-                    <i class="bi bi-person-plus"></i> Добавить пользователя
+                <a href="{% url 'admin_user_management' %}" class="btn btn-admin-primary w-100">
+                    <i class="bi bi-people"></i> Управление пользователями
                 </a>
             </div>
             <div class="col-md-3 col-6">
-                <a href="{% url 'admin_add_property' %}" class="btn btn-admin-success w-100">
-                    <i class="bi bi-building-add"></i> Добавить помещение
+                <a href="{% url 'admin_property_management' %}" class="btn btn-admin-success w-100">
+                    <i class="bi bi-buildings"></i> Управление помещениями
                 </a>
             </div>
             <div class="col-md-3 col-6">
-                <a href="{% url 'admin_property_management' %}" class="btn btn-admin-info w-100">
-                    <i class="bi bi-eye"></i> Просмотр помещений
-                </a>
-            </div>
-            <div class="col-md-3 col-6">
-                <a href="{% url 'admin_booking_management' %}" class="btn btn-admin-warning w-100">
+                <a href="{% url 'admin_booking_management' %}" class="btn btn-admin-info w-100">
                     <i class="bi bi-calendar-check"></i> Управление бронированиями
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a href="{% url 'admin_review_management' %}" class="btn btn-admin-warning w-100">
+                    <i class="bi bi-star"></i> Управление отзывами
                 </a>
             </div>
         </div>
@@ -502,6 +514,13 @@
         </div>
     </div>
 </div>
+
+<!-- Ссылка на Django Admin -->
+<div class="text-center mt-4">
+    <a href="/admin/" target="_blank" class="btn btn-admin-outline">
+        <i class="bi bi-box-arrow-up-right"></i> Перейти в Django Admin
+    </a>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -510,7 +529,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Данные из контекста Django
     const chartLabels = JSON.parse('{{ chart_labels|safe }}');
-    const chartConfirmed = JSON.parse('{{ chart_confirmed|safe }}');
+    const chartPaid = JSON.parse('{{ chart_paid|safe }}');
     const chartPending = JSON.parse('{{ chart_pending|safe }}');
     const chartCancelled = JSON.parse('{{ chart_cancelled|safe }}');
     const propertyLabels = JSON.parse('{{ property_labels|safe }}');
@@ -527,8 +546,8 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: chartLabels,
             datasets: [
                 {
-                    label: 'Подтвержденные',
-                    data: chartConfirmed,
+                    label: 'Оплаченные',
+                    data: chartPaid,
                     borderColor: '#28a745',
                     backgroundColor: 'rgba(40, 167, 69, 0.1)',
                     borderWidth: 3,
@@ -592,7 +611,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     '#f093fb',
                     '#4facfe',
                     '#43e97b',
-                    '#fa709a'
+                    '#fa709a',
+                    '#6c5ce7',
+                    '#a8e6cf'
                 ],
                 borderWidth: 0
             }]

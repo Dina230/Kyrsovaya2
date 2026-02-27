@@ -364,6 +364,7 @@
         }
 
         .badge-status-pending { background: #fff3cd; color: #856404; }
+        .badge-status-paid { background: #cce5ff; color: #004085; }
         .badge-status-confirmed { background: #d1e7dd; color: #0f5132; }
         .badge-status-cancelled { background: #f8d7da; color: #721c24; }
         .badge-status-completed { background: #cfe2ff; color: #084298; }
@@ -439,14 +440,6 @@
                            href="{% url 'admin_review_management' %}">
                             <i class="bi bi-star"></i>
                             <span>Отзывы</span>
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'admin-panel/settings' in request.path %}active{% endif %}"
-                           href="{% url 'admin_system_settings' %}">
-                            <i class="bi bi-gear"></i>
-                            <span>Настройки</span>
                         </a>
                     </li>
 

@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Добавление отзыва{% endblock %}
+
+{% block extra_css %}
+<style>
+    .rating-star {
+        font-size: 2rem;
+        color: #ffc107;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin: 0 2px;
+    }
+
+    .rating-star:hover {
+        transform: scale(1.2);
+        color: #ff9800;
+    }
+
+    .rating-star.active {
+        color: #ffc107;
+        text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+    }
+
+    .rating-star.inactive {
+        color: #e0e0e0;
+    }
+
+    .booking-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .booking-card h5 {
+        color: white;
+        opacity: 0.9;
+    }
+
+    .booking-card .property-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .booking-card .booking-dates {
+        font-size: 0.95rem;
+        opacity: 0.9;
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 10px 15px;
+        transition: all 0.3s;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+    }
+
+    .form-control.is-invalid {
+        border-color: #dc3545;
+    }
+
+    .invalid-feedback {
+        display: block;
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .rating-container {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .rating-label {
+        font-size: 1.1rem;
+        color: #495057;
+        margin-bottom: 15px;
+    }
+
+    .rating-value {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #28a745;
+        margin-top: 10px;
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        padding: 12px 30px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+        border-radius: 8px;
+        transition: all 0.3s;
+        width: 100%;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.6;
+        transform: none;
+    }
+
+    .btn-outline-secondary {
+        padding: 12px 30px;
+        font-size: 1.1rem;
+        border-radius: 8px;
+        width: 100%;
+    }
+
+    .tip-card {
+        background: #e7f3ff;
+        border-left: 4px solid #007bff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+
+    .tip-card i {
+        color: #007bff;
+        margin-right: 10px;
+    }
+
+    .tip-card h6 {
+        color: #0056b3;
+        margin-bottom: 10px;
+    }
+
+    .tip-card ul {
+        margin-bottom: 0;
+        padding-left: 20px;
+    }
+
+    .tip-card li {
+        margin-bottom: 5px;
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Хлебные крошки -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'my_bookings' %}">Мои бронирования</a></li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'booking_detail' booking.id %}">
+                            Бронирование #{{ booking.booking_id }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">Добавление отзыва</li>
+                </ol>
+            </nav>
+
+            <!-- Информация о бронировании -->
+            <div class="booking-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="property-title">
+                            <i class="bi bi-building me-2"></i>
+                            {{ booking.property.title }}
+                        </div>
+                        <div class="booking-dates">
+                            <i class="bi bi-calendar me-2"></i>
+                            {{ booking.start_datetime|date:"d.m.Y H:i" }} -
+                            {{ booking.end_datetime|date:"d.m.Y H:i" }}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="badge bg-success fs-6 p-3">
+                            {{ booking.total_price }} ₽
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Форма отзыва -->
+            <div class="form-container">
+                <h4 class="mb-4">
+                    <i class="bi bi-star text-warning"></i>
+                    Оставьте ваш отзыв
+                </h4>
+
+                <form method="post" id="reviewForm" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Рейтинг (звезды) -->
+                    <div class="rating-container">
+                        <div class="rating-label">Оцените помещение</div>
+                        <div class="rating-stars mb-3" id="ratingStars">
+                            <i class="bi bi-star-fill rating-star" data-rating="1"></i>
+                            <i class="bi bi-star-fill rating-star" data-rating="2"></i>
+                            <i class="bi bi-star-fill rating-star" data-rating="3"></i>
+                            <i class="bi bi-star-fill rating-star" data-rating="4"></i>
+                            <i class="bi bi-star-fill rating-star" data-rating="5"></i>
+                        </div>
+                        <div class="rating-value" id="ratingValue">
+                            Выберите оценку
+                        </div>
+
+                        <!-- Скрытое поле для рейтинга -->
+                        <input type="hidden" name="rating" id="ratingInput"
+                               value="{{ form.rating.value|default:'' }}">
+                        {% if form.rating.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.rating.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Комментарий -->
+                    <div class="form-group">
+                        <label for="comment">
+                            <i class="bi bi-chat-text me-2"></i>Ваш отзыв
+                        </label>
+                        <textarea name="comment"
+                                  id="comment"
+                                  class="form-control {% if form.comment.errors %}is-invalid{% endif %}"
+                                  rows="6"
+                                  placeholder="Расскажите о вашем опыте: чистота, удобство, расположение, владелец..."
+                                  required>{{ form.comment.value|default:'' }}</textarea>
+                        {% if form.comment.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.comment.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="text-muted">Минимум 10 символов</small>
+                    </div>
+
+                    <!-- Советы по написанию отзыва -->
+                    <div class="tip-card">
+                        <h6>
+                            <i class="bi bi-lightbulb"></i>
+                            Как написать полезный отзыв:
+                        </h6>
+                        <ul>
+                            <li>Опишите ваши впечатления о помещении</li>
+                            <li>Упомяните о соответствии реальности фотографиям</li>
+                            <li>Расскажите о взаимодействии с владельцем</li>
+                            <li>Отметьте плюсы и минусы</li>
+                        </ul>
+                    </div>
+
+                    <!-- Кнопки -->
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-2 mb-md-0">
+                            <a href="{% url 'booking_detail' booking.id %}"
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <button type="submit" class="btn btn-submit" id="submitBtn">
+                                <i class="bi bi-check-circle"></i> Отправить отзыв
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Предупреждение о модерации -->
+            <div class="alert alert-info mt-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Важно:</strong> Все отзывы проходят модерацию перед публикацией.
+                Мы проверяем соответствие правилам площадки. Отзыв будет опубликован в течение 24 часов.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript для звездного рейтинга и валидации -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const stars = document.querySelectorAll('.rating-star');
+    const ratingInput = document.getElementById('ratingInput');
+    const ratingValue = document.getElementById('ratingValue');
+    const commentField = document.getElementById('comment');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('reviewForm');
+
+    let currentRating = parseInt(ratingInput.value) || 0;
+
+    // Функция обновления звезд
+    function updateStars(rating) {
+        stars.forEach((star, index) => {
+            const starRating = index + 1;
+            if (starRating <= rating) {
+                star.classList.add('active');
+                star.classList.remove('inactive');
+            } else {
+                star.classList.remove('active');
+                star.classList.add('inactive');
+            }
+        });
+
+        // Обновляем текст
+        const ratingTexts = {
+            1: '1 звезда - Ужасно',
+            2: '2 звезды - Плохо',
+            3: '3 звезды - Нормально',
+            4: '4 звезды - Хорошо',
+            5: '5 звезд - Отлично'
+        };
+        ratingValue.textContent = rating ? ratingTexts[rating] : 'Выберите оценку';
+
+        // Обновляем скрытое поле
+        ratingInput.value = rating;
+    }
+
+    // Инициализация звезд
+    if (currentRating > 0) {
+        updateStars(currentRating);
+    }
+
+    // Обработчики для звезд
+    stars.forEach(star => {
+        star.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.dataset.rating);
+            stars.forEach((s, index) => {
+                if (index < rating) {
+                    s.style.color = '#ffc107';
+                    s.style.transform = 'scale(1.1)';
+                } else {
+                    s.style.color = '#e0e0e0';
+                    s.style.transform = 'scale(1)';
+                }
+            });
+        });
+
+        star.addEventListener('mouseleave', function() {
+            updateStars(currentRating);
+        });
+
+        star.addEventListener('click', function() {
+            currentRating = parseInt(this.dataset.rating);
+            updateStars(currentRating);
+        });
+    });
+
+    // Валидация формы
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            let errorMessage = '';
+
+            // Проверка рейтинга
+            if (!currentRating || currentRating < 1) {
+                errorMessage += '• Поставьте оценку от 1 до 5\n';
+                isValid = false;
+            }
+
+            // Проверка комментария
+            const comment = commentField.value.trim();
+            if (!comment) {
+                errorMessage += '• Напишите текст отзыва\n';
+                commentField.classList.add('is-invalid');
+                isValid = false;
+            } else if (comment.length < 10) {
+                errorMessage += '• Отзыв должен содержать минимум 10 символов\n';
+                commentField.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                commentField.classList.remove('is-invalid');
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Пожалуйста, исправьте ошибки:\n' + errorMessage);
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Отправка...';
+            }
+        });
+    }
+
+    // Счетчик символов
+    if (commentField) {
+        const counter = document.createElement('small');
+        counter.className = 'text-muted float-end';
+        commentField.parentNode.appendChild(counter);
+
+        function updateCounter() {
+            const length = commentField.value.length;
+            counter.textContent = `${length} / 1000`;
+
+            if (length < 10) {
+                counter.style.color = '#dc3545';
+            } else if (length > 900) {
+                counter.style.color = '#ffc107';
+            } else {
+                counter.style.color = '#6c757d';
+            }
+        }
+
+        commentField.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+});
+</script>
+{% endblock %}
