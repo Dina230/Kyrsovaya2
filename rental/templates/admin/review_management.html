@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Управление отзывами{% endblock %}
 
@@ -17,6 +18,7 @@
         height: 100vh;
         overflow-y: auto;
         top: 76px;
+        z-index: 100;
     }
 
     .admin-content {
@@ -42,6 +44,9 @@
         margin: 2px 0;
         border-left: 3px solid transparent;
         transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
     .sidebar-menu .nav-link:hover {
@@ -54,6 +59,11 @@
         color: white;
         background-color: rgba(58, 87, 232, 0.2);
         border-left-color: #3a57e8;
+    }
+
+    .sidebar-menu .nav-link i {
+        width: 20px;
+        text-align: center;
     }
 
     .admin-card {
@@ -72,6 +82,7 @@
     .review-card {
         border-left: 4px solid;
         margin-bottom: 15px;
+        transition: all 0.2s;
     }
 
     .rating-5 { border-left-color: #28a745; }
@@ -88,8 +99,175 @@
     .stars {
         color: #ffc107;
         font-size: 1.2rem;
+        letter-spacing: 2px;
+    }
+
+    .stars i {
+        margin-right: 2px;
+    }
+
+    /* Стили для статусов */
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+
+    .status-approved {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    /* Кнопки действий */
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-approve {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-approve:hover {
+        background: #218838;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-reject {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-reject:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-delete {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-delete:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+    }
+
+    /* Фильтры */
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .quick-filters {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .quick-filter {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #495057;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+
+    .quick-filter:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+        color: #007bff;
+    }
+
+    .quick-filter.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .notification-badge {
+        background: #dc3545;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        margin-left: 5px;
+    }
+
+    /* Модальное окно */
+    .modal-content {
+        border-radius: 15px;
+        border: none;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        padding: 10px 15px;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
     }
 </style>
+<!-- SweetAlert2 для красивых уведомлений -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 {% endblock %}
 
 {% block content %}
@@ -101,7 +279,7 @@
         <div class="admin-sidebar">
             <div class="sidebar-brand">
                 <h4><i class="bi bi-speedometer2"></i> Админ-панель</h4>
-                <small class="text-muted">Commercial Rental</small>
+                <small class="text-muted">Простор</small>
             </div>
 
             <div class="sidebar-menu">
@@ -114,26 +292,43 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'admin_user_management' %}">
                             <i class="bi bi-people"></i> Пользователи
+                            {% if pending_users_count > 0 %}
+                            <span class="notification-badge">{{ pending_users_count }}</span>
+                            {% endif %}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'admin_property_management' %}">
                             <i class="bi bi-buildings"></i> Помещения
+                            {% if pending_properties_count > 0 %}
+                            <span class="notification-badge">{{ pending_properties_count }}</span>
+                            {% endif %}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'admin_booking_management' %}">
                             <i class="bi bi-calendar-check"></i> Бронирования
+                            {% if pending_bookings_count > 0 %}
+                            <span class="notification-badge">{{ pending_bookings_count }}</span>
+                            {% endif %}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="{% url 'admin_review_management' %}">
                             <i class="bi bi-star"></i> Отзывы
+                            {% if pending_reviews_count > 0 %}
+                            <span class="notification-badge">{{ pending_reviews_count }}</span>
+                            {% endif %}
                         </a>
                     </li>
                     <li class="nav-item mt-4">
                         <a class="nav-link" href="/admin/" target="_blank">
                             <i class="bi bi-box-arrow-up-right"></i> Django Admin
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">
+                            <i class="bi bi-person-circle"></i> Мой кабинет
                         </a>
                     </li>
                 </ul>
@@ -146,12 +341,39 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="mb-1">Управление отзывами</h2>
-                    <p class="text-muted mb-0">Просмотр и управление отзывами пользователей</p>
+                    <p class="text-muted mb-0">Просмотр, модерация и управление отзывами пользователей</p>
                 </div>
                 <div class="text-end">
                     <span class="badge bg-primary">{{ user.get_user_type_display }}</span>
                     <small class="text-muted d-block">{{ user.email }}</small>
                 </div>
+            </div>
+
+            <!-- Быстрые фильтры -->
+            <div class="quick-filters">
+                <a href="{% url 'admin_review_management' %}?status=pending"
+                   class="quick-filter {% if request.GET.status == 'pending' %}active{% endif %}">
+                   <i class="bi bi-clock-history"></i> На модерации
+                   {% if pending_reviews_count > 0 %}
+                   <span class="notification-badge">{{ pending_reviews_count }}</span>
+                   {% endif %}
+                </a>
+                <a href="{% url 'admin_review_management' %}?status=approved"
+                   class="quick-filter {% if request.GET.status == 'approved' %}active{% endif %}">
+                   <i class="bi bi-check-circle"></i> Одобренные
+                </a>
+                <a href="{% url 'admin_review_management' %}?status=rejected"
+                   class="quick-filter {% if request.GET.status == 'rejected' %}active{% endif %}">
+                   <i class="bi bi-x-circle"></i> Отклоненные
+                </a>
+                <a href="{% url 'admin_review_management' %}?rating=5"
+                   class="quick-filter {% if request.GET.rating == '5' %}active{% endif %}">
+                   <i class="bi bi-star-fill"></i> 5 звезд
+                </a>
+                <a href="{% url 'admin_review_management' %}"
+                   class="quick-filter {% if not request.GET.status and not request.GET.rating %}active{% endif %}">
+                   <i class="bi bi-list"></i> Все
+                </a>
             </div>
 
             <div class="row">
@@ -189,10 +411,10 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <h6 class="text-muted mb-2">5 звезд</h6>
-                                            <h3 class="mb-0">{{ rating_5|default:"0" }}</h3>
+                                            <h6 class="text-muted mb-2">На модерации</h6>
+                                            <h3 class="mb-0">{{ pending_reviews_count|default:"0" }}</h3>
                                         </div>
-                                        <i class="bi bi-star-fill fs-1 text-warning"></i>
+                                        <i class="bi bi-clock-history fs-1 text-warning"></i>
                                     </div>
                                 </div>
                             </div>
@@ -202,14 +424,53 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <h6 class="text-muted mb-2">1-2 звезды</h6>
-                                            <h3 class="mb-0">{{ rating_low|default:"0" }}</h3>
+                                            <h6 class="text-muted mb-2">5 звезд</h6>
+                                            <h3 class="mb-0">{{ rating_5|default:"0" }}</h3>
                                         </div>
-                                        <i class="bi bi-star fs-1 text-warning"></i>
+                                        <i class="bi bi-star-fill fs-1 text-warning"></i>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Фильтры -->
+                    <div class="filter-section">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="search"
+                                       placeholder="Поиск по отзывам..."
+                                       value="{{ request.GET.search|default:'' }}">
+                            </div>
+                            <div class="col-md-2">
+                                <select name="status" class="form-select">
+                                    <option value="">Все статусы</option>
+                                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>На модерации</option>
+                                    <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Одобренные</option>
+                                    <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Отклоненные</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select name="rating" class="form-select">
+                                    <option value="">Все оценки</option>
+                                    <option value="5" {% if request.GET.rating == '5' %}selected{% endif %}>5 звезд</option>
+                                    <option value="4" {% if request.GET.rating == '4' %}selected{% endif %}>4 звезды</option>
+                                    <option value="3" {% if request.GET.rating == '3' %}selected{% endif %}>3 звезды</option>
+                                    <option value="2" {% if request.GET.rating == '2' %}selected{% endif %}>2 звезды</option>
+                                    <option value="1" {% if request.GET.rating == '1' %}selected{% endif %}>1 звезда</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Поиск
+                                    </button>
+                                    <a href="{% url 'admin_review_management' %}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> Сброс
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
                     </div>
 
                     <!-- Таблица отзывов -->
@@ -224,25 +485,26 @@
                                             <th>Пользователь</th>
                                             <th>Рейтинг</th>
                                             <th>Отзыв</th>
+                                            <th>Статус</th>
                                             <th>Дата</th>
                                             <th>Действия</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for review in reviews %}
-                                        <tr>
+                                        <tr class="review-card rating-{{ review.rating }}">
                                             <td>{{ review.id }}</td>
                                             <td>
-                                                <strong>{{ review.property.title }}</strong><br>
+                                                <strong>{{ review.property.title|truncatechars:30 }}</strong><br>
                                                 <small class="text-muted">{{ review.property.city }}</small>
                                             </td>
                                             <td>
                                                 {{ review.user.get_full_name|default:review.user.username }}<br>
-                                                <small class="text-muted">{{ review.user.email }}</small>
+                                                <small class="text-muted">{{ review.user.email|truncatechars:20 }}</small>
                                             </td>
                                             <td>
                                                 <div class="stars">
-                                                    {% for i in "12345" %}
+                                                    {% for i in "12345"|make_list %}
                                                         {% if forloop.counter <= review.rating %}
                                                             <i class="bi bi-star-fill"></i>
                                                         {% else %}
@@ -256,38 +518,58 @@
                                                 <div class="review-text" style="max-width: 300px;">
                                                     {{ review.comment|truncatechars:100 }}
                                                     {% if review.comment|length > 100 %}
-                                                    <a href="#" class="text-decoration-none" 
-                                                       data-bs-toggle="collapse" 
-                                                       data-bs-target="#review-{{ review.id }}">
+                                                    <a href="#" class="text-decoration-none"
+                                                       onclick="showFullReview('{{ review.comment|escapejs }}', {{ review.rating }})">
                                                        <small>показать больше</small>
                                                     </a>
-                                                    <div class="collapse" id="review-{{ review.id }}">
-                                                        {{ review.comment|slice:"100:" }}
-                                                    </div>
                                                     {% endif %}
                                                 </div>
+                                                {% if review.admin_comment %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="bi bi-chat-quote"></i> {{ review.admin_comment|truncatechars:30 }}
+                                                </small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="status-badge status-{{ review.status }}">
+                                                    {% if review.status == 'pending' %}
+                                                        <i class="bi bi-clock-history"></i> На модерации
+                                                    {% elif review.status == 'approved' %}
+                                                        <i class="bi bi-check-circle"></i> Одобрено
+                                                    {% elif review.status == 'rejected' %}
+                                                        <i class="bi bi-x-circle"></i> Отклонено
+                                                    {% endif %}
+                                                </span>
                                             </td>
                                             <td>
                                                 <small>{{ review.created_at|date:"d.m.Y" }}</small><br>
                                                 <small class="text-muted">{{ review.created_at|time:"H:i" }}</small>
                                             </td>
                                             <td>
-                                                <form method="post" class="d-inline">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="review_id" value="{{ review.id }}">
-                                                    <button type="submit" name="action" value="delete"
-                                                            class="btn btn-sm btn-outline-danger"
-                                                            onclick="return confirm('Удалить отзыв от {{ review.user.get_full_name|default:review.user.username }}?')"
-                                                            data-bs-toggle="tooltip"
-                                                            title="Удалить отзыв">
+                                                <div class="action-buttons">
+                                                    {% if review.status == 'pending' %}
+                                                    <button class="btn-action btn-approve"
+                                                            onclick="approveReview({{ review.id }})"
+                                                            data-bs-toggle="tooltip" title="Одобрить отзыв">
+                                                        <i class="bi bi-check-lg"></i>
+                                                    </button>
+                                                    <button class="btn-action btn-reject"
+                                                            onclick="showRejectModal({{ review.id }})"
+                                                            data-bs-toggle="tooltip" title="Отклонить отзыв">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                    <button class="btn-action btn-delete"
+                                                            onclick="deleteReview({{ review.id }}, '{{ review.user.get_full_name|default:review.user.username|escapejs }}')"
+                                                            data-bs-toggle="tooltip" title="Удалить отзыв">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
-                                                </form>
+                                                </div>
                                             </td>
                                         </tr>
                                         {% empty %}
                                         <tr>
-                                            <td colspan="7" class="text-center py-5">
+                                            <td colspan="8" class="text-center py-5">
                                                 <i class="bi bi-star display-4 text-muted mb-3"></i>
                                                 <h5 class="text-muted">Отзывы не найдены</h5>
                                                 <p class="text-muted">Пользователи еще не оставили отзывов</p>
@@ -304,15 +586,13 @@
                                 <ul class="pagination justify-content-center">
                                     {% if reviews.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ reviews.previous_page_number }}">
+                                        <a class="page-link" href="?page={{ reviews.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
                                             <i class="bi bi-chevron-left"></i>
                                         </a>
                                     </li>
                                     {% else %}
                                     <li class="page-item disabled">
-                                        <span class="page-link">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </span>
+                                        <span class="page-link"><i class="bi bi-chevron-left"></i></span>
                                     </li>
                                     {% endif %}
 
@@ -323,7 +603,7 @@
                                         </li>
                                         {% elif i > reviews.number|add:'-3' and i < reviews.number|add:'3' %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ i }}">
+                                            <a class="page-link" href="?page={{ i }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
                                                 {{ i }}
                                             </a>
                                         </li>
@@ -332,15 +612,13 @@
 
                                     {% if reviews.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ reviews.next_page_number }}">
+                                        <a class="page-link" href="?page={{ reviews.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
                                             <i class="bi bi-chevron-right"></i>
                                         </a>
                                     </li>
                                     {% else %}
                                     <li class="page-item disabled">
-                                        <span class="page-link">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </span>
+                                        <span class="page-link"><i class="bi bi-chevron-right"></i></span>
                                     </li>
                                     {% endif %}
                                 </ul>
@@ -361,6 +639,70 @@
             </div>
         </div>
     </div>
+
+    <!-- Модальное окно для комментария при отклонении -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-x-circle me-2"></i>
+                        Отклонение отзыва
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="rejectForm" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <input type="hidden" name="review_id" id="reject_review_id">
+                        <input type="hidden" name="action" value="reject">
+
+                        <div class="mb-3">
+                            <label for="admin_comment" class="form-label">
+                                <i class="bi bi-chat-text me-2"></i>Комментарий для пользователя
+                            </label>
+                            <textarea class="form-control" id="admin_comment" name="admin_comment"
+                                      rows="4" placeholder="Укажите причину отклонения отзыва..."></textarea>
+                            <small class="text-muted">Этот комментарий будет виден пользователю</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg"></i> Отмена
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-check-lg"></i> Отклонить отзыв
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для полного текста отзыва -->
+    <div class="modal fade" id="reviewModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-star me-2"></i>
+                        Полный текст отзыва
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3" id="fullReviewText"></div>
+                    <div class="stars" id="fullReviewRating"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Закрыть
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% else %}
     <!-- Если пользователь не администратор -->
     <div class="container mt-5">
@@ -372,16 +714,93 @@
     </div>
     {% endif %}
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- JavaScript -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Инициализация tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+});
+
+// Функция одобрения отзыва
+function approveReview(reviewId) {
+    Swal.fire({
+        title: 'Одобрить отзыв?',
+        text: 'Отзыв будет опубликован на сайте',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Да, одобрить',
+        cancelButtonText: 'Отмена'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                {% csrf_token %}
+                <input type="hidden" name="review_id" value="${reviewId}">
+                <input type="hidden" name="action" value="approve">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+// Функция показа модального окна для отклонения
+function showRejectModal(reviewId) {
+    document.getElementById('reject_review_id').value = reviewId;
+    var modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    modal.show();
+}
+
+// Функция удаления отзыва
+function deleteReview(reviewId, userName) {
+    Swal.fire({
+        title: 'Удалить отзыв?',
+        html: `Вы уверены, что хотите удалить отзыв пользователя <strong>${userName}</strong>?<br><br>
+               <small class="text-danger">Это действие нельзя отменить</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Да, удалить',
+        cancelButtonText: 'Отмена'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                {% csrf_token %}
+                <input type="hidden" name="review_id" value="${reviewId}">
+                <input type="hidden" name="action" value="delete">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+// Функция показа полного отзыва
+function showFullReview(comment, rating) {
+    document.getElementById('fullReviewText').innerHTML = comment.replace(/\n/g, '<br>');
+
+    let stars = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            stars += '<i class="bi bi-star-fill text-warning"></i> ';
+        } else {
+            stars += '<i class="bi bi-star text-warning"></i> ';
+        }
+    }
+    document.getElementById('fullReviewRating').innerHTML = stars;
+
+    var modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+    modal.show();
+}
 </script>
 {% endblock %}

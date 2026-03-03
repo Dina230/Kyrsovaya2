@@ -258,11 +258,6 @@ class Property(models.Model):
         default='draft',
         verbose_name='Статус'
     )
-    moderation_comment = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name='Комментарий модератора'
-    )
     views_count = models.PositiveIntegerField(
         default=0,
         verbose_name='Количество просмотров'
@@ -294,6 +289,17 @@ class Property(models.Model):
     def get_main_image(self):
         """Получить главное изображение"""
         return self.images.filter(is_main=True).first() or self.images.first()
+
+    def get_average_rating(self):
+        """Получить средний рейтинг помещения"""
+        reviews = self.reviews.filter(status='approved')
+        if reviews.exists():
+            return round(reviews.aggregate(avg=models.Avg('rating'))['avg'], 1)
+        return 0
+
+    def get_reviews_count(self):
+        """Получить количество отзывов"""
+        return self.reviews.filter(status='approved').count()
 
 
 class PropertyImage(models.Model):
@@ -388,6 +394,12 @@ class Booking(models.Model):
         blank=True,
         verbose_name='Дата оплаты'
     )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=[('card', 'Карта'), ('cash', 'Наличные')],
+        default='card',
+        verbose_name='Способ оплаты'
+    )
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата создания'
@@ -409,7 +421,6 @@ class Booking(models.Model):
         if not self.booking_id:
             self.booking_id = f"B{self.property.id:04d}-{uuid.uuid4().hex[:6].upper()}"
 
-        # Расчет стоимости, если не указана
         if self.start_datetime and self.end_datetime and not self.total_price:
             duration_hours = (self.end_datetime - self.start_datetime).total_seconds() / 3600
             self.total_price = round(float(self.property.price_per_hour) * duration_hours, 2)
@@ -422,8 +433,49 @@ class Booking(models.Model):
             duration = self.end_datetime - self.start_datetime
             hours = duration.seconds // 3600
             minutes = (duration.seconds % 3600) // 60
-            return {'hours': hours, 'minutes': minutes, 'total_hours': duration.total_seconds() / 3600}
-        return {'hours': 0, 'minutes': 0, 'total_hours': 0}
+            days = duration.days
+            return {'days': days, 'hours': hours, 'minutes': minutes, 'total_hours': duration.total_seconds() / 3600}
+        return {'days': 0, 'hours': 0, 'minutes': 0, 'total_hours': 0}
+
+    def get_savings(self):
+        """Рассчитать экономию при выборе посуточной аренды"""
+        duration = self.get_duration()
+        hours = duration['total_hours']
+
+        # Если аренда на день
+        if self.property.price_per_day and hours >= 8:
+            daily_rate = float(self.property.price_per_day)
+            hourly_rate = float(self.property.price_per_hour) * 8
+            if daily_rate < hourly_rate:
+                return {
+                    'saved': round(hourly_rate - daily_rate, 2),
+                    'type': 'day',
+                    'message': f'Выгоднее взять на день! Экономия {round(hourly_rate - daily_rate, 2)} ₽'
+                }
+
+        # Если аренда на неделю
+        if self.property.price_per_week and hours >= 40:
+            weekly_rate = float(self.property.price_per_week)
+            daily_rate = float(self.property.price_per_day or float(self.property.price_per_hour) * 8) * 5
+            if weekly_rate < daily_rate:
+                return {
+                    'saved': round(daily_rate - weekly_rate, 2),
+                    'type': 'week',
+                    'message': f'Выгоднее взять на неделю! Экономия {round(daily_rate - weekly_rate, 2)} ₽'
+                }
+
+        # Если аренда на месяц
+        if self.property.price_per_month and hours >= 160:
+            monthly_rate = float(self.property.price_per_month)
+            daily_rate = float(self.property.price_per_day or float(self.property.price_per_hour) * 8) * 20
+            if monthly_rate < daily_rate:
+                return {
+                    'saved': round(daily_rate - monthly_rate, 2),
+                    'type': 'month',
+                    'message': f'Выгоднее взять на месяц! Экономия {round(daily_rate - monthly_rate, 2)} ₽'
+                }
+
+        return None
 
 
 class Cart(models.Model):
@@ -514,7 +566,6 @@ class Contract(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.contract_number:
-            # Генерация номера: CON-ГОД-МЕСЯЦ-ID
             from datetime import datetime
             now = datetime.now()
             self.contract_number = f"CON-{now.year}-{now.month:02d}-{self.booking.id:06d}"
@@ -633,6 +684,10 @@ class Notification(models.Model):
         ('booking_completed', 'Бронирование завершено'),
         ('contract_signed', 'Договор подписан'),
         ('review_added', 'Добавлен отзыв'),
+        ('review_approved', 'Отзыв одобрен'),
+        ('review_rejected', 'Отзыв отклонен'),
+        ('property_approved', 'Помещение одобрено'),
+        ('property_rejected', 'Помещение отклонено'),
         ('message_received', 'Новое сообщение'),
         ('system', 'Системное уведомление'),
     ]

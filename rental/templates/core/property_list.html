@@ -111,6 +111,40 @@
         display: inline-block;
         margin-bottom: 1rem;
     }
+
+    /* Стили для рейтинга */
+    .rating-stars {
+        color: #ffc107;
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+        display: inline-block;
+    }
+
+    .rating-stars i {
+        margin-right: 2px;
+    }
+
+    .rating-value {
+        background: #ffc107;
+        color: #212529;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-left: 5px;
+    }
+
+    .reviews-count {
+        color: #6c757d;
+        font-size: 0.8rem;
+        margin-left: 5px;
+    }
+
+    .rating-container {
+        display: flex;
+        align-items: center;
+        margin: 10px 0;
+    }
 </style>
 {% endblock %}
 
@@ -289,7 +323,27 @@
                     <p class="card-text text-muted small mb-2">
                         <i class="bi bi-geo-alt-fill"></i> {{ property.city }}, {{ property.address|truncatechars:30 }}
                     </p>
-                    <p class="card-text">{{ property.description|truncatechars:100 }}</p>
+
+                    <!-- Рейтинг помещения -->
+                    <div class="rating-container">
+                        <div class="rating-stars">
+                            {% with avg_rating=property.get_average_rating %}
+                                {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= avg_rating %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% elif forloop.counter <= avg_rating|add:"0.5" %}
+                                        <i class="bi bi-star-half"></i>
+                                    {% else %}
+                                        <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endwith %}
+                        </div>
+                        <span class="rating-value">{{ property.get_average_rating }}</span>
+                        <span class="reviews-count">({{ property.get_reviews_count }} отзывов)</span>
+                    </div>
+
+                    <p class="card-text">{{ property.description|truncatechars:80 }}</p>
 
                     <div class="d-flex flex-wrap gap-2 mb-2">
                         <span class="badge bg-light text-dark border">

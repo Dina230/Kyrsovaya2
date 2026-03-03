@@ -1124,7 +1124,6 @@ def checkout(request):
 # ============================================================================
 # ОПЛАТА
 # ============================================================================
-
 @login_required
 def payment(request, booking_id):
     """Страница оплаты бронирования"""
@@ -1144,8 +1143,11 @@ def payment(request, booking_id):
 
     if request.method == 'POST':
         form = PaymentCardForm(request.POST)
+
         if form.is_valid():
             payment_method = form.cleaned_data['payment_method']
+            booking.payment_method = payment_method
+            booking.save()
 
             if payment_method == 'card':
                 # Проверка времени только для карты
@@ -1162,6 +1164,7 @@ def payment(request, booking_id):
                 booking.save()
 
                 create_booking_notification(booking, 'booking_paid')
+
                 create_notification(
                     user=booking.property.landlord,
                     notification_type='booking_paid',
@@ -1193,6 +1196,7 @@ def payment(request, booking_id):
                     related_object_id=booking.id,
                     related_object_type='booking'
                 )
+
                 # Уведомление арендатору
                 create_notification(
                     user=booking.tenant,
@@ -1206,10 +1210,10 @@ def payment(request, booking_id):
                 messages.success(request,
                                  'Бронирование создано! Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.')
                 return redirect('booking_detail', booking_id=booking.id)
-            else:
-                for field, errors in form.errors.items():
-                    for error in errors:
-                        messages.error(request, f'{error}')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
     else:
         form = PaymentCardForm()
 
