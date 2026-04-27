@@ -1,0 +1,2874 @@
+[
+{
+  "model": "sessions.session",
+  "pk": "0yopwm86ueovgtre6gvj1coxq8mim465",
+  "fields": {
+    "session_data": ".eJxVjDkOwjAQAP-yNbK8PuI4JT1viNbeNQ4gR8pRIf6OIqWAdmY0bxhp3-q4r7KME8MACJdflig_pR2CH9Tus8pz25YpqSNRp13VbWZ5Xc_2b1BprTAAiSNnJJrMWLw1KYhmlkw-aBeNi8zi-95KFzXq4hGxdNZYTJFt0AyfL_AdN5c:1w8wsT:4CpLV44dvVBeQhM1SHLbgtACeliybJjr7GqeE8vOf0E",
+    "expire_date": "2026-04-18T09:01:13.053Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "12e6fbsmug359xb024pk2ul3dd7eiq5g",
+  "fields": {
+    "session_data": ".eJxVjLsOwjAMAP_FM4riNKZNR_Z-QxXHDimgVOpjQvw7qtQB1rvTvWGM-1bGfdVlnAR6cHD5ZRzTU-sh5BHrfTZprtsysTkSc9rVDLPo63a2f4MS1wI9dEzRYYoJWcV3rdrOkXMBqUFNXnLizJ4Ec77aYK0wsdVGCUNLGDx8vvNIN_E:1w8XWQ:jZUotna5IExOX0DBerfOghuz-_QQwmApmzJh44qtDZE",
+    "expire_date": "2026-04-17T05:56:46.753Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "1qgvtcvjp8aj098owf45esg1h0xoe3zg",
+  "fields": {
+    "session_data": ".eJxVjMEOwiAQRP-FsyHItkA9evcbyC4sUjWQlPZk_Hdp0oMmc5l5M_MWHrc1-63x4ucoLkKL029GGJ5cdhAfWO5VhlrWZSa5V-RBm7zVyK_r0f07yNhyX5sJCMw4RdBdHBKBYqSzChGcdmjBsdPoxkGlABwNKadT9zb1dLDi8wXhUzfV:1w23vK:03HrlsaJGlJI2yEtzuO6RX2Wl-36BfKkegIoVI-EKd4",
+    "expire_date": "2026-03-30T09:07:42.440Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "7q8n6s372trahc803ums1g19msflxgwj",
+  "fields": {
+    "session_data": ".eJxVjDkOwjAQAP-yNbK8PuI4JT1viNbeNQ4gR8pRIf6OIqWAdmY0bxhp3-q4r7KME8MACJdflig_pR2CH9Tus8pz25YpqSNRp13VbWZ5Xc_2b1BprTAAiSNnJJrMWLw1KYhmlkw-aBeNi8zi-95KFzXq4hGxdNZYTJFt0AyfL_AdN5c:1w8wsH:o1Tglw_xgrPV0w-HMVzoZCGZFAFxfHqEc_V2hBO7qOo",
+    "expire_date": "2026-04-18T09:01:01.734Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "b2e86qdzvzqi613i1p83o6dvtcgw7b1g",
+  "fields": {
+    "session_data": ".eJxVjEsKwjAUAO-SdQn9pOln6b4nEAkveS82WpKSpIqId5dCF7qdGebNFGx5VluiqByykTWs-GUazJ38LvAG_hq4CT5Hp_me8MMmPgWk5XS0f4MZ0rxvNVFVl5UQthfYWKihHQBBC91YaQcSsuyEMdhrAIkkseqo7WtDiEIPhhUskiGfl5d6OHoSqjWGlWJ2lNh4bi-fLz4FRdo:1wGGOW:lt3O7WVEa_GTgm_3Zoo4aMV98mckQFLVoTRZMuxw0vo",
+    "expire_date": "2026-05-08T13:16:32.371Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "evv3jpj2o1xbvfb2tp7lp32wpzc69qxu",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQRO_iGln-x6akzxmsXa-NA8iR4qRC3J1ESgHFNPPezJtF2NYat56XOBG7Mskuvx1CeuZ2AHpAu888zW1dJuSHwk_a-ThTft1O9--gQq_7ugQprMEiCGgwAwXnnTBJaywUhLGYtYas9hRy6J1y2SSBRToFPqBlny_qrzgx:1vrwOj:8nd2si1iSJ-JMKyn7dgWrkK2iZAT94-1m7-VSqgRkmA",
+    "expire_date": "2026-03-02T11:04:13.000Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "gjbc6dyymxgo89rccdb0n7fyhh4j51sf",
+  "fields": {
+    "session_data": ".eJxVjMsOwiAQAP9lz4ZAebZH735Ds7CLVA0kpT0Z_9006UGvM5N5w4z7Vua98zovBBMouPyyiOnJ9RD0wHpvIrW6rUsURyJO28WtEb-uZ_s3KNgLTJDNyF5jNgMra1AG6y1ajzEHSzJ4SYNjThpdVEHrEL2jkS1JT5wII3y-4uM4aw:1vxOwR:xmo-i9Y1lYpuU4JKwDZwqiHCzM_fJCKXSCoWBArWAa8",
+    "expire_date": "2026-03-17T12:33:35.033Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "h7b1cz8e75lxzxr8y32x46w54o2nq11j",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQAP-yZ0MotCz06N03EHZZpGrapLQn499Nkx70OjOZN8S0bzXuTdY4ZRjBwOWXUeKnzIfIjzTfF8XLvK0TqSNRp23qtmR5Xc_2b1BTqzACEmHvhq4nKcVmSiVZ5y36woZJwoDIWrhjR4Y1ojU-S2AW1k5zyPD5AglvOPk:1wFX5F:tLzFD-EU7m_mPpsebLAt4XCPhX14TBiQjxwMJUcjkFI",
+    "expire_date": "2026-05-06T12:53:37.042Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "miffjmiyik8g4o21vl0s5iex709u31ms",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hAcCjgu3XsGMjCDVA1NSrsy3l2bdKHb_977LxVpXWpcu8xxZHVWR3X43RLlh7QN8J3abdJ5ass8Jr0peqddXyeW52V3_w4q9fqtyUpA8aEY8WTAZSg2sFiPSAWA5GRAkljLWLCwMwM6ARlKYoDgk3p_APXUOHM:1vo5aZ:zJy2HFsIipLV7H5kzCwSDTLwrtF3GWad8RhwFInDKs8",
+    "expire_date": "2026-02-19T20:04:31.565Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "o9m1ixkvergnoq2omcd8zrf0rz05ollw",
+  "fields": {
+    "session_data": ".eJxVjMsOwiAQAP9lz4ZAebZH735Ds7CLVA0kpT0Z_9006UGvM5N5w4z7Vua98zovBBMouPyyiOnJ9RD0wHpvIrW6rUsURyJO28WtEb-uZ_s3KNgLTJDNyF5jNgMra1AG6y1ajzEHSzJ4SYNjThpdVEHrEL2jkS1JT5wII3y-4uM4aw:1vvDgI:o6dUB1UoWH5wsKGBeqxBfWLpZCbq8cVNleuaffhd8Jo",
+    "expire_date": "2026-03-11T12:07:54.397Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "qiafrqn0tplh4qrbh16ztc757l4wo7p5",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlmOjT9LSc8ZrF3vggPIkeKkQtwdIqWA9s3Me6mM61Lz2mXOI6uTcurwuxGWh7QN8B3bbdJlass8kt4UvdOuLxPL87y7fwcVe_3WYhGMxKNNiUqMbIpLJgBeRaz14PxAwtZw8C6QxwhivReiwUAhiEG9P912N64:1voI8f:P2V3SYszL0QmiHZWiVniK82oTajEQ6ARjTsc66ICcmQ",
+    "expire_date": "2026-02-20T09:28:33.499Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "rrz8lrt3dm77by30gzigsvhst7992dej",
+  "fields": {
+    "session_data": ".eJxVjLsOwjAMAP8lM4rytCkjO99QObZLCyiVmnZC_Duq1AHWu9O9TU_bOvZb06WfxFxMNKdfVoifWnchD6r32fJc12Uqdk_sYZu9zaKv69H-DUZq4751ISpTCBkEusQg7DwSligY0Q0kCeHsIQ4OQYNHzgqpeI-aO8jBfL7KmTbi:1vvqOf:0n8gmUPLAitrPUYyz8WSCVnv0CXwzki4OMMvx7SjbqA",
+    "expire_date": "2026-03-13T05:28:17.339Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "t7ngay8mppjpkjtwy0oiaj1d5gobcy4s",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQAP-yZ0MotCz06N03EHZZpGrapLQn499Nkx70OjOZN8S0bzXuTdY4ZRjBwOWXUeKnzIfIjzTfF8XLvK0TqSNRp23qtmR5Xc_2b1BTqzACEmHvhq4nKcVmSiVZ5y36woZJwoDIWrhjR4Y1ojU-S2AW1k5zyPD5AglvOPk:1wFX3s:JQoFf-lPcsN0LybE6u_qlgSc2QuO6Th-DEt3lnez5DE",
+    "expire_date": "2026-05-06T12:52:12.192Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "tl3p861i9bv08kl0c0f2l3c13cv9enqx",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGllm_WFDSc8ZorV3jQPIluKkQtwdIqWA9s3Me6mR1qWMa5d5nFidlVWH3y1SekjdAN-p3ppOrS7zFPWm6J12fW0sz8vu_h0U6uVbY_TMAdCbBFHy0QmgEGdKZgBBIMJgjGFr2HkaMobgAMHbaO3JhqTeH_KlN5o:1vnvqJ:nXaOFYkjRhtOt6B6JoGStE8H-r-STP5jv4YMv8Eu5pQ",
+    "expire_date": "2026-02-19T09:40:07.921Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "v0b3disv6a4guzost7n4tj95ivsorj09",
+  "fields": {
+    "session_data": ".eJxVjDkOwjAQAP-yNbK86zslPW-I1huHBJAt5agQf0eRUkA7M5o39LxvU7-vZennATpAuPyyzPIs9RDDg-u9KWl1W-asjkSddlW3NpTX9Wz_BhOvE3RgtY4oxWM0HB35ZDKPLklEn1wwKWehpNEiBYu2OM5GkxXyQZOEkeDzBapENkY:1w8wsE:gBnxak-gL1B5pi4HYrajW8w98XgWxKwybkw6jSG4Bjs",
+    "expire_date": "2026-04-18T09:00:58.012Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "vdjs30duofs7mmbdt9jibaxyryad8ym6",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQAP_C2ZDSbil49N43kF12sVUDSWlPxr8bkh70OjOZtwp47Es4qmxhZXVVg7r8MsL4lNwEPzDfi44l79tKuiX6tFXPheV1O9u_wYJ1aVsSMX1nAJIDHhL2OHpkJKAh2eQFbDdBjOwI0bJYNpOMro_CDOSj-nwBBpE5Tg:1w8wmx:Z8o-hOuyGiWaNaPMVWanadbJSBH6q54aPRYyYmX9vDI",
+    "expire_date": "2026-04-18T08:55:31.155Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "vzhpqdm3p97tg4ceyl7ggjn0fiwuffby",
+  "fields": {
+    "session_data": ".eJxVjEsOwiAUAO_CuiH9UEq7dO8JjCEP3sOiBhqgGmO8u2nShW5nJvNmGtYy6zVT0h7ZxDpW_TID9kZhE3iFcIncxlCSN3xL-G4zP0ak-2Fv_wYz5HnbGqKmrRshnBLYOWihHwHBCNM56UYSsh6EtagMgESS2AzUq9YSojCjZRVLZCmU-0s_PD0J9ZLiQql4ymw6qfPnCz4ORd0:1wAos0:NHGmxJy8L329jjD58qIcwvInCiErJ8QqUcK9N2zsNqc",
+    "expire_date": "2026-04-23T12:52:28.852Z"
+  }
+},
+{
+  "model": "core.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$P14PuWf2AnclgeUTRurnme$fsjJsDh7jyrlDrEv3t74wnYoMI5x7G6QD4D9stTDVPA=",
+    "last_login": "2026-04-04T13:20:25.959Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-02-05T07:42:48Z",
+    "user_type": "admin",
+    "avatar": "avatars/оаоа.jpg",
+    "phone": null,
+    "company_name": null,
+    "email_verified": false,
+    "phone_verified": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "core.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$NZTjzqdFZPQsiUixLmmMu4$Yr+T8hVwUnhJOVG6itm5rjyxGcM3Tych6Pk/DNNquQE=",
+    "last_login": "2026-04-24T13:12:28.249Z",
+    "is_superuser": false,
+    "username": "user1",
+    "first_name": "user1",
+    "last_name": "user1",
+    "email": "rsd3278@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-02-05T07:44:08.248Z",
+    "user_type": "landlord",
+    "avatar": "avatars/Airena_wallapack_38_5_UAva1BE.jpg",
+    "phone": "+7 (987) 267-73-64",
+    "company_name": "Rav.Oil",
+    "email_verified": false,
+    "phone_verified": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "core.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$9jyLUhOicqVIm9aeUpjym3$U3JirVkWIcLfJkNyXXvSWX2uWwspquvnNcOzDT2PyEg=",
+    "last_login": "2026-04-24T13:16:24.182Z",
+    "is_superuser": false,
+    "username": "user2",
+    "first_name": "user2",
+    "last_name": "user2",
+    "email": "rakushk3278@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-02-05T07:48:14.596Z",
+    "user_type": "tenant",
+    "avatar": "avatars/Airena_wallapack_38_5.jpg",
+    "phone": "+7 (999) 999-99-99",
+    "company_name": "SadRoom",
+    "email_verified": false,
+    "phone_verified": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "core.user",
+  "fields": {
+    "password": "pbkdf2_sha256$600000$4QiAA8a9kUvdFSX2uviA92$0NfRYoBNPL5JIaEBWqCMyO8/yuYTsb4GIt9EIAechWA=",
+    "last_login": "2026-02-06T09:02:11.349Z",
+    "is_superuser": false,
+    "username": "user3",
+    "first_name": "user3",
+    "last_name": "user3",
+    "email": "user3@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-02-06T05:33:36.811Z",
+    "user_type": "landlord",
+    "avatar": "avatars/Airena_wallapack_57_27.jpg",
+    "phone": "+7 (999) 999-99-99",
+    "company_name": "Prostorno",
+    "email_verified": false,
+    "phone_verified": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "core.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$ncYKDZbfXiTgLc5Qsj50dN$Vjz82UvPf0wVssCjdOnFkSCUB2ohNK5boR5zcQOj4CQ=",
+    "last_login": "2026-04-04T11:39:20.314Z",
+    "is_superuser": false,
+    "username": "Dinara",
+    "first_name": "Динара",
+    "last_name": "Садриева",
+    "email": "dido753801@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-04T11:32:05.076Z",
+    "user_type": "tenant",
+    "avatar": "",
+    "phone": "+7 (798) 726-77-36",
+    "company_name": "",
+    "email_verified": false,
+    "phone_verified": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "core.category",
+  "pk": 1,
+  "fields": {
+    "name": "Офис",
+    "slug": "ofis",
+    "description": "Небольшое помещение",
+    "icon": null,
+    "created_at": "2026-02-05T19:24:37.229Z"
+  }
+},
+{
+  "model": "core.property",
+  "pk": 3,
+  "fields": {
+    "landlord": [
+      "user1"
+    ],
+    "title": "Просторный офис",
+    "slug": "-37dbbb30",
+    "description": "Описание просторного офиса",
+    "property_type": "office",
+    "category": 1,
+    "city": "Москва",
+    "address": "Ленина, д. 100",
+    "latitude": null,
+    "longitude": null,
+    "price_per_hour": "800.00",
+    "price_per_day": "5760.00",
+    "price_per_week": "27200.00",
+    "price_per_month": "102400.00",
+    "capacity": 1,
+    "area": "60.00",
+    "floor": null,
+    "is_featured": true,
+    "status": "active",
+    "views_count": 5,
+    "created_at": "2026-02-06T05:30:09.812Z",
+    "updated_at": "2026-04-04T13:19:06.365Z",
+    "amenities": []
+  }
+},
+{
+  "model": "core.property",
+  "pk": 4,
+  "fields": {
+    "landlord": [
+      "user1"
+    ],
+    "title": "Склад",
+    "slug": "-470ce1be",
+    "description": "Описание склада",
+    "property_type": "warehouse",
+    "category": null,
+    "city": "Альметьевск",
+    "address": "Базовая, д. 12",
+    "latitude": null,
+    "longitude": null,
+    "price_per_hour": "900.00",
+    "price_per_day": "6480.00",
+    "price_per_week": "30600.00",
+    "price_per_month": "115200.00",
+    "capacity": 12,
+    "area": "320.00",
+    "floor": null,
+    "is_featured": false,
+    "status": "active",
+    "views_count": 3,
+    "created_at": "2026-02-06T05:31:59.122Z",
+    "updated_at": "2026-04-03T05:50:47.824Z",
+    "amenities": []
+  }
+},
+{
+  "model": "core.property",
+  "pk": 5,
+  "fields": {
+    "landlord": [
+      "user3"
+    ],
+    "title": "Конференц-зал",
+    "slug": "-f3605b94",
+    "description": "Описание конференц-зала",
+    "property_type": "conference",
+    "category": null,
+    "city": "Казань",
+    "address": "ул. Примерная, д. 12",
+    "latitude": null,
+    "longitude": null,
+    "price_per_hour": "2000.00",
+    "price_per_day": null,
+    "price_per_week": null,
+    "price_per_month": null,
+    "capacity": 15,
+    "area": "85.00",
+    "floor": null,
+    "is_featured": true,
+    "status": "active",
+    "views_count": 10,
+    "created_at": "2026-02-06T05:36:06.125Z",
+    "updated_at": "2026-04-04T08:55:45.968Z",
+    "amenities": []
+  }
+},
+{
+  "model": "core.property",
+  "pk": 6,
+  "fields": {
+    "landlord": [
+      "user3"
+    ],
+    "title": "Коворкинг зона",
+    "slug": "-50e94902",
+    "description": "Описание коворкинг зоны",
+    "property_type": "coworking",
+    "category": null,
+    "city": "Нижнекамск",
+    "address": "ул. Ленина, д. 120",
+    "latitude": null,
+    "longitude": null,
+    "price_per_hour": "1000.00",
+    "price_per_day": null,
+    "price_per_week": null,
+    "price_per_month": null,
+    "capacity": 6,
+    "area": "45.00",
+    "floor": null,
+    "is_featured": false,
+    "status": "active",
+    "views_count": 2,
+    "created_at": "2026-02-06T05:38:17.357Z",
+    "updated_at": "2026-03-16T09:09:09.002Z",
+    "amenities": []
+  }
+},
+{
+  "model": "core.property",
+  "pk": 7,
+  "fields": {
+    "landlord": [
+      "user3"
+    ],
+    "title": "Студия L",
+    "slug": "l-502296ef",
+    "description": "Описание студии",
+    "property_type": "studio",
+    "category": null,
+    "city": "Санкт-Петербург",
+    "address": "Ленина, д. 100",
+    "latitude": null,
+    "longitude": null,
+    "price_per_hour": "1200.00",
+    "price_per_day": null,
+    "price_per_week": null,
+    "price_per_month": null,
+    "capacity": 20,
+    "area": "99.00",
+    "floor": null,
+    "is_featured": false,
+    "status": "active",
+    "views_count": 7,
+    "created_at": "2026-02-06T05:40:18.129Z",
+    "updated_at": "2026-04-04T11:42:16.247Z",
+    "amenities": []
+  }
+},
+{
+  "model": "core.property",
+  "pk": 8,
+  "fields": {
+    "landlord": [
+      "user1"
+    ],
+    "title": "Студия красоты",
+    "slug": "-e0ec7b1a",
+    "description": "Описание студии красоты",
+    "property_type": "studio",
+    "category": null,
+    "city": "Москва",
+    "address": "Строителей 12",
+    "latitude": null,
+    "longitude": null,
+    "price_per_hour": "1000.00",
+    "price_per_day": "7200.00",
+    "price_per_week": "34000.00",
+    "price_per_month": "128000.00",
+    "capacity": 6,
+    "area": "32.00",
+    "floor": null,
+    "is_featured": true,
+    "status": "active",
+    "views_count": 37,
+    "created_at": "2026-02-06T05:42:02.164Z",
+    "updated_at": "2026-04-04T08:55:12.186Z",
+    "amenities": []
+  }
+},
+{
+  "model": "core.property",
+  "pk": 9,
+  "fields": {
+    "landlord": [
+      "user1"
+    ],
+    "title": "Офис GOOD",
+    "slug": "good-f2dbf7d2",
+    "description": "Описание офиса",
+    "property_type": "office",
+    "category": 1,
+    "city": "Москва",
+    "address": "Базовая, д. 12",
+    "latitude": null,
+    "longitude": null,
+    "price_per_hour": "900.00",
+    "price_per_day": "6480.00",
+    "price_per_week": null,
+    "price_per_month": null,
+    "capacity": 6,
+    "area": "76.00",
+    "floor": null,
+    "is_featured": false,
+    "status": "active",
+    "views_count": 16,
+    "created_at": "2026-02-06T08:48:13.363Z",
+    "updated_at": "2026-04-04T08:56:52.344Z",
+    "amenities": []
+  }
+},
+{
+  "model": "core.property",
+  "pk": 11,
+  "fields": {
+    "landlord": [
+      "user1"
+    ],
+    "title": "ОФИС аа",
+    "slug": "-325a8d06",
+    "description": "ддд",
+    "property_type": "office",
+    "category": 1,
+    "city": "Москва",
+    "address": "Ленина 100",
+    "latitude": null,
+    "longitude": null,
+    "price_per_hour": "200.00",
+    "price_per_day": "1440.00",
+    "price_per_week": null,
+    "price_per_month": null,
+    "capacity": 1,
+    "area": "10.00",
+    "floor": null,
+    "is_featured": false,
+    "status": "pending",
+    "views_count": 0,
+    "created_at": "2026-04-24T13:14:17.520Z",
+    "updated_at": "2026-04-24T13:14:17.520Z",
+    "amenities": []
+  }
+},
+{
+  "model": "core.propertyimage",
+  "pk": 6,
+  "fields": {
+    "property": 3,
+    "image": "properties/modern-office-space-with-tables-chairs-computers-wooden-plank-table-generati_0vfErKx.avif",
+    "is_main": false,
+    "uploaded_at": "2026-02-06T05:30:09.816Z"
+  }
+},
+{
+  "model": "core.propertyimage",
+  "pk": 7,
+  "fields": {
+    "property": 4,
+    "image": "properties/obraz-magazynu-z-polkami-przedstawiajacymi-stosy-palet_674594-12812.avif",
+    "is_main": false,
+    "uploaded_at": "2026-02-06T05:31:59.126Z"
+  }
+},
+{
+  "model": "core.propertyimage",
+  "pk": 8,
+  "fields": {
+    "property": 5,
+    "image": "properties/Frame_22.png",
+    "is_main": false,
+    "uploaded_at": "2026-02-06T05:36:06.130Z"
+  }
+},
+{
+  "model": "core.propertyimage",
+  "pk": 9,
+  "fields": {
+    "property": 6,
+    "image": "properties/i.webp",
+    "is_main": false,
+    "uploaded_at": "2026-02-06T05:38:17.361Z"
+  }
+},
+{
+  "model": "core.propertyimage",
+  "pk": 10,
+  "fields": {
+    "property": 7,
+    "image": "properties/diploma.webp",
+    "is_main": false,
+    "uploaded_at": "2026-02-06T05:40:18.134Z"
+  }
+},
+{
+  "model": "core.propertyimage",
+  "pk": 11,
+  "fields": {
+    "property": 8,
+    "image": "properties/picture-shows-modern-beauty-salon-embodying-elegance_943281-45693.avif",
+    "is_main": false,
+    "uploaded_at": "2026-02-06T05:42:02.362Z"
+  }
+},
+{
+  "model": "core.propertyimage",
+  "pk": 12,
+  "fields": {
+    "property": 9,
+    "image": "properties/i_mmC9klI.webp",
+    "is_main": false,
+    "uploaded_at": "2026-02-06T08:48:13.367Z"
+  }
+},
+{
+  "model": "core.propertyimage",
+  "pk": 14,
+  "fields": {
+    "property": 11,
+    "image": "properties/photo_5332586031725273816_y_1.png",
+    "is_main": false,
+    "uploaded_at": "2026-04-24T13:14:17.554Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 5,
+  "fields": {
+    "booking_id": "B0009-66C798",
+    "property": 9,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-17T06:00:00Z",
+    "end_datetime": "2026-02-18T20:59:00Z",
+    "guests": 4,
+    "special_requests": "",
+    "total_price": "35085.00",
+    "status": "completed",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-02-16T10:57:40.393Z",
+    "updated_at": "2026-02-25T11:34:33.205Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 6,
+  "fields": {
+    "booking_id": "B0009-84BA6E",
+    "property": 9,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-25T06:00:00Z",
+    "end_datetime": "2026-02-25T15:00:00Z",
+    "guests": 1,
+    "special_requests": "лллл",
+    "total_price": "8100.00",
+    "status": "paid",
+    "is_paid": true,
+    "payment_date": "2026-02-24T13:13:27.034Z",
+    "payment_method": "card",
+    "created_at": "2026-02-24T13:12:11.033Z",
+    "updated_at": "2026-02-24T13:13:27.034Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 7,
+  "fields": {
+    "booking_id": "B0005-163001",
+    "property": 5,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-25T06:00:00Z",
+    "end_datetime": "2026-02-25T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "18000.00",
+    "status": "cancelled",
+    "is_paid": true,
+    "payment_date": "2026-02-25T04:46:45.250Z",
+    "payment_method": "card",
+    "created_at": "2026-02-25T04:46:23.935Z",
+    "updated_at": "2026-02-25T04:47:14.447Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 8,
+  "fields": {
+    "booking_id": "B0004-8271D0",
+    "property": 4,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-25T06:00:00Z",
+    "end_datetime": "2026-02-25T15:00:00Z",
+    "guests": 9,
+    "special_requests": "bvnfnhfn",
+    "total_price": "8100.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-02-25T04:47:45.337Z",
+    "updated_at": "2026-02-25T05:00:45.405Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 9,
+  "fields": {
+    "booking_id": "B0008-A13685",
+    "property": 8,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-25T06:00:00Z",
+    "end_datetime": "2026-02-25T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "9000.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-02-25T05:01:03.589Z",
+    "updated_at": "2026-02-25T05:12:11.633Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 10,
+  "fields": {
+    "booking_id": "B0009-6694C5",
+    "property": 9,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-27T06:00:00Z",
+    "end_datetime": "2026-02-27T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "8100.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-02-25T05:23:57.456Z",
+    "updated_at": "2026-02-25T05:30:53.041Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 11,
+  "fields": {
+    "booking_id": "B0006-89D13D",
+    "property": 6,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-26T06:00:00Z",
+    "end_datetime": "2026-02-28T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "57000.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-02-25T06:14:04.173Z",
+    "updated_at": "2026-02-25T06:47:54.277Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 12,
+  "fields": {
+    "booking_id": "B0005-C8DCEB",
+    "property": 5,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-26T06:00:00Z",
+    "end_datetime": "2026-02-28T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "114000.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-02-25T06:48:39.846Z",
+    "updated_at": "2026-02-25T07:19:25.008Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 13,
+  "fields": {
+    "booking_id": "B0005-FC509D",
+    "property": 5,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-26T06:00:00Z",
+    "end_datetime": "2026-03-03T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "258000.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-02-25T07:26:25.123Z",
+    "updated_at": "2026-02-25T09:31:25.325Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 14,
+  "fields": {
+    "booking_id": "B0008-F6BF2F",
+    "property": 8,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-28T08:00:00Z",
+    "end_datetime": "2026-03-01T20:59:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "14400.00",
+    "status": "paid",
+    "is_paid": true,
+    "payment_date": "2026-02-27T05:30:37.980Z",
+    "payment_method": "card",
+    "created_at": "2026-02-27T05:29:04.592Z",
+    "updated_at": "2026-02-27T05:30:37.980Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 15,
+  "fields": {
+    "booking_id": "B0007-A02CEA",
+    "property": 7,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-28T08:00:00Z",
+    "end_datetime": "2026-03-02T15:00:00Z",
+    "guests": 20,
+    "special_requests": "прттпипа",
+    "total_price": "66000.00",
+    "status": "paid",
+    "is_paid": true,
+    "payment_date": "2026-02-27T06:37:09.856Z",
+    "payment_method": "card",
+    "created_at": "2026-02-27T06:36:32.558Z",
+    "updated_at": "2026-02-27T06:37:09.856Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 16,
+  "fields": {
+    "booking_id": "B0005-ED3155",
+    "property": 5,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-02-28T06:00:00Z",
+    "end_datetime": "2026-03-02T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "114000.00",
+    "status": "paid",
+    "is_paid": true,
+    "payment_date": "2026-02-27T06:40:49.241Z",
+    "payment_method": "card",
+    "created_at": "2026-02-27T06:40:20.545Z",
+    "updated_at": "2026-02-27T06:40:49.241Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 17,
+  "fields": {
+    "booking_id": "B0008-04E0AE",
+    "property": 8,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-03-05T06:00:00Z",
+    "end_datetime": "2026-03-05T15:00:00Z",
+    "guests": 2,
+    "special_requests": "ьь",
+    "total_price": "9000.00",
+    "status": "completed",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "cash",
+    "created_at": "2026-03-03T12:27:18.693Z",
+    "updated_at": "2026-03-03T12:31:16.488Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 18,
+  "fields": {
+    "booking_id": "B0008-6731FE",
+    "property": 8,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-03-17T06:00:00Z",
+    "end_datetime": "2026-03-17T15:00:00Z",
+    "guests": 1,
+    "special_requests": "h",
+    "total_price": "9000.00",
+    "status": "confirmed",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "cash",
+    "created_at": "2026-03-16T09:07:06.285Z",
+    "updated_at": "2026-03-16T09:08:04.068Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 19,
+  "fields": {
+    "booking_id": "B0004-0B6AE2",
+    "property": 4,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-04-04T06:00:00Z",
+    "end_datetime": "2026-04-04T20:59:00Z",
+    "guests": 1,
+    "special_requests": "fvfvfgvgfb",
+    "total_price": "6480.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-04-03T05:54:59.156Z",
+    "updated_at": "2026-04-03T08:33:11.718Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 20,
+  "fields": {
+    "booking_id": "B0004-5D4337",
+    "property": 4,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-05-01T06:00:00Z",
+    "end_datetime": "2026-05-03T20:59:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "19440.00",
+    "status": "completed",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "cash",
+    "created_at": "2026-04-03T05:55:47.091Z",
+    "updated_at": "2026-04-22T12:53:53.026Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 21,
+  "fields": {
+    "booking_id": "B0009-A9BD16",
+    "property": 9,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-04-05T06:00:00Z",
+    "end_datetime": "2026-04-06T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "29700.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-04-04T08:58:28.116Z",
+    "updated_at": "2026-04-04T09:29:51.219Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 22,
+  "fields": {
+    "booking_id": "B0008-7FC53D",
+    "property": 8,
+    "tenant": [
+      "Dinara"
+    ],
+    "start_datetime": "2026-04-07T06:00:00Z",
+    "end_datetime": "2026-04-09T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "57000.00",
+    "status": "completed",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "cash",
+    "created_at": "2026-04-04T12:51:25.297Z",
+    "updated_at": "2026-04-22T12:53:48.989Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 23,
+  "fields": {
+    "booking_id": "B0009-0C50BA",
+    "property": 9,
+    "tenant": [
+      "Dinara"
+    ],
+    "start_datetime": "2026-04-10T06:00:00Z",
+    "end_datetime": "2026-04-11T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "29700.00",
+    "status": "cancelled",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "card",
+    "created_at": "2026-04-04T12:51:25.358Z",
+    "updated_at": "2026-04-04T13:23:36.668Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 24,
+  "fields": {
+    "booking_id": "B0008-91E936",
+    "property": 8,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-04-09T15:00:00Z",
+    "end_datetime": "2026-04-09T18:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "3000.00",
+    "status": "completed",
+    "is_paid": false,
+    "payment_date": null,
+    "payment_method": "cash",
+    "created_at": "2026-04-05T13:50:21.938Z",
+    "updated_at": "2026-04-22T12:52:26.744Z"
+  }
+},
+{
+  "model": "core.booking",
+  "pk": 25,
+  "fields": {
+    "booking_id": "B0005-09D29A",
+    "property": 5,
+    "tenant": [
+      "user2"
+    ],
+    "start_datetime": "2026-04-25T06:00:00Z",
+    "end_datetime": "2026-04-25T15:00:00Z",
+    "guests": 1,
+    "special_requests": "",
+    "total_price": "18000.00",
+    "status": "paid",
+    "is_paid": true,
+    "payment_date": "2026-04-24T13:21:32.006Z",
+    "payment_method": "card",
+    "created_at": "2026-04-24T13:16:42.108Z",
+    "updated_at": "2026-04-24T13:21:32.006Z"
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 1,
+  "fields": {
+    "booking": 6,
+    "contract_number": "CON-2026-02-000006",
+    "generated_at": "2026-02-24T13:13:27.356Z",
+    "pdf_file": "contracts/2026/02/24/contract_B0009-84BA6E.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 2,
+  "fields": {
+    "booking": 7,
+    "contract_number": "CON-2026-02-000007",
+    "generated_at": "2026-02-25T04:46:45.529Z",
+    "pdf_file": "contracts/2026/02/25/contract_B0005-163001.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 3,
+  "fields": {
+    "booking": 14,
+    "contract_number": "CON-2026-02-000014",
+    "generated_at": "2026-02-27T05:30:38.251Z",
+    "pdf_file": "contracts/2026/02/27/contract_B0008-F6BF2F.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 4,
+  "fields": {
+    "booking": 15,
+    "contract_number": "CON-2026-02-000015",
+    "generated_at": "2026-02-27T06:37:10.223Z",
+    "pdf_file": "contracts/2026/02/27/contract_B0007-A02CEA.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 5,
+  "fields": {
+    "booking": 16,
+    "contract_number": "CON-2026-02-000016",
+    "generated_at": "2026-02-27T06:40:49.515Z",
+    "pdf_file": "contracts/2026/02/27/contract_B0005-ED3155.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 6,
+  "fields": {
+    "booking": 17,
+    "contract_number": "CON-2026-03-000017",
+    "generated_at": "2026-03-03T12:30:58.369Z",
+    "pdf_file": "contracts/2026/03/03/contract_B0008-04E0AE.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 7,
+  "fields": {
+    "booking": 5,
+    "contract_number": "CON-2026-03-000005",
+    "generated_at": "2026-03-16T09:00:58.210Z",
+    "pdf_file": "contracts/2026/03/16/contract_B0009-66C798.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 8,
+  "fields": {
+    "booking": 18,
+    "contract_number": "CON-2026-03-000018",
+    "generated_at": "2026-03-16T09:08:04.139Z",
+    "pdf_file": "contracts/2026/03/16/contract_B0008-6731FE.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 9,
+  "fields": {
+    "booking": 20,
+    "contract_number": "CON-2026-04-000020",
+    "generated_at": "2026-04-03T05:57:34.921Z",
+    "pdf_file": "contracts/2026/04/03/contract_B0004-5D4337.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 10,
+  "fields": {
+    "booking": 22,
+    "contract_number": "CON-2026-04-000022",
+    "generated_at": "2026-04-04T13:03:40.543Z",
+    "pdf_file": "contracts/2026/04/04/contract_B0008-7FC53D.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 11,
+  "fields": {
+    "booking": 24,
+    "contract_number": "CON-2026-04-000024",
+    "generated_at": "2026-04-05T14:11:14.178Z",
+    "pdf_file": "contracts/2026/04/05/contract_B0008-91E936.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.contract",
+  "pk": 12,
+  "fields": {
+    "booking": 25,
+    "contract_number": "CON-2026-04-000025",
+    "generated_at": "2026-04-24T13:21:32.389Z",
+    "pdf_file": "contracts/2026/04/24/contract_B0005-09D29A.pdf",
+    "signed_by_tenant": false,
+    "signed_by_landlord": false
+  }
+},
+{
+  "model": "core.review",
+  "pk": 1,
+  "fields": {
+    "property": 9,
+    "user": [
+      "user2"
+    ],
+    "booking": 5,
+    "rating": 5,
+    "comment": "Без комментария",
+    "status": "approved",
+    "admin_comment": null,
+    "is_verified": false,
+    "created_at": "2026-02-25T11:37:25.545Z",
+    "updated_at": "2026-04-04T09:40:31.383Z"
+  }
+},
+{
+  "model": "core.review",
+  "pk": 2,
+  "fields": {
+    "property": 8,
+    "user": [
+      "user2"
+    ],
+    "booking": 17,
+    "rating": 5,
+    "comment": "Без комментария",
+    "status": "approved",
+    "admin_comment": null,
+    "is_verified": false,
+    "created_at": "2026-03-03T12:31:42.390Z",
+    "updated_at": "2026-03-03T12:52:01.612Z"
+  }
+},
+{
+  "model": "core.favorite",
+  "pk": 4,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "property": 3,
+    "created_at": "2026-02-06T09:28:35.164Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 1,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user2 user2",
+    "is_read": true,
+    "related_object_id": 1,
+    "related_object_type": "message",
+    "created_at": "2026-02-05T09:39:32.816Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 2,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user1 user1",
+    "is_read": true,
+    "related_object_id": 2,
+    "related_object_type": "message",
+    "created_at": "2026-02-05T09:39:52.736Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 3,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от admin",
+    "is_read": true,
+    "related_object_id": 3,
+    "related_object_type": "message",
+    "created_at": "2026-02-05T17:48:41.093Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 4,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"ччся\" на 06.02.2026 09:00",
+    "is_read": true,
+    "related_object_id": 3,
+    "related_object_type": "booking",
+    "created_at": "2026-02-05T18:44:25.633Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 5,
+  "fields": {
+    "user": [
+      "admin"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0002-1465CB отменено",
+    "is_read": true,
+    "related_object_id": 3,
+    "related_object_type": "booking",
+    "created_at": "2026-02-05T18:44:33.972Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 6,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0001-25C7E9 отменено",
+    "is_read": true,
+    "related_object_id": 2,
+    "related_object_type": "booking",
+    "created_at": "2026-02-05T18:45:45.441Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 7,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"ччся\" на 06.02.2026 09:00",
+    "is_read": true,
+    "related_object_id": 4,
+    "related_object_type": "booking",
+    "created_at": "2026-02-05T18:49:12.605Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 8,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0002-241F21 отменено",
+    "is_read": true,
+    "related_object_id": 1,
+    "related_object_type": "booking",
+    "created_at": "2026-02-05T18:56:53.432Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 9,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_confirmed",
+    "title": "Бронирование подтверждено",
+    "message": "Ваше бронирование #B0002-1B5229 подтверждено",
+    "is_read": true,
+    "related_object_id": 4,
+    "related_object_type": "booking",
+    "created_at": "2026-02-05T18:57:01.894Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 10,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Офис GOOD\" на 17.02.2026 09:00",
+    "is_read": true,
+    "related_object_id": 5,
+    "related_object_type": "booking",
+    "created_at": "2026-02-16T10:57:40.399Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 11,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_confirmed",
+    "title": "Бронирование подтверждено",
+    "message": "Ваше бронирование #B0009-66C798 подтверждено",
+    "is_read": true,
+    "related_object_id": 5,
+    "related_object_type": "booking",
+    "created_at": "2026-02-16T11:04:06.259Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 12,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от admin",
+    "is_read": true,
+    "related_object_id": 4,
+    "related_object_type": "message",
+    "created_at": "2026-02-24T12:10:26.352Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 13,
+  "fields": {
+    "user": [
+      "admin"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user1 user1",
+    "is_read": true,
+    "related_object_id": 5,
+    "related_object_type": "message",
+    "created_at": "2026-02-24T12:11:19.712Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 14,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Офис GOOD\" на 25.02.2026 09:00",
+    "is_read": true,
+    "related_object_id": 6,
+    "related_object_type": "booking",
+    "created_at": "2026-02-24T13:12:11.050Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 15,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0009-84BA6E оплачено. Ожидает подтверждения владельцем.",
+    "is_read": true,
+    "related_object_id": 6,
+    "related_object_type": "booking",
+    "created_at": "2026-02-24T13:13:27.051Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 16,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Конференц-зал\" на 25.02.2026 09:00",
+    "is_read": false,
+    "related_object_id": 7,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T04:46:23.962Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 17,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0005-163001 оплачено. Ожидает подтверждения владельцем.",
+    "is_read": true,
+    "related_object_id": 7,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T04:46:45.284Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 18,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0005-163001 отменено",
+    "is_read": true,
+    "related_object_id": 7,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T04:47:14.460Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 19,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Склад\" на 25.02.2026 09:00",
+    "is_read": true,
+    "related_object_id": 8,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T04:47:45.358Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 20,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0004-8271D0 отменено",
+    "is_read": true,
+    "related_object_id": 8,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T05:00:45.418Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 21,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Студия красоты\" на 25.02.2026 09:00",
+    "is_read": true,
+    "related_object_id": 9,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T05:01:03.612Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 22,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0008-A13685 отменено",
+    "is_read": true,
+    "related_object_id": 9,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T05:12:11.648Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 23,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Офис GOOD\" на 27.02.2026 09:00",
+    "is_read": true,
+    "related_object_id": 10,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T05:23:57.480Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 24,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0009-6694C5 отменено",
+    "is_read": true,
+    "related_object_id": 10,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T05:30:53.056Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 25,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Коворкинг зона\" на 26.02.2026 09:00",
+    "is_read": false,
+    "related_object_id": 11,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T06:14:04.189Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 26,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0006-89D13D для помещения \"Коворкинг зона\". Оплата наличными при встрече.",
+    "is_read": false,
+    "related_object_id": 11,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T06:38:59.317Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 27,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0006-89D13D создано. Свяжитесь с владельцем для встречи и оплаты.",
+    "is_read": true,
+    "related_object_id": 11,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T06:38:59.330Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 28,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0006-89D13D автоматически отменено из-за истечения времени оплаты.",
+    "is_read": true,
+    "related_object_id": 11,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T06:47:54.301Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 29,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Конференц-зал\" на 26.02.2026 09:00",
+    "is_read": false,
+    "related_object_id": 12,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T06:48:39.888Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 30,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0005-C8DCEB для помещения \"Конференц-зал\". Клиент оплатит наличными при встрече.",
+    "is_read": false,
+    "related_object_id": 12,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T06:56:29.161Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 31,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0005-C8DCEB создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": true,
+    "related_object_id": 12,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T06:56:29.174Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 32,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0005-C8DCEB для помещения \"Конференц-зал\". Клиент оплатит наличными при встрече.",
+    "is_read": false,
+    "related_object_id": 12,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T07:10:25.941Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 33,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0005-C8DCEB создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": true,
+    "related_object_id": 12,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T07:10:25.953Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 34,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0005-C8DCEB для помещения \"Конференц-зал\". Клиент оплатит наличными при встрече.",
+    "is_read": false,
+    "related_object_id": 12,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T07:14:39.152Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 35,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0005-C8DCEB создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": true,
+    "related_object_id": 12,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T07:14:39.168Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 36,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0005-C8DCEB автоматически отменено из-за истечения времени оплаты.",
+    "is_read": true,
+    "related_object_id": 12,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T07:19:25.036Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 37,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Конференц-зал\" на 26.02.2026 09:00",
+    "is_read": false,
+    "related_object_id": 13,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T07:26:25.146Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 38,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0005-FC509D для помещения \"Конференц-зал\". Клиент оплатит наличными при встрече.",
+    "is_read": false,
+    "related_object_id": 13,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T07:26:28.872Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 39,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0005-FC509D создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": true,
+    "related_object_id": 13,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T07:26:28.893Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 40,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0005-FC509D автоматически отменено из-за истечения времени оплаты.",
+    "is_read": true,
+    "related_object_id": 13,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T09:31:25.365Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 41,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user2 user2",
+    "is_read": true,
+    "related_object_id": 6,
+    "related_object_type": "message",
+    "created_at": "2026-02-25T11:07:08.331Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 42,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user1 user1",
+    "is_read": true,
+    "related_object_id": 7,
+    "related_object_type": "message",
+    "created_at": "2026-02-25T11:33:30.656Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 43,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_completed",
+    "title": "Бронирование завершено",
+    "message": "Бронирование #B0009-66C798 завершено. Пожалуйста, оставьте отзыв.",
+    "is_read": true,
+    "related_object_id": 5,
+    "related_object_type": "booking",
+    "created_at": "2026-02-25T11:34:33.216Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 44,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user2 user2",
+    "is_read": true,
+    "related_object_id": 8,
+    "related_object_type": "message",
+    "created_at": "2026-02-25T11:37:51.739Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 45,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Студия красоты\" на 28.02.2026 11:00",
+    "is_read": true,
+    "related_object_id": 14,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T05:29:04.617Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 46,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0008-F6BF2F оплачено. Ожидает подтверждения владельцем.",
+    "is_read": true,
+    "related_object_id": 14,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T05:30:38.019Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 47,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0008-F6BF2F для помещения \"Студия красоты\" оплачено картой и ожидает подтверждения.",
+    "is_read": true,
+    "related_object_id": 14,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T05:30:38.033Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 48,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Студия L\" на 28.02.2026 11:00",
+    "is_read": false,
+    "related_object_id": 15,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T06:36:32.574Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 49,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0007-A02CEA оплачено. Ожидает подтверждения владельцем.",
+    "is_read": true,
+    "related_object_id": 15,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T06:37:09.871Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 50,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0007-A02CEA для помещения \"Студия L\" оплачено картой и ожидает подтверждения.",
+    "is_read": false,
+    "related_object_id": 15,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T06:37:09.884Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 51,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Конференц-зал\" на 28.02.2026 09:00",
+    "is_read": false,
+    "related_object_id": 16,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T06:40:20.578Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 52,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0005-ED3155 оплачено. Ожидает подтверждения владельцем.",
+    "is_read": true,
+    "related_object_id": 16,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T06:40:49.268Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 53,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0005-ED3155 для помещения \"Конференц-зал\" оплачено картой и ожидает подтверждения.",
+    "is_read": false,
+    "related_object_id": 16,
+    "related_object_type": "booking",
+    "created_at": "2026-02-27T06:40:49.283Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 54,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Студия красоты\" на 05.03.2026 09:00",
+    "is_read": true,
+    "related_object_id": 17,
+    "related_object_type": "booking",
+    "created_at": "2026-03-03T12:27:18.706Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 55,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0008-04E0AE для помещения \"Студия красоты\". Клиент оплатит наличными при встрече.",
+    "is_read": true,
+    "related_object_id": 17,
+    "related_object_type": "booking",
+    "created_at": "2026-03-03T12:27:24.280Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 56,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0008-04E0AE создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": true,
+    "related_object_id": 17,
+    "related_object_type": "booking",
+    "created_at": "2026-03-03T12:27:24.290Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 57,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_confirmed",
+    "title": "Бронирование подтверждено",
+    "message": "Ваше бронирование #B0008-04E0AE подтверждено",
+    "is_read": true,
+    "related_object_id": 17,
+    "related_object_type": "booking",
+    "created_at": "2026-03-03T12:30:58.039Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 58,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_completed",
+    "title": "Бронирование завершено",
+    "message": "Бронирование #B0008-04E0AE завершено. Пожалуйста, оставьте отзыв.",
+    "is_read": true,
+    "related_object_id": 17,
+    "related_object_type": "booking",
+    "created_at": "2026-03-03T12:31:16.500Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 59,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Студия красоты\" на 17.03.2026 09:00",
+    "is_read": true,
+    "related_object_id": 18,
+    "related_object_type": "booking",
+    "created_at": "2026-03-16T09:07:06.310Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 60,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0008-6731FE для помещения \"Студия красоты\". Клиент оплатит наличными при встрече.",
+    "is_read": true,
+    "related_object_id": 18,
+    "related_object_type": "booking",
+    "created_at": "2026-03-16T09:07:11.820Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 61,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0008-6731FE создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": true,
+    "related_object_id": 18,
+    "related_object_type": "booking",
+    "created_at": "2026-03-16T09:07:11.821Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 62,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_confirmed",
+    "title": "Бронирование подтверждено",
+    "message": "Ваше бронирование #B0008-6731FE подтверждено",
+    "is_read": true,
+    "related_object_id": 18,
+    "related_object_type": "booking",
+    "created_at": "2026-03-16T09:08:04.094Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 63,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Склад\" на 04.04.2026 09:00",
+    "is_read": true,
+    "related_object_id": 19,
+    "related_object_type": "booking",
+    "created_at": "2026-04-03T05:54:59.176Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 64,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Склад\" на 01.05.2026 09:00",
+    "is_read": true,
+    "related_object_id": 20,
+    "related_object_type": "booking",
+    "created_at": "2026-04-03T05:55:47.111Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 65,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0004-5D4337 для помещения \"Склад\". Клиент оплатит наличными при встрече.",
+    "is_read": true,
+    "related_object_id": 20,
+    "related_object_type": "booking",
+    "created_at": "2026-04-03T05:55:55.807Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 66,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0004-5D4337 создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": true,
+    "related_object_id": 20,
+    "related_object_type": "booking",
+    "created_at": "2026-04-03T05:55:55.829Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 67,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_confirmed",
+    "title": "Бронирование подтверждено",
+    "message": "Ваше бронирование #B0004-5D4337 подтверждено",
+    "is_read": true,
+    "related_object_id": 20,
+    "related_object_type": "booking",
+    "created_at": "2026-04-03T05:57:34.905Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 68,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0004-0B6AE2 автоматически отменено из-за истечения времени оплаты.",
+    "is_read": false,
+    "related_object_id": 19,
+    "related_object_type": "booking",
+    "created_at": "2026-04-03T08:33:11.751Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 69,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Офис GOOD\" на 05.04.2026 09:00",
+    "is_read": true,
+    "related_object_id": 21,
+    "related_object_type": "booking",
+    "created_at": "2026-04-04T08:58:28.143Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 70,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0009-A9BD16 автоматически отменено из-за истечения времени оплаты.",
+    "is_read": false,
+    "related_object_id": 21,
+    "related_object_type": "booking",
+    "created_at": "2026-04-04T09:29:51.234Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 71,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Студия красоты\" на 07.04.2026 06:00",
+    "is_read": true,
+    "related_object_id": 22,
+    "related_object_type": "booking",
+    "created_at": "2026-04-04T12:51:25.326Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 72,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Офис GOOD\" на 10.04.2026 06:00",
+    "is_read": true,
+    "related_object_id": 23,
+    "related_object_type": "booking",
+    "created_at": "2026-04-04T12:51:25.386Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 73,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0008-7FC53D для помещения \"Студия красоты\". Клиент оплатит наличными при встрече.",
+    "is_read": true,
+    "related_object_id": 22,
+    "related_object_type": "booking",
+    "created_at": "2026-04-04T12:52:10.930Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 74,
+  "fields": {
+    "user": [
+      "Dinara"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0008-7FC53D создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": false,
+    "related_object_id": 22,
+    "related_object_type": "booking",
+    "created_at": "2026-04-04T12:52:10.943Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 75,
+  "fields": {
+    "user": [
+      "Dinara"
+    ],
+    "notification_type": "booking_confirmed",
+    "title": "Бронирование подтверждено",
+    "message": "Ваше бронирование #B0008-7FC53D подтверждено",
+    "is_read": false,
+    "related_object_id": 22,
+    "related_object_type": "booking",
+    "created_at": "2026-04-04T13:03:39.944Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 76,
+  "fields": {
+    "user": [
+      "Dinara"
+    ],
+    "notification_type": "booking_cancelled",
+    "title": "Бронирование отменено",
+    "message": "Бронирование #B0009-0C50BA автоматически отменено из-за истечения времени оплаты.",
+    "is_read": false,
+    "related_object_id": 23,
+    "related_object_type": "booking",
+    "created_at": "2026-04-04T13:23:36.683Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 77,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user2 user2",
+    "is_read": true,
+    "related_object_id": 9,
+    "related_object_type": "message",
+    "created_at": "2026-04-05T08:37:06.021Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 78,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Студия красоты\" на 09.04.2026 18:00",
+    "is_read": true,
+    "related_object_id": 24,
+    "related_object_type": "booking",
+    "created_at": "2026-04-05T13:50:21.958Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 79,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование (оплата наличными)",
+    "message": "Новое бронирование #B0008-91E936 для помещения \"Студия красоты\". Клиент оплатит наличными при встрече.",
+    "is_read": true,
+    "related_object_id": 24,
+    "related_object_type": "booking",
+    "created_at": "2026-04-05T14:08:27.076Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 80,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_created",
+    "title": "Бронирование создано (оплата наличными)",
+    "message": "Ваше бронирование #B0008-91E936 создано. Статус: ожидает оплаты при встрече. Свяжитесь с владельцем для подтверждения.",
+    "is_read": false,
+    "related_object_id": 24,
+    "related_object_type": "booking",
+    "created_at": "2026-04-05T14:08:27.087Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 81,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user2 user2",
+    "is_read": true,
+    "related_object_id": 10,
+    "related_object_type": "message",
+    "created_at": "2026-04-05T14:09:06.553Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 82,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "message_received",
+    "title": "Новое сообщение",
+    "message": "Вам новое сообщение от user1 user1",
+    "is_read": false,
+    "related_object_id": 11,
+    "related_object_type": "message",
+    "created_at": "2026-04-05T14:10:02.933Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 83,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_confirmed",
+    "title": "Бронирование подтверждено",
+    "message": "Ваше бронирование #B0008-91E936 подтверждено",
+    "is_read": false,
+    "related_object_id": 24,
+    "related_object_type": "booking",
+    "created_at": "2026-04-05T14:11:13.697Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 84,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_completed",
+    "title": "Бронирование завершено",
+    "message": "Бронирование #B0008-91E936 завершено. Пожалуйста, оставьте отзыв.",
+    "is_read": false,
+    "related_object_id": 24,
+    "related_object_type": "booking",
+    "created_at": "2026-04-22T12:52:26.785Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 85,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_completed",
+    "title": "Бронирование завершено",
+    "message": "Бронирование #B0008-7FC53D завершено. Пожалуйста, оставьте отзыв.",
+    "is_read": false,
+    "related_object_id": 22,
+    "related_object_type": "booking",
+    "created_at": "2026-04-22T12:53:49.046Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 86,
+  "fields": {
+    "user": [
+      "user1"
+    ],
+    "notification_type": "booking_completed",
+    "title": "Бронирование завершено",
+    "message": "Бронирование #B0004-5D4337 завершено. Пожалуйста, оставьте отзыв.",
+    "is_read": false,
+    "related_object_id": 20,
+    "related_object_type": "booking",
+    "created_at": "2026-04-22T12:53:53.046Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 87,
+  "fields": {
+    "user": [
+      "admin"
+    ],
+    "notification_type": "system",
+    "title": "Новое помещение на модерации",
+    "message": "Помещение \"ОФИС аа\" от user1 user1 требует проверки.",
+    "is_read": false,
+    "related_object_id": 11,
+    "related_object_type": "property",
+    "created_at": "2026-04-24T13:14:17.571Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 88,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_created",
+    "title": "Новое бронирование",
+    "message": "Новый запрос на бронирование помещения \"Конференц-зал\" на 25.04.2026 09:00",
+    "is_read": false,
+    "related_object_id": 25,
+    "related_object_type": "booking",
+    "created_at": "2026-04-24T13:16:42.124Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 89,
+  "fields": {
+    "user": [
+      "user2"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0005-09D29A оплачено. Ожидает подтверждения владельцем.",
+    "is_read": false,
+    "related_object_id": 25,
+    "related_object_type": "booking",
+    "created_at": "2026-04-24T13:21:32.029Z"
+  }
+},
+{
+  "model": "core.notification",
+  "pk": 90,
+  "fields": {
+    "user": [
+      "user3"
+    ],
+    "notification_type": "booking_paid",
+    "title": "Бронирование оплачено",
+    "message": "Бронирование #B0005-09D29A для помещения \"Конференц-зал\" оплачено картой и ожидает подтверждения.",
+    "is_read": false,
+    "related_object_id": 25,
+    "related_object_type": "booking",
+    "created_at": "2026-04-24T13:21:32.044Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 2,
+  "fields": {
+    "sender": [
+      "user1"
+    ],
+    "recipient": [
+      "user2"
+    ],
+    "property": null,
+    "subject": "",
+    "message": "Привет",
+    "is_read": true,
+    "created_at": "2026-02-05T09:39:52.730Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 4,
+  "fields": {
+    "sender": [
+      "admin"
+    ],
+    "recipient": [
+      "user1"
+    ],
+    "property": 8,
+    "subject": "Вопрос по помещению: Студия красоты",
+    "message": "Салям",
+    "is_read": true,
+    "created_at": "2026-02-24T12:10:26.339Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 5,
+  "fields": {
+    "sender": [
+      "user1"
+    ],
+    "recipient": [
+      "admin"
+    ],
+    "property": null,
+    "subject": "ХЗ",
+    "message": "Привет",
+    "is_read": true,
+    "created_at": "2026-02-24T12:11:19.681Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 6,
+  "fields": {
+    "sender": [
+      "user2"
+    ],
+    "recipient": [
+      "user1"
+    ],
+    "property": null,
+    "subject": "",
+    "message": "kkk",
+    "is_read": true,
+    "created_at": "2026-02-25T11:07:08.317Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 7,
+  "fields": {
+    "sender": [
+      "user1"
+    ],
+    "recipient": [
+      "user2"
+    ],
+    "property": null,
+    "subject": "",
+    "message": "хаю хай",
+    "is_read": true,
+    "created_at": "2026-02-25T11:33:30.642Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 8,
+  "fields": {
+    "sender": [
+      "user2"
+    ],
+    "recipient": [
+      "user1"
+    ],
+    "property": null,
+    "subject": "",
+    "message": "kkkk",
+    "is_read": true,
+    "created_at": "2026-02-25T11:37:51.727Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 9,
+  "fields": {
+    "sender": [
+      "user2"
+    ],
+    "recipient": [
+      "user1"
+    ],
+    "property": null,
+    "subject": "Вопрос о вай фае",
+    "message": "Здравствуйте, я хочу спросить. есть ли у вас вай фай в студии красоты?\r\n",
+    "is_read": true,
+    "created_at": "2026-04-05T08:37:06.003Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 10,
+  "fields": {
+    "sender": [
+      "user2"
+    ],
+    "recipient": [
+      "user1"
+    ],
+    "property": null,
+    "subject": "",
+    "message": "Здравствуйте, я оплатил наличкой. Студию красоты. Что дальше?\r\n",
+    "is_read": true,
+    "created_at": "2026-04-05T14:09:06.536Z"
+  }
+},
+{
+  "model": "core.message",
+  "pk": 11,
+  "fields": {
+    "sender": [
+      "user1"
+    ],
+    "recipient": [
+      "user2"
+    ],
+    "property": null,
+    "subject": "",
+    "message": "здравствуйте, сейчас одобрю\r\n",
+    "is_read": false,
+    "created_at": "2026-04-05T14:10:02.919Z"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 1,
+  "fields": {
+    "action_time": "2026-02-05T19:24:37.232Z",
+    "user": [
+      "admin"
+    ],
+    "content_type": [
+      "core",
+      "category"
+    ],
+    "object_id": "1",
+    "object_repr": "Офис",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 2,
+  "fields": {
+    "action_time": "2026-04-04T09:31:33.921Z",
+    "user": [
+      "admin"
+    ],
+    "content_type": [
+      "core",
+      "user"
+    ],
+    "object_id": "1",
+    "object_repr": "admin",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"\\u0422\\u0438\\u043f \\u043f\\u043e\\u043b\\u044c\\u0437\\u043e\\u0432\\u0430\\u0442\\u0435\\u043b\\u044f\"]}}]"
+  }
+}
+]

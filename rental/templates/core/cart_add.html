@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить в корзину — {{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'property_list' %}">Помещения</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'property_detail' property.slug %}">{{ property.title|truncatechars:40 }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Корзина</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #0d6efd 0%, #157347 100%);">
+                    <h1 class="h4 mb-0"><i class="bi bi-cart-plus me-2"></i>Добавить в корзину</h1>
+                    <p class="mb-0 small opacity-90">Несколько помещений можно оформить одним заказом</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <p class="text-secondary mb-4">
+                        <strong>{{ property.title }}</strong> — {{ property.city }}, {{ property.price_per_hour }} ₽/час
+                    </p>
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
+                                {{ form.start_date }}
+                                {% if form.start_date.errors %}<div class="text-danger small">{{ form.start_date.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.end_date.id_for_label }}">{{ form.end_date.label }}</label>
+                                {{ form.end_date }}
+                                {% if form.end_date.errors %}<div class="text-danger small">{{ form.end_date.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.start_time.id_for_label }}">{{ form.start_time.label }}</label>
+                                {{ form.start_time }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" for="{{ form.end_time.id_for_label }}">{{ form.end_time.label }}</label>
+                                {{ form.end_time }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="{{ form.guests.id_for_label }}">{{ form.guests.label }}</label>
+                                {{ form.guests }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="{{ form.special_requests.id_for_label }}">{{ form.special_requests.label }}</label>
+                                {{ form.special_requests }}
+                            </div>
+                        </div>
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger mt-3 rounded-3">{{ form.non_field_errors }}</div>
+                        {% endif %}
+
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-3">
+                                <i class="bi bi-cart-check me-1"></i> Добавить
+                            </button>
+                            <a href="{% url 'property_detail' property.slug %}" class="btn btn-outline-secondary btn-lg rounded-3">Отмена</a>
+                            <a href="{% url 'cart_detail' %}" class="btn btn-outline-primary btn-lg rounded-3 ms-auto">
+                                <i class="bi bi-bag"></i> Корзина ({{ cart_items_count }})
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

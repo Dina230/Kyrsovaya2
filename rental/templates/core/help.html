@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Справка и FAQ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="page-hero mb-4">
+        <h1 class="h2 fw-bold mb-2">Справка</h1>
+        <p class="text-secondary mb-0">Как пользоваться платформой «Простор»: бронирование, оплата, корзина и роли.</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="accordion shadow-sm rounded-3 overflow-hidden" id="faqAccordion">
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            Как забронировать помещение?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-secondary">
+                            Найдите помещение в каталоге, откройте карточку и нажмите «Забронировать» или «В корзину».
+                            Укажите даты и время, подтвердите заказ и оплатите в течение 30 минут (при оплате картой).
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            Чем корзина отличается от обычного бронирования?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-secondary">
+                            В корзину можно добавить несколько помещений с разными датами, затем оформить один заказ —
+                            для каждой позиции создаётся отдельное бронирование. Удобно для сравнения и планирования серии аренд.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            Как работают отзывы?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-secondary">
+                            После завершённого бронирования арендатор может оставить отзыв. Он проходит модерацию и
+                            публикуется на странице помещения после одобрения администратором.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            В чём разница между арендатором и арендодателем?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-secondary">
+                            <strong>Арендатор</strong> ищет и бронирует помещения, платит, пишет отзывы.
+                            <strong>Арендодатель</strong> размещает объекты, управляет календарём занятости и подтверждает брони.
+                            Тип аккаунта выбирается при регистрации.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                            Как восстановить пароль?
+                        </button>
+                    </h2>
+                    <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-secondary">
+                            На странице входа нажмите «Забыли пароль?», введите email. Ссылка для сброса придёт на почту
+                            (в режиме разработки текст письма дублируется в консоль сервера).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-3 sticky-lg-top" style="top: 96px;">
+                <div class="card-body">
+                    <h2 class="h6 fw-bold mb-3">Быстрые ссылки</h2>
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2"><a href="{% url 'property_list' %}">Каталог помещений</a></li>
+                        {% if user.is_authenticated %}
+                        <li class="mb-2"><a href="{% url 'dashboard' %}">Личный кабинет</a></li>
+                        {% if user.user_type == 'tenant' %}
+                        <li class="mb-2"><a href="{% url 'my_bookings' %}">Мои бронирования</a></li>
+                        <li class="mb-2"><a href="{% url 'cart_detail' %}">Корзина</a></li>
+                        {% endif %}
+                        {% else %}
+                        <li class="mb-2"><a href="{% url 'login' %}">Вход</a></li>
+                        <li class="mb-2"><a href="{% url 'register' %}">Регистрация</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
