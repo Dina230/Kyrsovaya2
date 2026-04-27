@@ -120,7 +120,14 @@
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Пароль *</label>
-                    <input type="password" class="form-control" name="password1" id="id_password1" required>
+                    <div class="input-group password-toggle">
+                        <input type="password" class="form-control rounded-start" name="password1" id="id_password1" required autocomplete="new-password">
+                        <button type="button" class="btn btn-outline-secondary rounded-end"
+                                data-password-toggle
+                                aria-label="Показать пароль" title="Показать пароль">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <small class="form-text text-muted">
                         <ul class="ps-3 mb-0">
                             <li>Пароль не должен быть слишком похож на другую вашу личную информацию</li>
@@ -133,7 +140,14 @@
 
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Подтверждение пароля *</label>
-                    <input type="password" class="form-control" name="password2" id="id_password2" required>
+                    <div class="input-group password-toggle">
+                        <input type="password" class="form-control rounded-start" name="password2" id="id_password2" required autocomplete="new-password">
+                        <button type="button" class="btn btn-outline-secondary rounded-end"
+                                data-password-toggle
+                                aria-label="Показать пароль" title="Показать пароль">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <small class="form-text text-muted">Введите тот же пароль, что и выше, для проверки</small>
                 </div>
             </div>

@@ -1,137 +1,235 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Мои бронирования{% endblock %}
 
+{% block extra_css %}
+<style>
+    .my-bookings-hero {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(25, 135, 84, 0.1) 100%);
+        border-radius: 20px;
+        padding: 2rem 2rem 1.5rem;
+        border: 1px solid rgba(13, 110, 253, 0.12);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-    <h1 class="mb-4">Мои бронирования</h1>
-    
-    <!-- Фильтр по статусу -->
-    <div class="mb-4">
-        <div class="btn-group" role="group">
-            <a href="{% url 'my_bookings' %}" class="btn btn-outline-secondary {% if not request.GET.status %}active{% endif %}">
-                Все
+<div class="container py-4 py-lg-5">
+    <div class="my-bookings-hero">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+            <div>
+                <p class="text-uppercase small fw-semibold text-primary mb-1 letter-spacing-tight">Личный кабинет</p>
+                <h1 class="h2 fw-bold mb-1">Мои бронирования</h1>
+                <p class="text-secondary mb-0">Поиск по номеру, городу и помещению, фильтры по дате и статусу.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'property_list' %}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm">
+                <i class="fas fa-search me-2"></i>Найти помещение
             </a>
-            <a href="{% url 'my_bookings' %}?status=pending" class="btn btn-outline-warning {% if request.GET.status == 'pending' %}active{% endif %}">
-                Ожидание
+            {% if status_stats.total > 0 %}
+            <a href="{% url 'export_my_bookings_csv' %}?{% if preserved_query %}{{ preserved_query }}{% endif %}" class="btn btn-outline-success btn-lg rounded-pill px-4 shadow-sm">
+                <i class="bi bi-download me-2"></i>Экспорт в CSV
             </a>
-            <a href="{% url 'my_bookings' %}?status=confirmed" class="btn btn-outline-success {% if request.GET.status == 'confirmed' %}active{% endif %}">
-                Подтверждено
-            </a>
-            <a href="{% url 'my_bookings' %}?status=completed" class="btn btn-outline-info {% if request.GET.status == 'completed' %}active{% endif %}">
-                Завершено
-            </a>
-            <a href="{% url 'my_bookings' %}?status=cancelled" class="btn btn-outline-danger {% if request.GET.status == 'cancelled' %}active{% endif %}">
-                Отменено
+            {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if status_stats.total > 0 %}
+    <form method="get" action="{% url 'my_bookings' %}" class="filter-panel-pro card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label class="form-label small fw-semibold text-secondary">Поиск</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-white border-end-0 rounded-start-pill"><i class="fas fa-search text-primary"></i></span>
+                        <input type="search" name="q" value="{{ search_query }}" class="form-control border-start-0 rounded-end-pill" placeholder="ID, город или название помещения">
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">С даты</label>
+                    <input type="date" name="date_from" value="{{ date_from_val }}" class="form-control form-control-lg rounded-3">
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">По дату</label>
+                    <input type="date" name="date_to" value="{{ date_to_val }}" class="form-control form-control-lg rounded-3">
+                </div>
+                <div class="col-12 col-md-4 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">Сортировка</label>
+                    <select name="sort" class="form-select form-select-lg rounded-3" onchange="this.form.submit()">
+                        <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Сначала новые</option>
+                        <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>По дате начала</option>
+                        <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Цена ↓</option>
+                        <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Цена ↑</option>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small fw-semibold text-secondary d-none d-lg-block">&nbsp;</label>
+                    <div class="d-flex flex-wrap gap-2 justify-content-stretch justify-content-lg-end align-items-center">
+                        {% if current_status %}
+                        <input type="hidden" name="status" value="{{ current_status }}">
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary btn-lg rounded-3 flex-grow-1 flex-lg-grow-0">Применить</button>
+                        <a href="{% url 'my_bookings' %}" class="btn btn-outline-secondary btn-lg rounded-3 text-nowrap flex-shrink-0" title="Сбросить фильтры">Сбросить</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+        <span class="small text-secondary me-1">Статус:</span>
+        <a href="{% url 'my_bookings' %}?{% if preserved_no_status %}{{ preserved_no_status }}{% endif %}"
+           class="btn btn-sm rounded-pill px-3 {% if not current_status %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            Все <span class="badge bg-secondary bg-opacity-25 text-dark ms-1">{{ status_stats.total }}</span>
+        </a>
+        <a href="{% url 'my_bookings' %}?{% if preserved_no_status %}{{ preserved_no_status }}&{% endif %}status=pending"
+           class="btn btn-sm rounded-pill px-3 {% if current_status == 'pending' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}">
+            Ожидание <span class="badge ms-1 {% if current_status == 'pending' %}bg-dark{% else %}bg-warning bg-opacity-25 text-dark{% endif %}">{{ status_stats.pending }}</span>
+        </a>
+        <a href="{% url 'my_bookings' %}?{% if preserved_no_status %}{{ preserved_no_status }}&{% endif %}status=paid"
+           class="btn btn-sm rounded-pill px-3 {% if current_status == 'paid' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Оплачено <span class="badge ms-1 {% if current_status == 'paid' %}bg-light text-primary{% else %}bg-primary bg-opacity-10{% endif %}">{{ status_stats.paid }}</span>
+        </a>
+        <a href="{% url 'my_bookings' %}?{% if preserved_no_status %}{{ preserved_no_status }}&{% endif %}status=confirmed"
+           class="btn btn-sm rounded-pill px-3 {% if current_status == 'confirmed' %}btn-success{% else %}btn-outline-success{% endif %}">
+            Подтверждено <span class="badge ms-1 {% if current_status == 'confirmed' %}bg-light text-success{% else %}bg-success bg-opacity-10{% endif %}">{{ status_stats.confirmed }}</span>
+        </a>
+        <a href="{% url 'my_bookings' %}?{% if preserved_no_status %}{{ preserved_no_status }}&{% endif %}status=completed"
+           class="btn btn-sm rounded-pill px-3 {% if current_status == 'completed' %}btn-info text-dark{% else %}btn-outline-info{% endif %}">
+            Завершено <span class="badge ms-1 {% if current_status == 'completed' %}bg-dark{% else %}bg-info bg-opacity-25 text-dark{% endif %}">{{ status_stats.completed }}</span>
+        </a>
+        <a href="{% url 'my_bookings' %}?{% if preserved_no_status %}{{ preserved_no_status }}&{% endif %}status=cancelled"
+           class="btn btn-sm rounded-pill px-3 {% if current_status == 'cancelled' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+            Отменено <span class="badge ms-1 {% if current_status == 'cancelled' %}bg-light text-danger{% else %}bg-danger bg-opacity-10{% endif %}">{{ status_stats.cancelled }}</span>
+        </a>
+    </div>
+    {% endif %}
+
+    {% if status_stats.total == 0 %}
+    <div class="text-center py-5 card border-0 shadow-sm rounded-4">
+        <div class="card-body py-5">
+            <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4" style="width:88px;height:88px;">
+                <i class="fas fa-calendar-times fa-2x text-primary"></i>
+            </div>
+            <h3 class="fw-bold">У вас пока нет бронирований</h3>
+            <p class="text-secondary mb-4 col-lg-6 mx-auto">Выберите помещение на карте или в каталоге и оформите первое бронирование за пару минут.</p>
+            <a href="{% url 'property_list' %}" class="btn btn-primary btn-lg rounded-pill px-5">
+                <i class="fas fa-search me-2"></i>Найти помещение
             </a>
         </div>
     </div>
 
-    {% if bookings %}
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Помещение</th>
-                    <th>Дата/Время</th>
-                    <th>Стоимость</th>
-                    <th>Статус</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for booking in bookings %}
-                <tr>
-                    <td><small>{{ booking.booking_id }}</small></td>
-                    <td>
-                        <a href="{% url 'property_detail' booking.property.slug %}" class="text-decoration-none">
-                            {{ booking.property.title }}
-                        </a>
-                    </td>
-                    <td>
-                        {{ booking.start_datetime|date:"d.m.Y" }}<br>
-                        <small>{{ booking.start_datetime|time:"H:i" }} - {{ booking.end_datetime|time:"H:i" }}</small>
-                    </td>
-                    <td>{{ booking.total_price }} ₽</td>
-                    <td>
-                        <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}info{% else %}danger{% endif %}">
-                            {{ booking.get_status_display }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-primary" title="Детали бронирования">
-                                <i class="fas fa-info-circle"></i> Детали
-                            </a>
-                            {% if booking.status == 'pending' or booking.status == 'confirmed' %}
-                            <a href="{% url 'cancel_booking' booking.id %}"
-                               class="btn btn-outline-danger"
-                               title="Отменить бронирование"
-                               onclick="return confirm('Вы уверены, что хотите отменить бронирование #{{ booking.booking_id }}?')">
-                                <i class="fas fa-times"></i> Отменить
-                            </a>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    {% elif bookings.paginator.count == 0 %}
+    <div class="alert alert-light border shadow-sm rounded-4 py-4 text-center">
+        <i class="fas fa-filter fa-2x text-primary mb-3 d-block"></i>
+        <h4 class="fw-bold">Ничего не найдено</h4>
+        <p class="text-secondary mb-3">Попробуйте изменить поиск или сбросить фильтры.</p>
+        <a href="{% url 'my_bookings' %}" class="btn btn-outline-primary rounded-pill">Сбросить всё</a>
     </div>
 
-    <!-- Пагинация -->
+    {% else %}
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-modern align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Помещение</th>
+                        <th>Дата / время</th>
+                        <th>Стоимость</th>
+                        <th>Статус</th>
+                        <th class="text-end">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                    <tr>
+                        <td><code class="small bg-light px-2 py-1 rounded">{{ booking.booking_id }}</code></td>
+                        <td>
+                            <a href="{% url 'property_detail' booking.property.slug %}" class="fw-semibold text-decoration-none link-premise">
+                                {{ booking.property.title }}
+                            </a>
+                            {% if booking.property.city %}
+                            <div class="small text-secondary">{{ booking.property.city }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if booking.start_datetime|date:"Y-m-d" != booking.end_datetime|date:"Y-m-d" %}
+                            <div class="fw-medium">{{ booking.start_datetime|date:"d.m.Y" }} — {{ booking.end_datetime|date:"d.m.Y" }}</div>
+                            {% else %}
+                            <div class="fw-medium">{{ booking.start_datetime|date:"d.m.Y" }}</div>
+                            {% endif %}
+                            <small class="text-secondary">{{ booking.start_datetime|time:"H:i" }} — {{ booking.end_datetime|time:"H:i" }}</small>
+                        </td>
+                        <td class="fw-semibold">{{ booking.total_price }} ₽</td>
+                        <td>
+                            {% if booking.status == 'confirmed' %}
+                            <span class="badge rounded-pill status-pill status-confirmed">{{ booking.get_status_display }}</span>
+                            {% elif booking.status == 'pending' %}
+                            <span class="badge rounded-pill status-pill status-pending">{{ booking.get_status_display }}</span>
+                            {% elif booking.status == 'paid' %}
+                            <span class="badge rounded-pill status-pill status-paid">{{ booking.get_status_display }}</span>
+                            {% elif booking.status == 'completed' %}
+                            <span class="badge rounded-pill status-pill status-completed">{{ booking.get_status_display }}</span>
+                            {% else %}
+                            <span class="badge rounded-pill status-pill status-cancelled">{{ booking.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm flex-wrap justify-content-end" role="group">
+                                <a href="{% url 'booking_detail' booking.id %}" class="btn btn-outline-primary rounded-pill px-3">
+                                    <i class="fas fa-info-circle me-1"></i>Детали
+                                </a>
+                                {% if booking.status == 'pending' or booking.status == 'paid' %}
+                                <a href="{% url 'cancel_booking' booking.id %}"
+                                   class="btn btn-outline-danger rounded-pill px-3"
+                                   onclick="return confirm('Отменить бронирование #{{ booking.booking_id }}?')">
+                                    <i class="fas fa-times me-1"></i>Отменить
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     {% if bookings.has_other_pages %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
+    <nav class="mt-4" aria-label="Навигация по страницам">
+        <ul class="pagination justify-content-center gap-1 flex-wrap">
             {% if bookings.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ bookings.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
+                <a class="page-link rounded-pill px-3" href="?{% if preserved_query %}{{ preserved_query }}&{% endif %}page={{ bookings.previous_page_number }}" aria-label="Предыдущая">&laquo;</a>
             </li>
             {% else %}
-            <li class="page-item disabled">
-                <span class="page-link">&laquo;</span>
-            </li>
+            <li class="page-item disabled"><span class="page-link rounded-pill px-3">&laquo;</span></li>
             {% endif %}
 
             {% for num in bookings.paginator.page_range %}
                 {% if bookings.number == num %}
-                <li class="page-item active">
-                    <span class="page-link">{{ num }}</span>
-                </li>
+                <li class="page-item active"><span class="page-link rounded-pill px-3">{{ num }}</span></li>
                 {% elif num > bookings.number|add:'-3' and num < bookings.number|add:'3' %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                    <a class="page-link rounded-pill px-3" href="?{% if preserved_query %}{{ preserved_query }}&{% endif %}page={{ num }}">{{ num }}</a>
                 </li>
                 {% endif %}
             {% endfor %}
 
             {% if bookings.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ bookings.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" aria-label="Next">
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
+                <a class="page-link rounded-pill px-3" href="?{% if preserved_query %}{{ preserved_query }}&{% endif %}page={{ bookings.next_page_number }}" aria-label="Следующая">&raquo;</a>
             </li>
             {% else %}
-            <li class="page-item disabled">
-                <span class="page-link">&raquo;</span>
-            </li>
+            <li class="page-item disabled"><span class="page-link rounded-pill px-3">&raquo;</span></li>
             {% endif %}
         </ul>
     </nav>
     {% endif %}
-
-    {% else %}
-    <div class="text-center py-5">
-        <i class="fas fa-calendar-times fa-4x text-muted"></i>
-        <h3 class="mt-3">У вас пока нет бронирований</h3>
-        <p class="text-muted">Найдите и забронируйте свое первое помещение</p>
-        <a href="{% url 'property_list' %}" class="btn btn-primary">
-            <i class="fas fa-search"></i> Найти помещение
-        </a>
-    </div>
     {% endif %}
 </div>
 {% endblock %}

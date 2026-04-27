@@ -1,15 +1,21 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Мои бронирования{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <h2 class="mb-4">Мои бронирования</h2>
-    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Мои бронирования</h2>
+        <a href="{% url 'property_list' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Новое бронирование
+        </a>
+    </div>
+
     {% if bookings %}
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
                     <tr>
                         <th>ID</th>
                         <th>Помещение</th>
@@ -23,34 +29,112 @@
                 <tbody>
                     {% for booking in bookings %}
                         <tr>
-                            <td><small>{{ booking.booking_id|truncatechars:8 }}</small></td>
                             <td>
-                                <a href="{% url 'property_detail' booking.property.slug %}">
+                                <code class="small">{{ booking.booking_id|truncatechars:8 }}</code>
+                            </td>
+                            <td>
+                                <a href="{% url 'property_detail' booking.property.slug %}" class="text-decoration-none fw-semibold">
                                     {{ booking.property.title }}
                                 </a>
+                                {% if booking.property.city %}
+                                    <br>
+                                    <small class="text-muted">{{ booking.property.city }}</small>
+                                {% endif %}
                             </td>
-                            <td>{{ booking.start_datetime|date:"d.m.Y" }}</td>
-                            <td>{{ booking.start_datetime|time:"H:i" }} - {{ booking.end_datetime|time:"H:i" }}</td>
-                            <td>{{ booking.total_price }} ₽</td>
+                            <td class="text-nowrap">{{ booking.start_datetime|date:"d.m.Y" }}</td>
+                            <td class="text-nowrap">{{ booking.start_datetime|time:"H:i" }} - {{ booking.end_datetime|time:"H:i" }}</td>
+                            <td class="fw-semibold">{{ booking.total_price }} ₽</td>
                             <td>
-                                <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
-                                    {{ booking.get_status_display }}
-                                </span>
+                                {% if booking.status == 'confirmed' %}
+                                    <span class="badge bg-success">{{ booking.get_status_display }}</span>
+                                {% elif booking.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">{{ booking.get_status_display }}</span>
+                                {% elif booking.status == 'paid' %}
+                                    <span class="badge bg-primary">{{ booking.get_status_display }}</span>
+                                {% elif booking.status == 'completed' %}
+                                    <span class="badge bg-info text-dark">{{ booking.get_status_display }}</span>
+                                {% elif booking.status == 'cancelled' %}
+                                    <span class="badge bg-danger">{{ booking.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ booking.get_status_display }}</span>
+                                {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'booking_detail' booking.booking_id %}" class="btn btn-sm btn-outline-primary">
-                                    Подробнее
-                                </a>
-                            </td>
-                        </tr>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'booking_detail' booking.booking_id %}" class="btn btn-outline-primary">
+                                        <i class="fas fa-info-circle me-1"></i>Детали
+                                    </a>
+                                    {% if booking.status == 'pending' or booking.status == 'paid' %}
+                                        <a href="{% url 'cancel_booking' booking.id %}"
+                                           class="btn btn-outline-danger"
+                                           onclick="return confirm('Вы уверены, что хотите отменить бронирование #{{ booking.booking_id }}?')">
+                                            <i class="fas fa-times me-1"></i>Отменить
+                                        </a>
+                                    {% endif %}
+                                </div>
+                             </td>
+                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        <!-- Пагинация -->
+        {% if bookings.has_other_pages %}
+        <nav aria-label="Навигация по страницам" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if bookings.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ bookings.previous_page_number }}">&laquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                {% endif %}
+
+                {% for num in bookings.paginator.page_range %}
+                    {% if bookings.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > bookings.number|add:'-3' and num < bookings.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if bookings.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ bookings.next_page_number }}">&raquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <!-- Статистика -->
+        <div class="mt-3 text-center text-muted">
+            <small>Всего: {{ bookings.paginator.count }} бронирований</small>
+        </div>
+
     {% else %}
-        <div class="alert alert-info">
-            У вас пока нет бронирований. 
-            <a href="{% url 'home' %}">Найдите помещение</a> и забронируйте его.
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-calendar-alt fa-4x text-muted"></i>
+            </div>
+            <h4 class="mb-3">У вас пока нет бронирований</h4>
+            <p class="text-muted mb-4">
+                Найдите подходящее помещение и сделайте первое бронирование
+            </p>
+            <a href="{% url 'property_list' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-search me-2"></i>Найти помещение
+            </a>
         </div>
     {% endif %}
 </div>

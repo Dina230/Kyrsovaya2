@@ -1,9 +1,10 @@
 # rental/settings.py
-import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-your-secret-key-change-this-in-production'
@@ -57,6 +58,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.tenant_cart',
+                'core.context_processors.notifications_context',
             ],
         },
     },
@@ -117,3 +120,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
+
+# Сброс пароля: в разработке письма выводятся в консоль сервера (читаемый текст, без MIME base64)
+EMAIL_BACKEND = 'core.email_backends.ReadableConsoleEmailBackend'
+DEFAULT_FROM_EMAIL = 'Простор <noreply@prostor.local>'
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+

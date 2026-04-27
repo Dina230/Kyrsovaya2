@@ -272,8 +272,7 @@
 
 {% block content %}
 <div class="admin-dashboard">
-    <!-- Проверка прав администратора -->
-    {% if user.is_authenticated and user.is_staff %}
+    {% if user.is_staff or user.user_type == 'admin' %}
     <div class="admin-wrapper">
         <!-- Admin Sidebar -->
         <div class="admin-sidebar">
@@ -548,20 +547,32 @@
                                             <td>
                                                 <div class="action-buttons">
                                                     {% if review.status == 'pending' %}
-                                                    <button class="btn-action btn-approve"
+                                                    <button type="button" class="btn-action btn-approve"
                                                             onclick="approveReview({{ review.id }})"
-                                                            data-bs-toggle="tooltip" title="Одобрить отзыв">
+                                                            data-bs-toggle="tooltip" title="Одобрить и опубликовать">
                                                         <i class="bi bi-check-lg"></i>
                                                     </button>
-                                                    <button class="btn-action btn-reject"
+                                                    <button type="button" class="btn-action btn-reject"
                                                             onclick="showRejectModal({{ review.id }})"
-                                                            data-bs-toggle="tooltip" title="Отклонить отзыв">
+                                                            data-bs-toggle="tooltip" title="Отклонить">
                                                         <i class="bi bi-x-lg"></i>
                                                     </button>
+                                                    {% elif review.status == 'approved' %}
+                                                    <button type="button" class="btn-action btn-reject"
+                                                            onclick="showRejectModal({{ review.id }})"
+                                                            data-bs-toggle="tooltip" title="Снять с публикации (отклонить)">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                    {% elif review.status == 'rejected' %}
+                                                    <button type="button" class="btn-action btn-approve"
+                                                            onclick="approveReview({{ review.id }})"
+                                                            data-bs-toggle="tooltip" title="Одобрить и опубликовать">
+                                                        <i class="bi bi-check-lg"></i>
+                                                    </button>
                                                     {% endif %}
-                                                    <button class="btn-action btn-delete"
+                                                    <button type="button" class="btn-action btn-delete"
                                                             onclick="deleteReview({{ review.id }}, '{{ review.user.get_full_name|default:review.user.username|escapejs }}')"
-                                                            data-bs-toggle="tooltip" title="Удалить отзыв">
+                                                            data-bs-toggle="tooltip" title="Удалить навсегда">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </div>
@@ -586,7 +597,7 @@
                                 <ul class="pagination justify-content-center">
                                     {% if reviews.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ reviews.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                        <a class="page-link" href="?page={{ reviews.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search|urlencode }}{% endif %}">
                                             <i class="bi bi-chevron-left"></i>
                                         </a>
                                     </li>
@@ -603,7 +614,7 @@
                                         </li>
                                         {% elif i > reviews.number|add:'-3' and i < reviews.number|add:'3' %}
                                         <li class="page-item">
-                                            <a class="page-link" href="?page={{ i }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                            <a class="page-link" href="?page={{ i }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search|urlencode }}{% endif %}">
                                                 {{ i }}
                                             </a>
                                         </li>
@@ -612,7 +623,7 @@
 
                                     {% if reviews.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ reviews.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                                        <a class="page-link" href="?page={{ reviews.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.rating %}&rating={{ request.GET.rating }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search|urlencode }}{% endif %}">
                                             <i class="bi bi-chevron-right"></i>
                                         </a>
                                     </li>
@@ -651,8 +662,9 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="rejectForm" method="post">
+                <form id="rejectForm" method="post" action="{% url 'admin_review_management' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
                     <div class="modal-body">
                         <input type="hidden" name="review_id" id="reject_review_id">
                         <input type="hidden" name="action" value="reject">
@@ -740,11 +752,15 @@ function approveReview(reviewId) {
         if (result.isConfirmed) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = `
-                {% csrf_token %}
-                <input type="hidden" name="review_id" value="${reviewId}">
-                <input type="hidden" name="action" value="approve">
-            `;
+            form.action = '{% url "admin_review_management" %}';
+            form.innerHTML = '{% csrf_token %}';
+            const rid = document.createElement('input');
+            rid.type = 'hidden'; rid.name = 'review_id'; rid.value = reviewId;
+            const act = document.createElement('input');
+            act.type = 'hidden'; act.name = 'action'; act.value = 'approve';
+            const next = document.createElement('input');
+            next.type = 'hidden'; next.name = 'next'; next.value = window.location.pathname + window.location.search;
+            form.appendChild(rid); form.appendChild(act); form.appendChild(next);
             document.body.appendChild(form);
             form.submit();
         }
@@ -774,11 +790,15 @@ function deleteReview(reviewId, userName) {
         if (result.isConfirmed) {
             const form = document.createElement('form');
             form.method = 'POST';
-            form.innerHTML = `
-                {% csrf_token %}
-                <input type="hidden" name="review_id" value="${reviewId}">
-                <input type="hidden" name="action" value="delete">
-            `;
+            form.action = '{% url "admin_review_management" %}';
+            form.innerHTML = '{% csrf_token %}';
+            const rid = document.createElement('input');
+            rid.type = 'hidden'; rid.name = 'review_id'; rid.value = reviewId;
+            const act = document.createElement('input');
+            act.type = 'hidden'; act.name = 'action'; act.value = 'delete';
+            const next = document.createElement('input');
+            next.type = 'hidden'; next.name = 'next'; next.value = window.location.pathname + window.location.search;
+            form.appendChild(rid); form.appendChild(act); form.appendChild(next);
             document.body.appendChild(form);
             form.submit();
         }

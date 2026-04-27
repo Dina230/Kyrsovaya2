@@ -5,327 +5,340 @@
 
 {% block extra_css %}
 <style>
-    /* Hover effect for property cards */
+    .property-list-hero {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(25, 135, 84, 0.1) 100%);
+        border-radius: 20px;
+        padding: 1.75rem 2rem;
+        border: 1px solid rgba(13, 110, 253, 0.12);
+    }
+
+    .property-filter-card {
+        border: 1px solid rgba(13, 110, 253, 0.1) !important;
+        background: #fff;
+    }
+
+    .property-filter-card .form-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+        margin-bottom: 0.35rem;
+    }
+
+    .property-filter-card .form-control,
+    .property-filter-card .form-select {
+        border-radius: 12px;
+        border-color: rgba(15, 23, 42, 0.12);
+    }
+
+    .property-filter-card .form-control:focus,
+    .property-filter-card .form-select:focus {
+        border-color: rgba(13, 110, 253, 0.45);
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+    }
+
+    .search-input-wrap .input-group-text {
+        border-radius: 12px 0 0 12px;
+        border-color: rgba(15, 23, 42, 0.12);
+        background: #f8fafc;
+    }
+
+    .search-input-wrap .form-control {
+        border-radius: 0 12px 12px 0;
+    }
+
+    .filter-range-label {
+        font-size: 0.7rem;
+        color: #94a3b8;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .availability-pill {
+        border: 1px solid rgba(25, 135, 84, 0.35);
+        border-radius: 14px;
+        padding: 0.75rem 1rem;
+        background: linear-gradient(180deg, rgba(25, 135, 84, 0.06) 0%, rgba(255,255,255,0.9) 100%);
+    }
+
+    .availability-pill .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+
     .hover-shadow {
         transition: box-shadow 0.3s ease, transform 0.3s ease;
     }
 
     .hover-shadow:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-        transform: translateY(-5px);
+        box-shadow: 0 12px 32px rgba(13, 110, 253, 0.14) !important;
+        transform: translateY(-4px);
     }
 
-    /* Featured badge styling */
-    .badge.bg-warning {
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    .property-card .card-img-top,
+    .property-card .card-img-placeholder {
+        border-radius: 16px 16px 0 0;
     }
 
-    /* Price tag emphasis */
-    .text-primary.fs-5 {
-        font-weight: 600;
+    .featured-ribbon {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 2;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        color: #422006;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.45);
     }
 
-    /* Form labels */
-    .form-label {
-        font-weight: 500;
-        font-size: 0.9rem;
-        color: #495057;
-    }
-
-    /* Card image overlay */
-    .card-img-top {
-        border-top-left-radius: calc(0.5rem - 1px);
-        border-top-right-radius: calc(0.5rem - 1px);
-    }
-
-    /* Active filters alert */
-    .alert-info {
-        background-color: #e7f3ff;
-        border-color: #b3d9ff;
-        color: #004085;
-    }
-
-    /* Filter section styling */
-    .filter-section {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-
-    .available-checkbox {
-        margin-top: 32px;
-    }
-
-    @media (max-width: 768px) {
-        .available-checkbox {
-            margin-top: 0;
-        }
-    }
-
-    /* Pagination styles */
-    .pagination {
-        margin-top: 2rem;
-        margin-bottom: 1rem;
-    }
-
-    .page-link {
-        color: #007bff;
-        border-radius: 5px;
-        margin: 0 3px;
-        border: 1px solid #dee2e6;
-        transition: all 0.2s;
-    }
-
-    .page-link:hover {
-        background-color: #007bff;
-        color: white;
-        border-color: #007bff;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,123,255,0.2);
-    }
-
-    .page-item.active .page-link {
-        background-color: #007bff;
-        border-color: #007bff;
-        box-shadow: 0 4px 8px rgba(0,123,255,0.3);
-    }
-
-    .page-item.disabled .page-link {
-        color: #6c757d;
-        background-color: #f8f9fa;
-        border-color: #dee2e6;
-    }
-
-    .pagination-info {
-        text-align: center;
-        color: #6c757d;
-        margin-top: 1rem;
-        font-size: 0.9rem;
-    }
-
-    .results-count {
-        background: #e9ecef;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        display: inline-block;
-        margin-bottom: 1rem;
-    }
-
-    /* Стили для рейтинга */
-    .rating-stars {
-        color: #ffc107;
-        font-size: 0.9rem;
-        letter-spacing: 2px;
-        display: inline-block;
-    }
-
-    .rating-stars i {
-        margin-right: 2px;
-    }
-
-    .rating-value {
-        background: #ffc107;
-        color: #212529;
-        padding: 2px 8px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-left: 5px;
-    }
-
-    .reviews-count {
-        color: #6c757d;
-        font-size: 0.8rem;
-        margin-left: 5px;
-    }
-
-    .rating-container {
-        display: flex;
+    .results-pill {
+        display: inline-flex;
         align-items: center;
-        margin: 10px 0;
+        gap: 0.5rem;
+        padding: 0.45rem 1rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        background: #fff;
+        border: 1px solid rgba(13, 110, 253, 0.2);
+        color: #0d6efd;
+    }
+
+    .active-filters-bar {
+        border-radius: 14px;
+        border: 1px solid rgba(13, 110, 253, 0.15);
+        background: linear-gradient(180deg, #f0f7ff 0%, #fff 100%);
+    }
+
+    .chip-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        background: rgba(13, 110, 253, 0.1);
+        color: #0a58ca;
+        border: 1px solid rgba(13, 110, 253, 0.2);
+    }
+
+    .pagination .page-link {
+        border-radius: 999px !important;
+        margin: 0 2px;
+        border: 1px solid rgba(13, 110, 253, 0.2);
+        color: #0d6efd;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        border-color: #0a58ca;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <!-- Хлебные крошки -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
+<div class="container py-4 py-lg-5">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
             <li class="breadcrumb-item active" aria-current="page">Помещения</li>
         </ol>
     </nav>
 
-    <div class="row mb-4">
-        <div class="col">
-            <h1 class="mb-2">Помещения для аренды</h1>
-            <div class="d-flex align-items-center gap-2">
-                <span class="results-count">
-                    <i class="bi bi-building"></i> Найдено: {{ properties.paginator.count }}
-                </span>
+    <div class="property-list-hero mb-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+            <div>
+                <p class="text-uppercase small fw-semibold text-primary mb-1" style="letter-spacing:0.06em;">Каталог</p>
+                <h1 class="h2 fw-bold mb-2">Помещения для аренды</h1>
+                <p class="text-secondary mb-0 small">Фильтруйте по городу, цене, площади и свободным слотам на дату.</p>
+            </div>
+            <div class="results-pill shadow-sm">
+                <i class="bi bi-building"></i>
+                Найдено: {{ properties.paginator.count }}
                 {% if properties.paginator.count > 0 %}
-                <span class="text-muted">
-                    ({{ properties.start_index }}-{{ properties.end_index }} из {{ properties.paginator.count }})
-                </span>
+                <span class="text-muted fw-normal">({{ properties.start_index }}–{{ properties.end_index }})</span>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Фильтры -->
-    <div class="filter-section shadow-sm">
-        <form method="get" class="row g-3" id="filterForm">
-            <!-- Тип помещения -->
-            <div class="col-md-3">
-                <label for="property_type" class="form-label">Тип помещения</label>
-                <select name="property_type" id="property_type" class="form-select">
-                    <option value="">Все типы</option>
-                    {% for key, value in property_types.items %}
-                    <option value="{{ key }}" {% if request.GET.property_type == key %}selected{% endif %}>
-                        {{ value }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Город -->
-            <div class="col-md-3">
-                <label for="city" class="form-label">Город</label>
-                <input type="text" name="city" id="city" class="form-control"
-                       placeholder="Например: Москва" value="{{ request.GET.city }}">
-            </div>
-
-            <!-- Цена (мин) -->
-            <div class="col-md-2">
-                <label for="min_price" class="form-label">Цена от (₽)</label>
-                <input type="number" name="min_price" id="min_price" class="form-control"
-                       placeholder="От" value="{{ request.GET.min_price }}" min="0">
-            </div>
-
-            <!-- Цена (макс) -->
-            <div class="col-md-2">
-                <label for="max_price" class="form-label">Цена до (₽)</label>
-                <input type="number" name="max_price" id="max_price" class="form-control"
-                       placeholder="До" value="{{ request.GET.max_price }}" min="0">
-            </div>
-
-            <!-- Дата -->
-            <div class="col-md-3">
-                <label for="date" class="form-label">Дата аренды</label>
-                <input type="date" name="date" id="date" class="form-control"
-                       value="{{ request.GET.date }}" min="{{ today }}">
-            </div>
-
-            <!-- Время -->
-            <div class="col-md-2">
-                <label for="time" class="form-label">Время начала</label>
-                <input type="time" name="time" id="time" class="form-control"
-                       value="{{ request.GET.time|default:'09:00' }}">
-            </div>
-
-            <!-- Чекбокс "Только доступные" -->
-            <div class="col-md-2 available-checkbox">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" name="available_only" id="available_only"
-                           {% if request.GET.available_only == 'on' %}checked{% endif %}>
-                    <label class="form-check-label fw-bold text-success" for="available_only">
-                        <i class="bi bi-check-circle"></i> Только доступные
-                    </label>
-                </div>
-                <small class="text-muted">Показывать только свободные помещения</small>
-            </div>
-
-            <!-- Кнопки -->
-            <div class="col-12 d-flex gap-2 align-items-end mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search"></i> Применить фильтры
+    {% url 'property_list' as plist_url %}
+    {% with s=request.GET.sort %}
+    <div class="card property-filter-card shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4 p-lg-5">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+                <h2 class="h5 fw-bold mb-0"><i class="bi bi-sliders2 text-primary me-2"></i>Параметры поиска</h2>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill d-flex align-items-center gap-2" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#advancedPropertyFilters"
+                        aria-expanded="{% if request.GET.min_price or request.GET.max_price or request.GET.min_area or request.GET.max_area or request.GET.min_capacity or request.GET.date or request.GET.time or request.GET.available_only or s and s != 'newest' %}true{% else %}false{% endif %}"
+                        aria-controls="advancedPropertyFilters">
+                    <i class="bi bi-funnel"></i>
+                    <span>Дополнительно</span>
+                    <i class="bi bi-chevron-down small"></i>
                 </button>
-                <a href="{% url 'property_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-circle"></i> Сбросить
-                </a>
             </div>
-        </form>
-    </div>
 
-    <!-- Активные фильтры -->
-    {% if request.GET.date or request.GET.time or request.GET.property_type or request.GET.city or request.GET.min_price or request.GET.max_price or request.GET.available_only %}
-    <div class="alert alert-info d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <i class="bi bi-funnel me-2"></i>
-            <strong>Активные фильтры:</strong>
-            {% if request.GET.property_type %}
-            <span class="badge bg-primary ms-2">{{ request.GET.property_type }}</span>
-            {% endif %}
-            {% if request.GET.city %}
-            <span class="badge bg-primary ms-2">{{ request.GET.city }}</span>
-            {% endif %}
-            {% if request.GET.min_price %}
-            <span class="badge bg-primary ms-2">от {{ request.GET.min_price }} ₽</span>
-            {% endif %}
-            {% if request.GET.max_price %}
-            <span class="badge bg-primary ms-2">до {{ request.GET.max_price }} ₽</span>
-            {% endif %}
-            {% if request.GET.date %}
-            <span class="badge bg-primary ms-2">{{ request.GET.date }}</span>
-            {% endif %}
-            {% if request.GET.time %}
-            <span class="badge bg-primary ms-2">{{ request.GET.time }}</span>
-            {% endif %}
-            {% if request.GET.available_only %}
-            <span class="badge bg-success ms-2">Только доступные</span>
-            {% endif %}
+            <form method="get" class="property-filter-form" id="filterForm">
+                <div class="row g-3 g-lg-4">
+                    <div class="col-12 col-lg-5">
+                        <label for="q" class="form-label">Поиск</label>
+                        <div class="input-group search-input-wrap">
+                            <span class="input-group-text border-end-0"><i class="bi bi-search text-primary"></i></span>
+                            <input type="search" name="q" id="q" class="form-control border-start-0"
+                                   placeholder="Название, адрес, город…" value="{{ request.GET.q|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-lg-2">
+                        <label for="property_type" class="form-label">Тип</label>
+                        <select name="property_type" id="property_type" class="form-select">
+                            <option value="">Все типы</option>
+                            {% for key, value in property_types.items %}
+                            <option value="{{ key }}" {% if request.GET.property_type == key %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 col-lg-3">
+                        <label for="category" class="form-label">Категория</label>
+                        <select name="category" id="category" class="form-select">
+                            <option value="">Все категории</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 col-lg-2">
+                        <label for="city" class="form-label">Город</label>
+                        <input type="text" name="city" id="city" class="form-control" placeholder="Город"
+                               value="{{ request.GET.city }}">
+                    </div>
+                </div>
+
+                <div class="collapse mt-4 {% if request.GET.min_price or request.GET.max_price or request.GET.min_area or request.GET.max_area or request.GET.min_capacity or request.GET.date or request.GET.time or request.GET.available_only or s and s != 'newest' %}show{% endif %}" id="advancedPropertyFilters">
+                    <hr class="text-muted opacity-25 my-2">
+                    <div class="row g-3 g-lg-4 pt-2">
+                        <div class="col-md-6 col-xl-3">
+                            <span class="filter-range-label">Цена за час, ₽</span>
+                            <div class="input-group">
+                                <input type="number" name="min_price" id="min_price" class="form-control" placeholder="От" value="{{ request.GET.min_price }}" min="0">
+                                <span class="input-group-text bg-light border-secondary-subtle">—</span>
+                                <input type="number" name="max_price" id="max_price" class="form-control" placeholder="До" value="{{ request.GET.max_price }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-3">
+                            <span class="filter-range-label">Площадь, м²</span>
+                            <div class="input-group">
+                                <input type="number" name="min_area" id="min_area" class="form-control" step="0.1" placeholder="От" value="{{ request.GET.min_area|default:'' }}" min="0">
+                                <span class="input-group-text bg-light border-secondary-subtle">—</span>
+                                <input type="number" name="max_area" id="max_area" class="form-control" step="0.1" placeholder="До" value="{{ request.GET.max_area|default:'' }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-xl-2">
+                            <label for="min_capacity" class="form-label">Вместимость</label>
+                            <input type="number" name="min_capacity" id="min_capacity" class="form-control" placeholder="от чел." value="{{ request.GET.min_capacity|default:'' }}" min="1">
+                        </div>
+                        <div class="col-md-8 col-xl-4">
+                            <label for="sort" class="form-label">Сортировка</label>
+                            <select name="sort" id="sort" class="form-select">
+                                <option value="newest" {% if current_sort == 'newest' or not current_sort %}selected{% endif %}>Сначала новые</option>
+                                <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Цена за час ↑</option>
+                                <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Цена за час ↓</option>
+                                <option value="area_desc" {% if current_sort == 'area_desc' %}selected{% endif %}>Площадь ↓</option>
+                                <option value="popular" {% if current_sort == 'popular' %}selected{% endif %}>По просмотрам</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-xl-2">
+                            <label for="date" class="form-label">Дата аренды</label>
+                            <input type="date" name="date" id="date" class="form-control" value="{{ request.GET.date }}" min="{{ today }}">
+                        </div>
+                        <div class="col-md-4 col-xl-2">
+                            <label for="time" class="form-label">Время начала</label>
+                            <input type="time" name="time" id="time" class="form-control" value="{{ request.GET.time|default:'09:00' }}">
+                        </div>
+                        <div class="col-md-4 col-xl-4 d-flex align-items-end">
+                            <div class="availability-pill w-100">
+                                <div class="form-check form-switch mb-0 ps-0">
+                                    <input type="checkbox" class="form-check-input ms-0 me-2 float-none" role="switch" name="available_only" id="available_only"
+                                           {% if request.GET.available_only == 'on' %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold text-success" for="available_only">Только свободные</label>
+                                </div>
+                                <small class="text-muted d-block mt-1">Скрыть занятые на выбранную дату и время</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-4 pt-1">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-search me-1"></i>Применить
+                    </button>
+                    <a href="{{ plist_url }}" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                        <i class="bi bi-x-lg me-1"></i>Сбросить
+                    </a>
+                </div>
+            </form>
         </div>
-        <a href="{% url 'property_list' %}" class="btn btn-sm btn-outline-danger">
-            <i class="bi bi-x"></i> Очистить все
-        </a>
+    </div>
+    {% endwith %}
+
+    {% if request.GET.date or request.GET.time or request.GET.property_type or request.GET.city or request.GET.min_price or request.GET.max_price or request.GET.available_only or request.GET.q or request.GET.category or request.GET.min_area or request.GET.max_area or request.GET.min_capacity or request.GET.sort and current_sort != 'newest' %}
+    <div class="active-filters-bar p-3 p-md-4 mb-4 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-semibold text-dark"><i class="bi bi-funnel-fill text-primary me-1"></i>Активные фильтры</span>
+            {% if request.GET.q %}<span class="chip-filter">«{{ request.GET.q|truncatechars:28 }}»</span>{% endif %}
+            {% if request.GET.category %}<span class="chip-filter">категория #{{ request.GET.category }}</span>{% endif %}
+            {% if request.GET.property_type %}<span class="chip-filter">{{ request.GET.property_type }}</span>{% endif %}
+            {% if request.GET.min_area or request.GET.max_area %}
+            <span class="chip-filter">{{ request.GET.min_area|default:"?" }}–{{ request.GET.max_area|default:"?" }} м²</span>
+            {% endif %}
+            {% if request.GET.min_capacity %}<span class="chip-filter">от {{ request.GET.min_capacity }} чел.</span>{% endif %}
+            {% if request.GET.sort and current_sort != 'newest' %}<span class="chip-filter bg-info bg-opacity-10 text-dark border-info">{{ current_sort }}</span>{% endif %}
+            {% if request.GET.city %}<span class="chip-filter">{{ request.GET.city }}</span>{% endif %}
+            {% if request.GET.min_price %}<span class="chip-filter">от {{ request.GET.min_price }} ₽/ч</span>{% endif %}
+            {% if request.GET.max_price %}<span class="chip-filter">до {{ request.GET.max_price }} ₽/ч</span>{% endif %}
+            {% if request.GET.date %}<span class="chip-filter">{{ request.GET.date }}</span>{% endif %}
+            {% if request.GET.time %}<span class="chip-filter">{{ request.GET.time }}</span>{% endif %}
+            {% if request.GET.available_only %}<span class="chip-filter" style="background:rgba(25,135,84,.12);border-color:rgba(25,135,84,.35);color:#146c43;">только свободные</span>{% endif %}
+        </div>
+        <a href="{{ plist_url }}" class="btn btn-sm btn-outline-danger rounded-pill flex-shrink-0"><i class="bi bi-x-lg me-1"></i>Сбросить всё</a>
     </div>
     {% endif %}
 
-    <!-- Подсказка для фильтра доступности -->
     {% if request.GET.available_only and not request.GET.date %}
-    <div class="alert alert-warning mb-4">
-        <i class="bi bi-info-circle"></i>
-        Для фильтра "Только доступные" используется сегодняшняя дата ({{ today }}) и текущее время + 1 час.
-        Укажите дату и время для точного поиска.
+    <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4">
+        <i class="bi bi-info-circle me-2"></i>
+        Для «Только свободные» без даты используется сегодня (<strong>{{ today }}</strong>) и время «сейчас + 1 ч». Укажите дату и время для точного поиска.
     </div>
     {% endif %}
 
-    <!-- Список помещений -->
     {% if properties %}
-    <div class="row">
+    <div class="row g-4">
         {% for property in properties %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card property-card h-100 shadow-sm hover-shadow">
+        <div class="col-md-6 col-lg-4">
+            <div class="card property-card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-shadow">
                 <div class="position-relative">
                     {% if property.is_featured %}
-                    <div class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark">
-                        <i class="bi bi-star-fill"></i> Рекомендуем
-                    </div>
+                    <span class="featured-ribbon"><i class="bi bi-star-fill me-1"></i>Рекомендуем</span>
                     {% endif %}
-
                     {% if property.images.first %}
-                    <img src="{{ property.images.first.image.url }}"
-                         class="card-img-top"
-                         alt="{{ property.title }}"
-                         style="height: 220px; object-fit: cover;">
+                    <img src="{{ property.images.first.image.url }}" class="card-img-top" alt="{{ property.title }}" style="height: 220px; object-fit: cover;">
                     {% else %}
-                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
-                         style="height: 220px;">
+                    <div class="card-img-placeholder bg-light d-flex align-items-center justify-content-center" style="height: 220px;">
                         <i class="bi bi-building text-secondary" style="font-size: 3rem;"></i>
                     </div>
                     {% endif %}
                 </div>
 
-                <div class="card-body">
-                    <h5 class="card-title">{{ property.title|truncatechars:30 }}</h5>
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title fw-bold mb-2">{{ property.title|truncatechars:32 }}</h5>
                     <p class="card-text text-muted small mb-2">
-                        <i class="bi bi-geo-alt-fill"></i> {{ property.city }}, {{ property.address|truncatechars:30 }}
+                        <i class="bi bi-geo-alt-fill text-primary"></i> {{ property.city }}, {{ property.address|truncatechars:28 }}
                     </p>
 
-                    <!-- Рейтинг помещения -->
-                    <div class="rating-container">
+                    <div class="rating-container mb-2">
                         <div class="rating-stars">
                             {% with avg_rating=property.get_average_rating %}
                                 {% for i in "12345"|make_list %}
@@ -340,206 +353,133 @@
                             {% endwith %}
                         </div>
                         <span class="rating-value">{{ property.get_average_rating }}</span>
-                        <span class="reviews-count">({{ property.get_reviews_count }} отзывов)</span>
+                        <span class="reviews-count">({{ property.get_reviews_count }})</span>
                     </div>
 
-                    <p class="card-text">{{ property.description|truncatechars:80 }}</p>
+                    <p class="card-text small text-secondary flex-grow-1">{{ property.description|truncatechars:72 }}</p>
 
-                    <div class="d-flex flex-wrap gap-2 mb-2">
-                        <span class="badge bg-light text-dark border">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge rounded-pill bg-light text-dark border">
                             <i class="bi bi-arrows-fullscreen"></i> {{ property.area }} м²
                         </span>
-                        <span class="badge bg-light text-dark border">
+                        <span class="badge rounded-pill bg-light text-dark border">
                             <i class="bi bi-people"></i> до {{ property.capacity }} чел.
                         </span>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         <div>
-                            <span class="fw-bold text-primary fs-5">
-                                {{ property.price_per_hour|floatformat:0 }} ₽
-                                <span class="fs-6 text-muted">/ час</span>
-                            </span>
+                            <span class="fw-bold text-primary fs-5">{{ property.price_per_hour|floatformat:0 }} ₽<span class="fs-6 text-muted fw-normal">/час</span></span>
                             {% if property.price_per_day %}
-                            <br>
-                            <small class="text-muted">{{ property.price_per_day|floatformat:0 }} ₽/день</small>
+                            <div><small class="text-muted">{{ property.price_per_day|floatformat:0 }} ₽ / день</small></div>
                             {% endif %}
                         </div>
-                        <span class="badge bg-{% if property.status == 'active' %}success{% else %}secondary{% endif %}">
-                            {{ property.get_status_display }}
-                        </span>
+                        <span class="badge rounded-pill bg-{% if property.status == 'active' %}success{% else %}secondary{% endif %}">{{ property.get_status_display }}</span>
                     </div>
 
                     {% if property.views_count %}
-                    <div class="mt-2">
-                        <small class="text-muted">
-                            <i class="bi bi-eye"></i> {{ property.views_count }} просмотров
-                        </small>
+                    <div class="mb-2">
+                        <small class="text-muted"><i class="bi bi-eye"></i> {{ property.views_count }} просмотров</small>
                     </div>
                     {% endif %}
-                </div>
 
-                <div class="card-footer bg-white border-0 pb-3">
-                    <div class="d-grid">
-                        <a href="{% url 'property_detail' property.slug %}" class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-right"></i> Подробнее
-                        </a>
-                    </div>
+                    <a href="{% url 'property_detail' property.slug %}" class="btn btn-primary rounded-pill w-100 mt-auto">
+                        Подробнее <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <!-- ПАГИНАЦИЯ -->
     {% if properties.has_other_pages %}
-    <nav aria-label="Пагинация" class="mt-4">
-        <ul class="pagination justify-content-center">
-            <!-- Кнопка "Первая" -->
+    <nav aria-label="Пагинация" class="mt-5">
+        <ul class="pagination justify-content-center flex-wrap gap-1">
             {% if properties.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page=1
-                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                   aria-label="Первая">
-                    <i class="bi bi-chevron-double-left"></i>
-                </a>
+                <a class="page-link px-3" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Первая"><i class="bi bi-chevron-double-left"></i></a>
             </li>
-            {% else %}
-            <li class="page-item disabled">
-                <span class="page-link"><i class="bi bi-chevron-double-left"></i></span>
-            </li>
-            {% endif %}
-
-            <!-- Кнопка "Предыдущая" -->
-            {% if properties.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ properties.previous_page_number }}
-                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                   aria-label="Предыдущая">
-                    <i class="bi bi-chevron-left"></i>
-                </a>
+                <a class="page-link px-3" href="?page={{ properties.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="bi bi-chevron-left"></i></a>
             </li>
             {% else %}
-            <li class="page-item disabled">
-                <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-            </li>
+            <li class="page-item disabled"><span class="page-link px-3"><i class="bi bi-chevron-double-left"></i></span></li>
+            <li class="page-item disabled"><span class="page-link px-3"><i class="bi bi-chevron-left"></i></span></li>
             {% endif %}
 
-            <!-- Номера страниц -->
             {% for num in properties.paginator.page_range %}
                 {% if properties.number == num %}
-                <li class="page-item active">
-                    <span class="page-link">{{ num }}</span>
-                </li>
+                <li class="page-item active"><span class="page-link px-3">{{ num }}</span></li>
                 {% elif num > properties.number|add:'-3' and num < properties.number|add:'3' %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}
-                        {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                        {{ num }}
-                    </a>
+                    <a class="page-link px-3" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
                 </li>
                 {% endif %}
             {% endfor %}
 
-            <!-- Кнопка "Следующая" -->
             {% if properties.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ properties.next_page_number }}
-                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                   aria-label="Следующая">
-                    <i class="bi bi-chevron-right"></i>
-                </a>
+                <a class="page-link px-3" href="?page={{ properties.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="bi bi-chevron-right"></i></a>
             </li>
-            {% else %}
-            <li class="page-item disabled">
-                <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-            </li>
-            {% endif %}
-
-            <!-- Кнопка "Последняя" -->
-            {% if properties.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ properties.paginator.num_pages }}
-                    {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
-                   aria-label="Последняя">
-                    <i class="bi bi-chevron-double-right"></i>
-                </a>
+                <a class="page-link px-3" href="?page={{ properties.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="bi bi-chevron-double-right"></i></a>
             </li>
             {% else %}
-            <li class="page-item disabled">
-                <span class="page-link"><i class="bi bi-chevron-double-right"></i></span>
-            </li>
+            <li class="page-item disabled"><span class="page-link px-3"><i class="bi bi-chevron-right"></i></span></li>
+            <li class="page-item disabled"><span class="page-link px-3"><i class="bi bi-chevron-double-right"></i></span></li>
             {% endif %}
         </ul>
-
-        <!-- Информация о пагинации -->
-        <div class="pagination-info">
-            <small>
-                Страница {{ properties.number }} из {{ properties.paginator.num_pages }} |
-                Показано {{ properties.start_index }} - {{ properties.end_index }}
-                из {{ properties.paginator.count }} помещений
-            </small>
-        </div>
+        <p class="text-center text-muted small mt-3 mb-0">
+            Страница {{ properties.number }} из {{ properties.paginator.num_pages }} · записи {{ properties.start_index }}–{{ properties.end_index }} из {{ properties.paginator.count }}
+        </p>
     </nav>
     {% endif %}
 
     {% else %}
-    <div class="text-center py-5">
-        <i class="bi bi-building display-1 text-muted"></i>
-        <h3 class="mt-3">Помещения не найдены</h3>
-        <p class="text-muted">Попробуйте изменить параметры поиска</p>
-        <a href="{% url 'property_list' %}" class="btn btn-outline-primary mt-2">
-            <i class="bi bi-arrow-counterclockwise"></i> Сбросить все фильтры
-        </a>
+    <div class="text-center py-5 px-3 rounded-4 border bg-white shadow-sm">
+        <i class="bi bi-building display-4 text-muted"></i>
+        <h3 class="mt-3 fw-bold">Ничего не найдено</h3>
+        <p class="text-muted mb-4">Измените фильтры или сбросьте параметры поиска.</p>
+        <a href="{{ plist_url }}" class="btn btn-primary rounded-pill px-4"><i class="bi bi-arrow-counterclockwise me-1"></i>Показать все помещения</a>
     </div>
     {% endif %}
 </div>
 
-<!-- JavaScript для автоматической отправки формы при изменении select и сохранения скролла -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Автоматическая отправка при изменении select
-    const filterSelects = document.querySelectorAll('select[name="property_type"]');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            document.getElementById('filterForm').submit();
-        });
-    });
-
-    // Валидация цены
     const minPrice = document.getElementById('min_price');
     const maxPrice = document.getElementById('max_price');
-
     if (minPrice && maxPrice) {
         minPrice.addEventListener('change', function() {
-            if (maxPrice.value && parseInt(minPrice.value) > parseInt(maxPrice.value)) {
+            if (maxPrice.value && parseFloat(minPrice.value) > parseFloat(maxPrice.value)) {
                 alert('Минимальная цена не может быть больше максимальной');
                 minPrice.value = '';
             }
         });
-
         maxPrice.addEventListener('change', function() {
-            if (minPrice.value && parseInt(maxPrice.value) < parseInt(minPrice.value)) {
+            if (minPrice.value && parseFloat(maxPrice.value) < parseFloat(minPrice.value)) {
                 alert('Максимальная цена не может быть меньше минимальной');
                 maxPrice.value = '';
             }
         });
     }
 
-    // Сохранение позиции скролла при переходе по страницам
-    const paginationLinks = document.querySelectorAll('.page-link');
-    paginationLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            // Сохраняем текущую позицию скролла в sessionStorage
-            sessionStorage.setItem('scrollPosition', window.scrollY);
+    document.querySelectorAll('.pagination .page-link').forEach(function(link) {
+        link.addEventListener('click', function() {
+            sessionStorage.setItem('scrollPosition', String(window.scrollY));
         });
     });
-
-    // Восстановление позиции скролла после загрузки страницы
-    const savedPosition = sessionStorage.getItem('scrollPosition');
-    if (savedPosition) {
-        window.scrollTo(0, parseInt(savedPosition));
+    var saved = sessionStorage.getItem('scrollPosition');
+    if (saved) {
+        window.scrollTo(0, parseInt(saved, 10));
         sessionStorage.removeItem('scrollPosition');
+    }
+
+    var adv = document.getElementById('advancedPropertyFilters');
+    var advBtn = document.querySelector('[data-bs-target="#advancedPropertyFilters"]');
+    if (adv && advBtn && typeof bootstrap !== 'undefined') {
+        adv.addEventListener('show.bs.collapse', function() { advBtn.setAttribute('aria-expanded', 'true'); });
+        adv.addEventListener('hide.bs.collapse', function() { advBtn.setAttribute('aria-expanded', 'false'); });
     }
 });
 </script>

@@ -2,241 +2,335 @@
 
 {% block title %}Мои помещения{% endblock %}
 
+{% block extra_css %}
+<style>
+    .mp-hero {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(25, 135, 84, 0.1) 100%);
+        border-radius: 20px;
+        padding: 1.75rem 2rem;
+        border: 1px solid rgba(13, 110, 253, 0.12);
+        margin-bottom: 1.5rem;
+    }
+    .mp-stat {
+        border-radius: 16px;
+        border: 1px solid rgba(13, 110, 253, 0.1);
+        padding: 1.25rem 1.35rem;
+        height: 100%;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .mp-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.1);
+    }
+    .mp-stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+    .mp-thumb {
+        width: 96px;
+        height: 68px;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+    .mp-thumb-ph {
+        width: 96px;
+        height: 68px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-    <div class="row mb-4">
-        <div class="col">
-            <h1 class="display-5 fw-bold">Мои помещения</h1>
-            <p class="lead">Управление вашими помещениями для аренды</p>
-        </div>
-        <div class="col-auto">
-            <a href="{% url 'add_property' %}" class="btn btn-primary btn-lg">
-                <i class="bi bi-plus-circle"></i> Добавить помещение
+<div class="container py-4 py-lg-5">
+    <div class="mp-hero">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3">
+            <div>
+                <p class="text-uppercase small fw-semibold text-primary mb-1 letter-spacing-tight">Личный кабинет</p>
+                <h1 class="h2 fw-bold mb-1">Мои помещения</h1>
+                <p class="text-secondary mb-0">Фильтры, поиск и управление объектами для аренды</p>
+            </div>
+            <a href="{% url 'add_property' %}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i>Добавить помещение
             </a>
         </div>
     </div>
 
-    <!-- Фильтры и поиск -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Статус</label>
-                    <select name="status" class="form-select" onchange="this.form.submit()">
-                        <option value="">Все статусы</option>
-                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Активные</option>
-                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Неактивные</option>
+    <form method="get" action="{% url 'my_properties' %}" class="filter-panel-pro card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label class="form-label small fw-semibold text-secondary">Поиск</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="bi bi-search text-primary"></i></span>
+                        <input type="search" name="q" value="{{ search_query }}" class="form-control border-start-0 rounded-end-3" placeholder="Название, город, адрес…">
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">Статус</label>
+                    <select name="status" class="form-select form-select-lg rounded-3">
+                        <option value="">Все</option>
+                        {% for val, label in status_choices %}
+                        <option value="{{ val }}" {% if current_status == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
-            </form>
+                <div class="col-md-6 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">Тип</label>
+                    <select name="property_type" class="form-select form-select-lg rounded-3">
+                        <option value="">Все типы</option>
+                        {% for val, label in property_types %}
+                        <option value="{{ val }}" {% if current_type == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">Город</label>
+                    {% if owner_cities %}
+                    <select name="city" class="form-select form-select-lg rounded-3">
+                        <option value="">Все города</option>
+                        {% for c in owner_cities %}
+                        <option value="{{ c }}" {% if current_city == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="text" name="city" value="{{ current_city }}" class="form-control form-control-lg rounded-3" placeholder="Город">
+                    {% endif %}
+                </div>
+                <div class="col-md-6 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">Витрина</label>
+                    <select name="featured" class="form-select form-select-lg rounded-3">
+                        <option value="">Все</option>
+                        <option value="1" {% if current_featured == '1' %}selected{% endif %}>Рекомендуемые</option>
+                        <option value="0" {% if current_featured == '0' %}selected{% endif %}>Без метки</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">Цена от, ₽/ч</label>
+                    <input type="number" name="min_price" value="{{ min_price_val }}" class="form-control form-control-lg rounded-3" step="0.01" min="0" placeholder="0">
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="form-label small fw-semibold text-secondary">Цена до, ₽/ч</label>
+                    <input type="number" name="max_price" value="{{ max_price_val }}" class="form-control form-control-lg rounded-3" step="0.01" min="0" placeholder="∞">
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <label class="form-label small fw-semibold text-secondary">Сортировка</label>
+                    <select name="sort" class="form-select form-select-lg rounded-3">
+                        <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Сначала новые</option>
+                        <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>Сначала старые</option>
+                        <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Цена ↑</option>
+                        <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Цена ↓</option>
+                        <option value="title" {% if current_sort == 'title' %}selected{% endif %}>По названию</option>
+                        <option value="views" {% if current_sort == 'views' %}selected{% endif %}>По просмотрам</option>
+                    </select>
+                </div>
+                <div class="col-lg-3 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-3 flex-grow-1">
+                        <i class="bi bi-funnel me-1"></i>Применить
+                    </button>
+                    <a href="{% url 'my_properties' %}" class="btn btn-outline-secondary btn-lg rounded-3">Сброс</a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg">
+            <div class="mp-stat">
+                <div class="mp-stat-icon text-primary bg-primary bg-opacity-10"><i class="bi bi-buildings"></i></div>
+                <div class="small text-secondary">Всего</div>
+                <div class="h4 mb-0 fw-bold">{{ stats.total_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="mp-stat">
+                <div class="mp-stat-icon text-success bg-success bg-opacity-10"><i class="bi bi-check-circle"></i></div>
+                <div class="small text-secondary">Активные</div>
+                <div class="h4 mb-0 fw-bold text-success">{{ stats.active_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="mp-stat">
+                <div class="mp-stat-icon text-warning bg-warning bg-opacity-10"><i class="bi bi-hourglass-split"></i></div>
+                <div class="small text-secondary">На модерации</div>
+                <div class="h4 mb-0 fw-bold">{{ stats.pending_count }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg">
+            <div class="mp-stat">
+                <div class="mp-stat-icon text-info bg-info bg-opacity-10"><i class="bi bi-star"></i></div>
+                <div class="small text-secondary">Рекомендуемые</div>
+                <div class="h4 mb-0 fw-bold">{{ stats.featured_count }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-lg">
+            <div class="mp-stat">
+                <div class="mp-stat-icon text-primary bg-primary bg-opacity-10"><i class="bi bi-calendar2-check"></i></div>
+                <div class="small text-secondary">Активные брони</div>
+                <div class="h4 mb-0 fw-bold">{{ stats.booked_count }}</div>
+            </div>
         </div>
     </div>
 
-    <!-- Статистика -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Всего помещений</h5>
-                    <p class="card-text display-6">{{ properties.paginator.count }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Активные</h5>
-                    <p class="card-text display-6">{{ active_count|default:0 }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">В избранном</h5>
-                    <p class="card-text display-6">{{ featured_count|default:0 }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Забронировано</h5>
-                    <p class="card-text display-6">{{ booked_count|default:0 }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Список помещений -->
-    <div class="card">
-        <div class="card-body">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
             {% if properties %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Изображение</th>
-                                <th>Название</th>
-                                <th>Тип</th>
-                                <th>Город</th>
-                                <th>Цена/час</th>
-                                <th>Статус</th>
-                                <th>Дата создания</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for property in properties %}
-                            <tr>
-                                <td>
-                                    {% if property.images.first %}
-                                        <img src="{{ property.images.first.image.url }}" 
-                                             alt="{{ property.title }}" 
-                                             style="width: 100px; height: 70px; object-fit: cover; border-radius: 5px;">
-                                    {% else %}
-                                        <div class="bg-light text-center" 
-                                             style="width: 100px; height: 70px; line-height: 70px; border-radius: 5px;">
-                                            <i class="bi bi-image text-muted"></i>
-                                        </div>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <strong>{{ property.title }}</strong>
-                                    {% if property.is_featured %}
-                                        <span class="badge bg-warning ms-1">Рекомендуемое</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ property.get_property_type_display }}</td>
-                                <td>{{ property.city }}</td>
-                                <td>{{ property.price_per_hour }} ₽</td>
-                                <td>
-                                    {% if property.status == 'active' %}
-                                        <span class="badge bg-success">Активно</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Неактивно</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ property.created_at|date:"d.m.Y" }}</td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{% url 'property_detail' property.slug %}" 
-                                           class="btn btn-sm btn-outline-primary"
-                                           title="Просмотреть">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="{% url 'edit_property' property.id %}" 
-                                           class="btn btn-sm btn-outline-warning"
-                                           title="Редактировать">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <a href="#" 
-                                           class="btn btn-sm btn-outline-danger"
-                                           title="Удалить"
-                                           data-bs-toggle="modal" 
-                                           data-bs-target="#deleteModal{{ property.id }}">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
-                                    </div>
-                                    
-                                    <!-- Модальное окно подтверждения удаления -->
-                                    <div class="modal fade" id="deleteModal{{ property.id }}" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Подтверждение удаления</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <p>Вы уверены, что хотите удалить помещение <strong>"{{ property.title }}"</strong>?</p>
-                                                    <p class="text-danger">Это действие нельзя отменить.</p>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                                                    <form method="post" action="{% url 'delete_property' property.id %}">
-                                                        {% csrf_token %}
-                                                        <button type="submit" class="btn btn-danger">Удалить</button>
-                                                    </form>
-                                                </div>
+            <div class="table-responsive">
+                <table class="table table-modern align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Фото</th>
+                            <th>Название</th>
+                            <th>Тип</th>
+                            <th>Город</th>
+                            <th>Цена / час</th>
+                            <th>Статус</th>
+                            <th>Создано</th>
+                            <th class="text-end pe-4">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for property in properties %}
+                        <tr>
+                            <td class="ps-4">
+                                {% if property.images.first %}
+                                <img src="{{ property.images.first.image.url }}" alt="" class="mp-thumb">
+                                {% else %}
+                                <div class="mp-thumb-ph"><i class="bi bi-image"></i></div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-semibold link-premise">{{ property.title }}</span>
+                                {% if property.is_featured %}
+                                <span class="badge rounded-pill ms-1" style="background: linear-gradient(135deg,#fbbf24,#f59e0b); color:#422006;">Рекомендуемое</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ property.get_property_type_display }}</td>
+                            <td><i class="bi bi-geo-alt text-primary me-1"></i>{{ property.city }}</td>
+                            <td class="fw-semibold">{{ property.price_per_hour }} ₽</td>
+                            <td>
+                                {% if property.status == 'active' %}
+                                <span class="badge rounded-pill bg-success">Активно</span>
+                                {% elif property.status == 'pending' %}
+                                <span class="badge rounded-pill status-pending">На модерации</span>
+                                {% elif property.status == 'draft' %}
+                                <span class="badge bg-secondary rounded-pill">Черновик</span>
+                                {% elif property.status == 'rejected' %}
+                                <span class="badge bg-danger rounded-pill">Отклонено</span>
+                                {% elif property.status == 'inactive' %}
+                                <span class="badge bg-dark bg-opacity-50 rounded-pill">Неактивно</span>
+                                {% else %}
+                                <span class="badge bg-secondary rounded-pill">{{ property.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-secondary small">{{ property.created_at|date:"d.m.Y" }}</td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group">
+                                    <a href="{% url 'property_detail' property.slug %}" class="btn btn-sm btn-outline-primary rounded-start-3" title="На сайте">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'edit_property' property.id %}" class="btn btn-sm btn-outline-primary" title="Редактировать">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-end-3" title="Удалить"
+                                            data-bs-toggle="modal" data-bs-target="#deleteModal{{ property.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="modal fade" id="deleteModal{{ property.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content rounded-4 border-0 shadow">
+                                            <div class="modal-header border-0">
+                                                <h5 class="modal-title">Удалить помещение?</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="mb-0">Объект «<strong>{{ property.title }}</strong>» будет удалён без восстановления.</p>
+                                            </div>
+                                            <div class="modal-footer border-0">
+                                                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Отмена</button>
+                                                <form method="post" action="{% url 'delete_property' property.id %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger rounded-3">Удалить</button>
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Пагинация -->
-                {% if properties.has_other_pages %}
-                <nav aria-label="Page navigation" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if properties.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
-                                    <i class="bi bi-chevron-double-left"></i>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ properties.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
-                                    <i class="bi bi-chevron-left"></i>
-                                </a>
-                            </li>
-                        {% endif %}
-
-                        {% for num in properties.paginator.page_range %}
-                            {% if properties.number == num %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ num }}</span>
-                                </li>
-                            {% elif num > properties.number|add:'-3' and num < properties.number|add:'3' %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
-                                </li>
-                            {% endif %}
+                                </div>
+                            </td>
+                        </tr>
                         {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-                        {% if properties.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ properties.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
-                                    <i class="bi bi-chevron-right"></i>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ properties.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
-                                    <i class="bi bi-chevron-double-right"></i>
-                                </a>
-                            </li>
+            {% if properties.has_other_pages %}
+            <nav class="p-3 border-top" aria-label="Страницы">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if properties.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link rounded-3" href="?page=1{% if preserved_query %}&{{ preserved_query }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link rounded-3" href="?page={{ properties.previous_page_number }}{% if preserved_query %}&{{ preserved_query }}{% endif %}"><i class="bi bi-chevron-left"></i></a>
+                    </li>
+                    {% endif %}
+                    {% for num in properties.paginator.page_range %}
+                        {% if properties.number == num %}
+                        <li class="page-item active"><span class="page-link rounded-3">{{ num }}</span></li>
+                        {% elif num > properties.number|add:'-3' and num < properties.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link rounded-3" href="?page={{ num }}{% if preserved_query %}&{{ preserved_query }}{% endif %}">{{ num }}</a>
+                        </li>
                         {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
+                    {% endfor %}
+                    {% if properties.has_next %}
+                    <li class="page-item">
+                        <a class="page-link rounded-3" href="?page={{ properties.next_page_number }}{% if preserved_query %}&{{ preserved_query }}{% endif %}"><i class="bi bi-chevron-right"></i></a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link rounded-3" href="?page={{ properties.paginator.num_pages }}{% if preserved_query %}&{{ preserved_query }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
             {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-building text-muted" style="font-size: 4rem;"></i>
-                    <h3 class="mt-3">У вас пока нет помещений</h3>
-                    <p class="text-muted">Добавьте свое первое помещение для аренды</p>
-                    <a href="{% url 'add_property' %}" class="btn btn-primary btn-lg mt-3">
-                        <i class="bi bi-plus-circle"></i> Добавить помещение
-                    </a>
+            <div class="text-center py-5 px-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width:88px;height:88px;">
+                    <i class="bi bi-building text-primary fs-2"></i>
                 </div>
+                <h3 class="fw-bold">Ничего не найдено</h3>
+                <p class="text-secondary col-lg-6 mx-auto mb-4">
+                    {% if stats.total_count == 0 %}
+                    Добавьте первое помещение — оно появится в каталоге после модерации.
+                    {% else %}
+                    Попробуйте изменить фильтры или сбросить поиск.
+                    {% endif %}
+                </p>
+                {% if stats.total_count == 0 %}
+                <a href="{% url 'add_property' %}" class="btn btn-primary btn-lg rounded-pill px-4"><i class="bi bi-plus-lg me-1"></i>Добавить помещение</a>
+                {% else %}
+                <a href="{% url 'my_properties' %}" class="btn btn-outline-primary rounded-pill">Сбросить фильтры</a>
+                {% endif %}
+            </div>
             {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Автоматическая отправка формы при изменении фильтров
-    document.addEventListener('DOMContentLoaded', function() {
-        const filterSelects = document.querySelectorAll('select[onchange*="submit"]');
-        filterSelects.forEach(select => {
-            select.addEventListener('change', function() {
-                this.form.submit();
-            });
-        });
-    });
-</script>
 {% endblock %}

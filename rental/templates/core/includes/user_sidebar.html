@@ -1,0 +1,84 @@
+{% load static %}
+{# Боковая панель кабинета: без кнопки «Редактировать профиль» и без «Сменить пароль». #}
+{% with url_name=request.resolver_match.url_name %}
+<div class="user-sidebar">
+    <div class="card user-sidebar__profile border-0 shadow-sm mb-3">
+        <div class="card-body text-center p-4">
+            {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" class="user-sidebar__avatar rounded-circle mb-3" width="100" height="100" alt="">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" class="user-sidebar__avatar rounded-circle mb-3" width="100" height="100" alt="">
+            {% endif %}
+            <h5 class="card-title fw-semibold mb-1">{{ user.get_full_name_or_username }}</h5>
+            <p class="text-muted small mb-0">{{ user.email }}</p>
+            {% if user.company_name %}
+                <p class="text-muted small mt-2 mb-0"><i class="fas fa-building me-1 opacity-75"></i>{{ user.company_name }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <nav class="list-group user-sidebar__nav mb-4" aria-label="Разделы личного кабинета">
+        <a href="{% url 'dashboard' %}"
+           class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'dashboard' %}is-active{% endif %}">
+            <i class="bi bi-speedometer2 user-sidebar__icon"></i>
+            <span>Обзор</span>
+        </a>
+
+        {% if user.user_type == 'tenant' %}
+            <a href="{% url 'my_bookings' %}"
+               class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'my_bookings' %}is-active{% endif %}">
+                <i class="bi bi-calendar-check user-sidebar__icon"></i>
+                <span>Мои бронирования</span>
+            </a>
+            <a href="{% url 'my_favorites' %}"
+               class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'my_favorites' %}is-active{% endif %}">
+                <i class="bi bi-heart user-sidebar__icon"></i>
+                <span>Избранное</span>
+                {% if user.favorites.count %}
+                    <span class="badge rounded-pill user-sidebar__badge ms-auto">{{ user.favorites.count }}</span>
+                {% endif %}
+            </a>
+        {% elif user.user_type == 'landlord' %}
+            <a href="{% url 'my_properties' %}"
+               class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'my_properties' %}is-active{% endif %}">
+                <i class="bi bi-buildings user-sidebar__icon"></i>
+                <span>Мои помещения</span>
+            </a>
+            <a href="{% url 'add_property' %}"
+               class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'add_property' %}is-active{% endif %}">
+                <i class="bi bi-plus-circle user-sidebar__icon"></i>
+                <span>Добавить помещение</span>
+            </a>
+            <a href="{% url 'landlord_bookings' %}"
+               class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'landlord_bookings' %}is-active{% endif %}">
+                <i class="bi bi-calendar-week user-sidebar__icon"></i>
+                <span>Бронирования</span>
+            </a>
+        {% endif %}
+
+        <a href="{% url 'messages_list' %}"
+           class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'messages_list' or url_name == 'send_message' %}is-active{% endif %}">
+            <i class="bi bi-envelope user-sidebar__icon"></i>
+            <span>Сообщения</span>
+            {% if unread_messages_count %}
+                <span class="badge rounded-pill user-sidebar__badge user-sidebar__badge--danger ms-auto">{{ unread_messages_count }}</span>
+            {% endif %}
+        </a>
+
+        <a href="{% url 'notifications_list' %}"
+           class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'notifications_list' %}is-active{% endif %}">
+            <i class="bi bi-bell user-sidebar__icon"></i>
+            <span>Уведомления</span>
+            {% if unread_notifications_count %}
+                <span class="badge rounded-pill user-sidebar__badge user-sidebar__badge--danger ms-auto">{{ unread_notifications_count }}</span>
+            {% endif %}
+        </a>
+
+        <a href="{% url 'edit_profile' %}"
+           class="list-group-item list-group-item-action user-sidebar__link d-flex align-items-center {% if url_name == 'edit_profile' %}is-active{% endif %}">
+            <i class="bi bi-person-circle user-sidebar__icon"></i>
+            <span>Профиль</span>
+        </a>
+    </nav>
+</div>
+{% endwith %}

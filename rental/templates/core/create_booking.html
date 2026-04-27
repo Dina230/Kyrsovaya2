@@ -236,13 +236,15 @@
                                     <label for="start_date" class="form-label required">
                                         <i class="fas fa-calendar-plus me-1"></i> Дата начала
                                     </label>
-                                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" required
+                                           value="{% if form.start_date.value %}{{ form.start_date.value|date:'Y-m-d' }}{% endif %}">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="end_date" class="form-label required">
                                         <i class="fas fa-calendar-minus me-1"></i> Дата окончания
                                     </label>
-                                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                                    <input type="date" class="form-control" id="end_date" name="end_date" required
+                                           value="{% if form.end_date.value %}{{ form.end_date.value|date:'Y-m-d' }}{% endif %}">
                                 </div>
                             </div>
 
@@ -264,27 +266,32 @@
 
                         <!-- Поля для посуточного бронирования -->
                         <div id="dailyFields" style="display: none;">
+                            <p class="text-muted small mb-3">Укажите дату заезда и дату выезда (последний день аренды включительно).</p>
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="daily_start_date" class="form-label required">
-                                        <i class="fas fa-calendar-plus me-1"></i> Дата начала
+                                        <i class="fas fa-calendar-plus me-1"></i> Дата заезда
                                     </label>
-                                    <input type="date" class="form-control" id="daily_start_date" name="start_date" required>
+                                    <input type="date" class="form-control" id="daily_start_date" name="start_date" required disabled
+                                           value="{% if form.start_date.value %}{{ form.start_date.value|date:'Y-m-d' }}{% endif %}">
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="days_count" class="form-label required">
-                                        <i class="fas fa-calendar-day me-1"></i> Количество дней
+                                    <label for="daily_end_date" class="form-label required">
+                                        <i class="fas fa-calendar-minus me-1"></i> Дата окончания (выезд)
                                     </label>
-                                    <input type="number" class="form-control" id="days_count" name="days_count" min="1" max="365" value="1">
+                                    <input type="date" class="form-control" id="daily_end_date" name="end_date" required disabled
+                                           value="{% if form.end_date.value %}{{ form.end_date.value|date:'Y-m-d' }}{% endif %}">
                                     <div class="quick-days">
                                         <span class="quick-day" onclick="setDays(1)">1 день</span>
                                         <span class="quick-day" onclick="setDays(3)">3 дня</span>
-                                        <span class="quick-day" onclick="setDays(7)">1 неделя</span>
-                                        <span class="quick-day" onclick="setDays(14)">2 недели</span>
-                                        <span class="quick-day" onclick="setDays(30)">1 месяц</span>
+                                        <span class="quick-day" onclick="setDays(7)">7 дней</span>
+                                        <span class="quick-day" onclick="setDays(14)">14 дней</span>
+                                        <span class="quick-day" onclick="setDays(30)">30 дней</span>
                                     </div>
                                 </div>
                             </div>
+                            <input type="hidden" name="start_time" value="09:00" id="daily_hidden_start_time" class="daily-time-field" disabled>
+                            <input type="hidden" name="end_time" value="18:00" id="daily_hidden_end_time" class="daily-time-field" disabled>
                         </div>
 
                         <!-- Количество гостей -->
@@ -447,7 +454,7 @@
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check-circle text-success me-2"></i>
-                            Посуточное: мин. 1 день
+                            Посуточное: даты заезда и выезда
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check-circle text-success me-2"></i>
@@ -475,6 +482,24 @@
 
 {% block extra_js %}
 <script>
+    function setFieldsDisabled(containerId, disabled) {
+        const root = document.getElementById(containerId);
+        if (!root) return;
+        root.querySelectorAll('input, select, textarea').forEach(function(el) {
+            el.disabled = disabled;
+        });
+    }
+
+    function syncDailyEndMin() {
+        const ds = document.getElementById('daily_start_date');
+        const de = document.getElementById('daily_end_date');
+        if (!ds || !de || !ds.value) return;
+        de.min = ds.value;
+        if (de.value < ds.value) {
+            de.value = ds.value;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Установка минимальной даты
         const today = new Date().toISOString().split('T')[0];
@@ -486,19 +511,31 @@
         document.getElementById('end_date').min = today;
         document.getElementById('daily_start_date').min = today;
 
-        // Установка начальных значений дат
-        document.getElementById('start_date').value = tomorrowStr;
-        document.getElementById('end_date').value = tomorrowStr;
-        document.getElementById('daily_start_date').value = tomorrowStr;
+        // Значения с сервера (в т.ч. ?date=) не перезаписываем; иначе — завтра по умолчанию
+        const sEl = document.getElementById('start_date');
+        const eEl = document.getElementById('end_date');
+        const dsEl = document.getElementById('daily_start_date');
+        const deEl = document.getElementById('daily_end_date');
+        if (!sEl.value) sEl.value = tomorrowStr;
+        if (!eEl.value) eEl.value = tomorrowStr;
+        if (!dsEl.value) dsEl.value = tomorrowStr;
+        if (!deEl.value) deEl.value = tomorrowStr;
+        syncDailyEndMin();
 
         // Инициализация
         selectBookingType('hourly');
         calculatePrice();
 
         // Обработчики событий для расчета стоимости
-        document.querySelectorAll('#start_date, #end_date, #start_time, #end_time, #daily_start_date, #days_count, #guests').forEach(el => {
-            el.addEventListener('change', calculatePrice);
-            el.addEventListener('input', calculatePrice);
+        document.querySelectorAll('#start_date, #end_date, #start_time, #end_time, #daily_start_date, #daily_end_date, #guests').forEach(el => {
+            el.addEventListener('change', function() {
+                if (el.id === 'daily_start_date') syncDailyEndMin();
+                calculatePrice();
+            });
+            el.addEventListener('input', function() {
+                if (el.id === 'daily_start_date') syncDailyEndMin();
+                calculatePrice();
+            });
         });
 
         // Связь range и input для гостей
@@ -525,33 +562,44 @@
         document.getElementById(type + 'Card').classList.add('active');
         document.getElementById('booking_type').value = type;
 
-        // Показ/скрытие полей
+        // Показ/скрытие полей и отправка только активного блока
         if (type === 'hourly') {
             document.getElementById('hourlyFields').style.display = 'block';
             document.getElementById('dailyFields').style.display = 'none';
+            setFieldsDisabled('hourlyFields', false);
+            setFieldsDisabled('dailyFields', true);
 
-            // Переносим значение даты
-            const dailyDate = document.getElementById('daily_start_date').value;
-            if (dailyDate) {
-                document.getElementById('start_date').value = dailyDate;
-                document.getElementById('end_date').value = dailyDate;
-            }
+            const dStart = document.getElementById('daily_start_date').value;
+            const dEnd = document.getElementById('daily_end_date').value;
+            if (dStart) document.getElementById('start_date').value = dStart;
+            if (dEnd) document.getElementById('end_date').value = dEnd;
+            else if (dStart) document.getElementById('end_date').value = dStart;
         } else {
             document.getElementById('hourlyFields').style.display = 'none';
             document.getElementById('dailyFields').style.display = 'block';
+            setFieldsDisabled('hourlyFields', true);
+            setFieldsDisabled('dailyFields', false);
 
-            // Переносим значение даты
-            const hourlyDate = document.getElementById('start_date').value;
-            if (hourlyDate) {
-                document.getElementById('daily_start_date').value = hourlyDate;
-            }
+            const hStart = document.getElementById('start_date').value;
+            const hEnd = document.getElementById('end_date').value;
+            if (hStart) document.getElementById('daily_start_date').value = hStart;
+            if (hEnd) document.getElementById('daily_end_date').value = hEnd;
+            else if (hStart) document.getElementById('daily_end_date').value = hStart;
+            syncDailyEndMin();
         }
 
         calculatePrice();
     }
 
-    function setDays(days) {
-        document.getElementById('days_count').value = days;
+    function setDays(n) {
+        const startEl = document.getElementById('daily_start_date');
+        const endEl = document.getElementById('daily_end_date');
+        if (!startEl || !endEl || !startEl.value) return;
+        const start = new Date(startEl.value + 'T12:00:00');
+        const end = new Date(start);
+        end.setDate(end.getDate() + (n - 1));
+        endEl.value = end.toISOString().split('T')[0];
+        syncDailyEndMin();
         calculatePrice();
     }
 
@@ -614,18 +662,23 @@
             }
         } else {
             const startDate = document.getElementById('daily_start_date').value;
-            const daysCount = parseInt(document.getElementById('days_count').value) || 1;
+            const endDate = document.getElementById('daily_end_date').value;
 
-            if (startDate) {
-                // Если цена за день указана в БД, используем её
-                // Иначе считаем как 8 часов по цене за час
-                const dailyRate = pricePerDay > 0 ? pricePerDay : pricePerHour * 8;
-                totalPrice = dailyRate * daysCount;
-                details.push(`Количество дней: ${daysCount}`);
-                details.push(`Стоимость дня: ${dailyRate.toFixed(2)} ₽`);
+            if (startDate && endDate) {
+                const s = new Date(startDate + 'T12:00:00');
+                const e = new Date(endDate + 'T12:00:00');
+                if (e < s) {
+                    warning = 'Дата выезда не может быть раньше даты заезда';
+                } else {
+                    const daysCount = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
+                    const dailyRate = pricePerDay > 0 ? pricePerDay : pricePerHour * 8;
+                    totalPrice = dailyRate * daysCount;
+                    details.push(`Календарных дней: ${daysCount}`);
+                    details.push(`Стоимость дня: ${dailyRate.toFixed(2)} ₽`);
 
-                if (daysCount > 30) {
-                    warning = 'Бронирование на срок более 30 дней. Рекомендуем связаться с владельцем.';
+                    if (daysCount > 30) {
+                        warning = 'Бронирование на срок более 30 дней. Рекомендуем связаться с владельцем.';
+                    }
                 }
             }
         }

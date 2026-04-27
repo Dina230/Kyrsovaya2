@@ -5,182 +5,202 @@
 {% block title %}Регистрация{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-primary text-white text-center py-4">
-                    <h3><i class="bi bi-person-plus"></i> Регистрация</h3>
-                    <p class="mb-0">Создайте аккаунт для аренды или сдачи помещений</p>
-                </div>
-                <div class="card-body p-4 p-md-5">
-                    <form method="post" novalidate id="registrationForm">
-                        {% csrf_token %}
+<div class="auth-page auth-shell py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-7 col-xl-6">
+                <div class="card auth-card border-0">
+                    <div class="auth-card-header">
+                        <div class="auth-card-icon" aria-hidden="true">
+                            <i class="bi bi-person-plus"></i>
+                        </div>
+                        <h1 class="auth-card-title">Регистрация</h1>
+                        <p class="auth-card-sub">Создайте аккаунт «Простор»</p>
+                    </div>
+                    <div class="card-body auth-card-body-soft p-4 p-md-5">
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger border-0 rounded-3 mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.username.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person"></i> Имя пользователя *
-                                </label>
-                                {{ form.username }}
-                                {% if form.username.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.username.errors }}
+                        <form method="post" novalidate id="registrationForm">
+                            {% csrf_token %}
+
+                            <!-- Личные данные -->
+                            <div class="mb-4">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label for="{{ form.username.id_for_label }}" class="form-label auth-input-label fw-semibold">
+                                            <i class="bi bi-person me-1"></i> Имя пользователя *
+                                        </label>
+                                        {{ form.username }}
+                                        {% if form.username.errors %}
+                                        <div class="invalid-feedback d-block small text-danger mt-1">{{ form.username.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text small text-muted mt-1">Уникальный логин для входа в аккаунт</div>
+                                    </div>
                                 </div>
-                                {% endif %}
-                                <small class="form-text text-muted">Будет использоваться для входа</small>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.email.id_for_label }}" class="form-label">
-                                    <i class="bi bi-envelope"></i> Email *
+                            <div class="mb-4">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="{{ form.first_name.id_for_label }}" class="form-label auth-input-label fw-semibold">
+                                            <i class="bi bi-person-badge me-1"></i> Имя *
+                                        </label>
+                                        {{ form.first_name }}
+                                        {% if form.first_name.errors %}
+                                        <div class="invalid-feedback d-block small text-danger mt-1">{{ form.first_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.last_name.id_for_label }}" class="form-label auth-input-label fw-semibold">
+                                            <i class="bi bi-person-badge me-1"></i> Фамилия *
+                                        </label>
+                                        {{ form.last_name }}
+                                        {% if form.last_name.errors %}
+                                        <div class="invalid-feedback d-block small text-danger mt-1">{{ form.last_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="{{ form.email.id_for_label }}" class="form-label auth-input-label fw-semibold">
+                                    <i class="bi bi-envelope me-1"></i> Email *
                                 </label>
                                 {{ form.email }}
                                 {% if form.email.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.email.errors }}
-                                </div>
+                                <div class="invalid-feedback d-block small text-danger mt-1">{{ form.email.errors }}</div>
                                 {% endif %}
+                                <div class="form-text small text-muted mt-1">Для входа и важных уведомлений</div>
                             </div>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.first_name.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person-badge"></i> Имя *
+                            <!-- Тип аккаунта и телефон -->
+                            <div class="mb-4">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="{{ form.user_type.id_for_label }}" class="form-label auth-input-label fw-semibold">
+                                            <i class="bi bi-briefcase me-1"></i> Тип аккаунта *
+                                        </label>
+                                        {{ form.user_type }}
+                                        {% if form.user_type.errors %}
+                                        <div class="invalid-feedback d-block small text-danger mt-1">{{ form.user_type.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text small text-muted mt-1">Арендатор ищет помещения, арендодатель сдаёт</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="phoneInput" class="form-label auth-input-label fw-semibold">
+                                            <i class="bi bi-telephone me-1"></i> Телефон <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">+7</span>
+                                            <input type="tel"
+                                                   class="form-control auth-input-field border-start-0{% if form.phone.errors %} is-invalid{% endif %}"
+                                                   id="phoneInput"
+                                                   name="{{ form.phone.name }}"
+                                                   placeholder="(999) 999-99-99"
+                                                   value="{{ form.phone.value|default:'' }}"
+                                                   maxlength="18"
+                                                   autocomplete="tel"
+                                                   required
+                                                   aria-required="true">
+                                        </div>
+                                        {% if form.phone.errors %}
+                                        <div class="invalid-feedback d-block small text-danger mt-1">
+                                            {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        <div class="form-text small text-muted mt-1">Обязательно: 10 цифр номера (после +7)</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Название компании (только для арендодателя) -->
+                            <div class="mb-4" id="companyField" style="display: none;">
+                                <label for="{{ form.company_name.id_for_label }}" class="form-label auth-input-label fw-semibold">
+                                    <i class="bi bi-building me-1"></i> Название компании <span id="companyRequired" class="text-danger">*</span>
                                 </label>
-                                {{ form.first_name }}
-                                {% if form.first_name.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.first_name.errors }}
-                                </div>
+                                {{ form.company_name }}
+                                {% if form.company_name.errors %}
+                                <div class="invalid-feedback d-block small text-danger mt-1">{{ form.company_name.errors }}</div>
                                 {% endif %}
+                                <div class="form-text small text-muted mt-1" id="companyHint">Обязательно для арендодателей</div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.last_name.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person-badge"></i> Фамилия *
+                            <!-- Пароль -->
+                            <div class="mb-4">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="{{ form.password1.id_for_label }}" class="form-label auth-input-label fw-semibold">
+                                            <i class="bi bi-lock me-1"></i> Пароль *
+                                        </label>
+                                        <div class="input-group password-toggle">
+                                            {{ form.password1 }}
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                    data-password-toggle
+                                                    aria-label="Показать пароль" title="Показать пароль">
+                                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                        {% if form.password1.errors %}
+                                        <div class="invalid-feedback d-block small text-danger mt-1">{{ form.password1.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="{{ form.password2.id_for_label }}" class="form-label auth-input-label fw-semibold">
+                                            <i class="bi bi-lock-fill me-1"></i> Подтверждение *
+                                        </label>
+                                        <div class="input-group password-toggle">
+                                            {{ form.password2 }}
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                    data-password-toggle
+                                                    aria-label="Показать пароль" title="Показать пароль">
+                                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                        {% if form.password2.errors %}
+                                        <div class="invalid-feedback d-block small text-danger mt-1">{{ form.password2.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Требования к паролю -->
+                            <div class="alert alert-light border rounded-3 mb-4 small" role="alert">
+                                <i class="bi bi-shield-check text-primary me-2"></i>
+                                <strong>Требования к паролю:</strong>
+                                <ul class="mb-0 mt-2 ps-3">
+                                    <li>Не менее 8 символов</li>
+                                    <li>Не должен быть слишком простым</li>
+                                    <li>Не должен состоять только из цифр</li>
+                                    <li>Не должен совпадать с личной информацией</li>
+                                </ul>
+                            </div>
+
+                            <!-- Соглашение -->
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="agreeTerms" name="agree_terms" required>
+                                <label class="form-check-label small" for="agreeTerms">
+                                    Я соглашаюсь с <a href="#" class="text-decoration-none">условиями использования</a>
+                                    и <a href="#" class="text-decoration-none">политикой конфиденциальности</a> *
                                 </label>
-                                {{ form.last_name }}
-                                {% if form.last_name.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.last_name.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.user_type.id_for_label }}" class="form-label">
-                                    <i class="bi bi-briefcase"></i> Тип аккаунта *
-                                </label>
-                                {{ form.user_type }}
-                                {% if form.user_type.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.user_type.errors }}
-                                </div>
-                                {% endif %}
+                                <div class="invalid-feedback small">Необходимо принять условия</div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.phone.id_for_label }}" class="form-label">
-                                    <i class="bi bi-telephone"></i> Телефон
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text">+7</span>
-                                    <input type="tel"
-                                           class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
-                                           id="phoneInput"
-                                           name="{{ form.phone.name }}"
-                                           placeholder="(999) 999-99-99"
-                                           value="{{ form.phone.value|default:'' }}"
-                                           maxlength="18">
-                                </div>
-                                {% if form.phone.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.phone.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                <small class="form-text text-muted">Формат: +7 (999) 999-99-99</small>
+                            <div class="d-grid gap-2 mb-2">
+                                <button type="submit" class="btn btn-lg rounded-3 py-3 auth-btn-primary-lg">
+                                    <i class="bi bi-check2-circle me-2"></i>Создать аккаунт
+                                </button>
                             </div>
+                        </form>
+
+                        <div class="text-center mt-4 pt-3 border-top auth-link-muted">
+                            <span>Уже есть аккаунт?</span>
+                            <a href="{% url 'login' %}" class="ms-1">Войти</a>
                         </div>
-
-                        <div class="mb-3" id="companyField">
-                            <label for="{{ form.company_name.id_for_label }}" class="form-label">
-                                <i class="bi bi-building"></i> Название компании <span id="companyRequired"></span>
-                            </label>
-                            {{ form.company_name }}
-                            {% if form.company_name.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.company_name.errors }}
-                            </div>
-                            {% endif %}
-                            <small class="form-text text-muted" id="companyHint">Только для арендодателей</small>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.password1.id_for_label }}" class="form-label">
-                                    <i class="bi bi-lock"></i> Пароль *
-                                </label>
-                                {{ form.password1 }}
-                                {% if form.password1.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.password1.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.password2.id_for_label }}" class="form-label">
-                                    <i class="bi bi-lock-fill"></i> Подтвердите пароль *
-                                </label>
-                                {{ form.password2 }}
-                                {% if form.password2.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.password2.errors }}
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Требования к паролю -->
-                        <div class="alert alert-info">
-                            <h6 class="alert-heading">Требования к паролю:</h6>
-                            <ul class="mb-0">
-                                <li>Не менее 8 символов</li>
-                                <li>Не должен быть слишком простым</li>
-                                <li>Не должен состоять только из цифр</li>
-                                <li>Не должен совпадать с личной информацией</li>
-                            </ul>
-                        </div>
-
-                        <!-- Соглашение -->
-                        <div class="form-check mb-4">
-                            <input class="form-check-input" type="checkbox" id="agreeTerms" name="agree_terms" required>
-                            <label class="form-check-label" for="agreeTerms">
-                                Я соглашаюсь с <a href="#" class="text-decoration-none">условиями использования</a> и <a href="#" class="text-decoration-none">политикой конфиденциальности</a> *
-                            </label>
-                            <div class="invalid-feedback">
-                                Необходимо принять условия использования
-                            </div>
-                        </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-check-circle"></i> Зарегистрироваться
-                            </button>
-                        </div>
-                    </form>
-
-                    <div class="text-center mt-4">
-                        <p class="text-muted mb-2">Уже есть аккаунт?</p>
-                        <a href="{% url 'login' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-box-arrow-in-right"></i> Войти
-                        </a>
                     </div>
                 </div>
             </div>
@@ -188,73 +208,38 @@
     </div>
 </div>
 
-<style>
-    .form-label {
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-    }
-
-    .form-control:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-
-    .card {
-        border-radius: 15px;
-        overflow: hidden;
-    }
-
-    .card-header {
-        border-radius: 0 !important;
-    }
-
-    .invalid-feedback {
-        font-size: 0.875em;
-    }
-
-    .input-group-text {
-        background-color: #f8f9fa;
-        border-right: none;
-    }
-
-    #phoneInput {
-        border-left: none;
-        padding-left: 0;
-    }
-
-    /* Стили для ошибок формы */
-    .is-invalid {
-        border-color: #dc3545;
-    }
-
-    .is-invalid:focus {
-        border-color: #dc3545;
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-    }
-</style>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Получаем элементы
+        // Переключение видимости пароля
+        document.querySelectorAll('[data-password-toggle]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const input = this.closest('.password-toggle').querySelector('input');
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                }
+            });
+        });
+
         const userTypeSelect = document.querySelector('#{{ form.user_type.id_for_label }}');
         const companyField = document.getElementById('companyField');
         const companyInput = document.querySelector('#{{ form.company_name.id_for_label }}');
-        const companyHint = document.getElementById('companyHint');
         const companyRequired = document.getElementById('companyRequired');
+        const companyHint = document.getElementById('companyHint');
         const phoneInput = document.getElementById('phoneInput');
 
-        // Функция для применения маски телефона
+        // Маска телефона
         function applyPhoneMask(input) {
-            // Сохраняем текущее значение и позицию курсора
             let value = input.value.replace(/\D/g, '');
-            let selectionStart = input.selectionStart;
-
-            // Ограничиваем длину до 10 цифр (без +7)
             if (value.length > 10) {
                 value = value.substring(0, 10);
             }
-
-            // Форматируем номер
             let formattedValue = '';
             if (value.length > 0) {
                 formattedValue = '(' + value.substring(0, 3);
@@ -268,109 +253,46 @@
                     formattedValue += '-' + value.substring(8, 10);
                 }
             }
-
-            // Устанавливаем отформатированное значение
             input.value = formattedValue;
-
-            // Восстанавливаем позицию курсора
-            // Учитываем добавленные символы форматирования
-            let addedChars = 0;
-            if (value.length > 0) addedChars++; // (
-            if (value.length > 3) addedChars += 2; // ) и пробел
-            if (value.length > 6) addedChars++; // -
-            if (value.length > 8) addedChars++; // -
-
-            let newPosition = selectionStart + addedChars;
-            input.setSelectionRange(newPosition, newPosition);
         }
 
-        // Функция для валидации телефона
-        function validatePhone(input) {
-            const value = input.value;
-            const phoneDigits = value.replace(/\D/g, '');
-
-            // Очищаем предыдущие ошибки
-            input.classList.remove('is-invalid');
-
-            // Если поле пустое - валидно (необязательное поле)
-            if (!value.trim()) {
-                return true;
-            }
-
-            // Проверяем минимальную длину
-            if (phoneDigits.length < 10) {
-                input.classList.add('is-invalid');
-                return false;
-            }
-
-            // Проверяем, что номер начинается с 7 или 8 (для РФ)
-            if (phoneDigits.length === 11 && !['7', '8'].includes(phoneDigits[0])) {
-                input.classList.add('is-invalid');
-                return false;
-            }
-
-            // Проверяем, что если 10 цифр, это валидно
-            if (phoneDigits.length === 10) {
-                return true;
-            }
-
-            // Проверяем, что если 11 цифр и начинается с 7 или 8, это валидно
-            if (phoneDigits.length === 11 && ['7', '8'].includes(phoneDigits[0])) {
-                return true;
-            }
-
-            // Если не прошли проверки
-            input.classList.add('is-invalid');
-            return false;
-        }
-
-        // Функция для обновления поля компании
         function updateCompanyField() {
+            if (!userTypeSelect) return;
             const userType = userTypeSelect.value;
 
             if (userType === 'landlord') {
-                // Для арендодателя - обязательно
-                companyRequired.innerHTML = '*';
+                companyField.style.display = 'block';
                 companyInput.required = true;
-                companyHint.innerHTML = 'Обязательно для арендодателей';
-                companyInput.placeholder = 'Введите название вашей компании';
+                companyRequired.textContent = '*';
+                companyHint.textContent = 'Обязательно для арендодателей';
             } else {
-                // Для арендатора - необязательно
-                companyRequired.innerHTML = '';
+                companyField.style.display = 'none';
                 companyInput.required = false;
-                companyHint.innerHTML = 'Опционально (можно указать название организации)';
-                companyInput.placeholder = 'Опционально (название организации)';
             }
         }
 
-        // Инициализация маски телефона
+        function validatePhoneFilled(input) {
+            if (!input) return true;
+            const digits = input.value.replace(/\D/g, '');
+            if (digits.length < 10) {
+                input.classList.add('is-invalid');
+                return false;
+            }
+            input.classList.remove('is-invalid');
+            return true;
+        }
+
         if (phoneInput) {
-            // Применяем маску при вводе
-            phoneInput.addEventListener('input', function(e) {
+            phoneInput.addEventListener('input', function() {
                 applyPhoneMask(this);
+                this.classList.remove('is-invalid');
             });
-
-            // Применяем маску при загрузке страницы
-            if (phoneInput.value) {
-                applyPhoneMask(phoneInput);
-            }
-
-            // Валидация при потере фокуса
-            phoneInput.addEventListener('blur', function() {
-                validatePhone(this);
-            });
-
-            // Валидация при отправке формы
-            phoneInput.addEventListener('change', function() {
-                validatePhone(this);
-            });
+            if (phoneInput.value) applyPhoneMask(phoneInput);
+            phoneInput.addEventListener('blur', function() { validatePhoneFilled(this); });
         }
 
-        // Инициализация при загрузке
-        updateCompanyField();
-
-        // Обработчик изменения типа пользователя
         if (userTypeSelect) {
+            updateCompanyField();
             userTypeSelect.addEventListener('change', updateCompanyField);
         }
 
@@ -382,7 +304,6 @@
             form.addEventListener('submit', function(event) {
                 let isValid = true;
 
-                // Проверка согласия с условиями
                 if (!agreeCheckbox.checked) {
                     agreeCheckbox.classList.add('is-invalid');
                     isValid = false;
@@ -390,73 +311,67 @@
                     agreeCheckbox.classList.remove('is-invalid');
                 }
 
-                // Проверка телефона
-                if (phoneInput) {
-                    if (!validatePhone(phoneInput)) {
-                        isValid = false;
-                    } else {
-                        // Если телефон валиден, форматируем его для отправки
-                        const phoneDigits = phoneInput.value.replace(/\D/g, '');
-                        if (phoneDigits.length >= 10) {
-                            // Если номер с 7 или 8 в начале (11 цифр)
-                            let finalDigits = phoneDigits;
-                            if (phoneDigits.length === 11 && ['7', '8'].includes(phoneDigits[0])) {
-                                finalDigits = phoneDigits.substring(1); // Убираем первую цифру (7 или 8)
-                            }
-                            // Оставляем только 10 цифр
-                            finalDigits = finalDigits.substring(0, 10);
-                            // Форматируем в красивый вид
-                            const formattedPhone = `+7 (${finalDigits.substring(0,3)}) ${finalDigits.substring(3,6)}-${finalDigits.substring(6,8)}-${finalDigits.substring(8,10)}`;
-                            phoneInput.value = formattedPhone;
-                        }
-                    }
-                }
-
-                // Проверка компании для арендодателя
-                if (userTypeSelect && userTypeSelect.value === 'landlord' && !companyInput.value.trim()) {
+                if (userTypeSelect && userTypeSelect.value === 'landlord' && companyInput && !companyInput.value.trim()) {
                     companyInput.classList.add('is-invalid');
                     isValid = false;
                 } else if (companyInput) {
                     companyInput.classList.remove('is-invalid');
                 }
 
+                if (phoneInput && !validatePhoneFilled(phoneInput)) {
+                    isValid = false;
+                }
+
                 if (!isValid) {
                     event.preventDefault();
-                    event.stopPropagation();
-
-                    // Прокрутка к первой ошибке
                     const firstError = document.querySelector('.is-invalid');
-                    if (firstError) {
-                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        // Если ошибка в чекбоксе, фокусируемся на нем
-                        if (firstError === agreeCheckbox) {
-                            agreeCheckbox.focus();
-                        }
-                    }
+                    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-            });
-        }
-
-        // Очистка ошибки при клике на поле
-        if (phoneInput) {
-            phoneInput.addEventListener('focus', function() {
-                this.classList.remove('is-invalid');
-            });
-        }
-
-        if (companyInput) {
-            companyInput.addEventListener('focus', function() {
-                this.classList.remove('is-invalid');
             });
         }
 
         if (agreeCheckbox) {
             agreeCheckbox.addEventListener('change', function() {
-                if (this.checked) {
-                    this.classList.remove('is-invalid');
-                }
+                if (this.checked) this.classList.remove('is-invalid');
             });
         }
     });
 </script>
+
+<style>
+    /* Стили в едином стиле со страницей входа */
+    .auth-input-field {
+        border-radius: 8px;
+        padding: 10px 15px;
+    }
+    .input-group-text {
+        border-radius: 8px 0 0 8px;
+    }
+    .input-group .auth-input-field {
+        border-radius: 0 8px 8px 0;
+    }
+    .password-toggle .btn-outline-secondary {
+        border-radius: 0 8px 8px 0;
+    }
+    .auth-input-label {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        color: #1e293b;
+    }
+    .auth-card-body-soft {
+        background: #ffffff;
+    }
+    .auth-link-muted a {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .auth-link-muted a:hover {
+        text-decoration: underline;
+    }
+    select.form-select {
+        border-radius: 8px;
+        padding: 10px 15px;
+    }
+</style>
 {% endblock %}

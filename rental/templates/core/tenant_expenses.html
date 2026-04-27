@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои расходы — Простор{% endblock %}
+
+{% block content %}
+<div class="container py-4 py-lg-5">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Личный кабинет</a></li>
+            <li class="breadcrumb-item active">Расходы</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Расходы по бронированиям</h1>
+            <p class="text-secondary mb-0">Учитываются статусы «Оплачено», «Подтверждено», «Завершено». Дата — оплата или дата создания брони.</p>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill"><i class="bi bi-arrow-left me-1"></i>В кабинет</a>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <p class="small text-secondary text-uppercase fw-semibold mb-1">Всего</p>
+                    <p class="h3 fw-bold text-primary mb-0">{{ total_spent|floatformat:0 }} ₽</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 border-start border-4 border-success">
+                <div class="card-body p-4">
+                    <p class="small text-secondary text-uppercase fw-semibold mb-1">Текущий месяц</p>
+                    <p class="h3 fw-bold text-success mb-0">{{ spent_this_month|floatformat:0 }} ₽</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <p class="small text-secondary text-uppercase fw-semibold mb-1">Прошлый месяц</p>
+                    <p class="h3 fw-bold mb-0">{{ spent_prev_month|floatformat:0 }} ₽</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-3 px-4">
+                    <h2 class="h6 fw-bold mb-0">По месяцам</h2>
+                </div>
+                <div class="card-body p-0">
+                    {% if monthly_rows %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Месяц</th>
+                                    <th class="text-end pe-4">Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in monthly_rows %}
+                                <tr>
+                                    <td class="ps-4">{{ row.month|date:"F Y" }}</td>
+                                    <td class="text-end pe-4 fw-semibold">{{ row.total|floatformat:0 }} ₽</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted px-4 py-5 text-center mb-0">Нет данных по оплаченным бронированиям.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-3 px-4">
+                    <h2 class="h6 fw-bold mb-0">По статусам</h2>
+                </div>
+                <div class="card-body p-0">
+                    {% if by_status %}
+                    <ul class="list-group list-group-flush">
+                        {% for row in by_status %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-4">
+                            <span>
+                                {% if row.status == 'paid' %}Оплачено
+                                {% elif row.status == 'confirmed' %}Подтверждено
+                                {% elif row.status == 'completed' %}Завершено
+                                {% else %}{{ row.status }}{% endif %}
+                            </span>
+                            <span class="fw-semibold">{{ row.total|floatformat:0 }} ₽ <span class="text-secondary small">({{ row.cnt }})</span></span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted px-4 py-5 text-center mb-0">Нет данных.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mt-4">
+        <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+            <h2 class="h6 fw-bold mb-0">Последние операции</h2>
+            <a href="{% url 'my_bookings' %}" class="small">Все бронирования</a>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_lines %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle small">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Дата</th>
+                            <th>Помещение</th>
+                            <th>Статус</th>
+                            <th class="text-end pe-4">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in recent_lines %}
+                        <tr>
+                            <td class="ps-4 text-nowrap">{{ b.ref_date|date:"d.m.Y H:i" }}</td>
+                            <td><a href="{% url 'property_detail' b.property.slug %}">{{ b.property.title|truncatechars:40 }}</a></td>
+                            <td>{{ b.get_status_display }}</td>
+                            <td class="text-end pe-4 fw-semibold">{{ b.total_price|floatformat:0 }} ₽</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted px-4 py-5 text-center mb-0">Список пуст.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

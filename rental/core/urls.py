@@ -5,12 +5,16 @@ from . import views
 urlpatterns = [
     # Основные пути
     path('', views.home, name='home'),
+    path('help/', views.help_page, name='help'),
     path('register/', views.register, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='core/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
 
     # Личный кабинет
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard/expenses/', views.tenant_expenses, name='tenant_expenses'),
+    path('dashboard/revenue/', views.landlord_revenue, name='landlord_revenue'),
+    path('dashboard/platform-revenue/', views.admin_platform_revenue, name='admin_platform_revenue'),
 
     # Профиль
     path('profile/edit/', views.edit_profile, name='edit_profile'),
@@ -30,6 +34,7 @@ urlpatterns = [
     path('messages/property/<int:property_id>/', views.send_message, name='send_message_property'),
 
     # Для арендатора
+    path('my-bookings/export.csv', views.export_my_bookings_csv, name='export_my_bookings_csv'),
     path('my-bookings/', views.my_bookings, name='my_bookings'),
     path('my-favorites/', views.my_favorites, name='my_favorites'),
     path('bookings/<int:booking_id>/', views.booking_detail, name='booking_detail'),
@@ -40,6 +45,12 @@ urlpatterns = [
     path('bookings/<int:booking_id>/contract/download/', views.download_contract, name='download_contract'),
 
     path('messages/unread-count/', views.get_unread_messages_count, name='get_unread_messages_count'),
+
+    # Корзина (несколько бронирований подряд)
+    path('cart/', views.cart_detail, name='cart_detail'),
+    path('cart/add/<int:property_id>/', views.cart_add, name='cart_add'),
+    path('cart/remove/<int:item_id>/', views.cart_remove, name='cart_remove'),
+    path('cart/checkout/', views.checkout, name='checkout'),
 
     # Для арендодателя
     path('my-properties/', views.my_properties, name='my_properties'),

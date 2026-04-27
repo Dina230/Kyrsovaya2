@@ -7,37 +7,7 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-3">
-            <!-- Боковая панель -->
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    {% if user.avatar %}
-                        <img src="{{ user.avatar.url }}" class="rounded-circle mb-3" width="100" height="100" alt="Аватар">
-                    {% else %}
-                        <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle mb-3" width="100" height="100" alt="Аватар">
-                    {% endif %}
-                    <h5 class="card-title">{{ user.get_full_name }}</h5>
-                    <p class="text-muted">{{ user.email }}</p>
-                    <a href="{% url 'edit_profile' %}" class="btn btn-outline-primary btn-sm">Редактировать профиль</a>
-                </div>
-            </div>
-
-            <div class="list-group mb-4">
-                <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action active">
-                    <i class="fas fa-tachometer-alt"></i> Обзор
-                </a>
-                <a href="{% url 'my_bookings' %}" class="list-group-item list-group-item-action">
-                    <i class="fas fa-calendar-check"></i> Мои бронирования
-                </a>
-                <a href="{% url 'my_favorites' %}" class="list-group-item list-group-item-action">
-                    <i class="fas fa-heart"></i> Избранное
-                </a>
-                <a href="{% url 'edit_profile' %}" class="list-group-item list-group-item-action">
-                    <i class="fas fa-user-edit"></i> Профиль
-                </a>
-                <a href="{% url 'change_password' %}" class="list-group-item list-group-item-action">
-                    <i class="fas fa-key"></i> Сменить пароль
-                </a>
-            </div>
+            {% include 'core/includes/user_sidebar.html' %}
 
             <!-- Статистика -->
             <div class="card">

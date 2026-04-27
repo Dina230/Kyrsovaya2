@@ -8,7 +8,7 @@
 
 Также надо добавить календарь занятости по часам и по дням(3 месяца)
 
-Улучшить расчет прти бронировании (выгоднее взять на день и тд)
+Улучшить расчет пути бронировании (выгоднее взять на день и тд)
 
 Улучшение Дизайн: (Белый + Синий + Зеленый)
 
@@ -17,3 +17,25 @@
 Дизайн: (Белый + Синий + Зеленый)
 
 По оплате нужен чек об оплате (хз)
+
+## Запуск с SQLite3 (PowerShell)
+
+### 1) Установить/обновить зависимости
+
+```powershell
+cd .\rental
+& "..\.venv\Scripts\python.exe" -m pip install -r ".\requirements.txt"
+```
+
+### 2) Применить миграции
+
+```powershell
+& "..\.venv\Scripts\python.exe" manage.py migrate
+```
+
+### 3) Проверка
+
+```powershell
+& "..\.venv\Scripts\python.exe" manage.py check
+& "..\.venv\Scripts\python.exe" manage.py runserver
+```

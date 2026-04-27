@@ -6,15 +6,20 @@ from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmVie
 from django.http import JsonResponse, HttpResponse, FileResponse
 from django.utils import timezone
 from django.core.paginator import Paginator
-from django.db.models import Q, Count, Avg, Sum, F
-from django.urls import reverse_lazy
+from django.db.models import Q, Count, Avg, Sum, F, DateTimeField
+from django.db.models.functions import TruncMonth, Coalesce
+from django.urls import reverse, reverse_lazy
 from django.conf import settings
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
+import calendar
 import csv
 import io
 import os
+import re
 import logging
+from itertools import groupby
+from xml.sax.saxutils import escape
 
 # Импорты моделей
 from .models import (
@@ -24,6 +29,7 @@ from .models import (
 # Импорты форм
 from .forms import (
     CustomUserCreationForm, CustomUserChangeForm,
+    PasswordChangeCustomForm,
     PropertyForm, BookingForm, ReviewForm,
     ContactForm, CartBookingForm, CheckoutForm,
     AdminUserEditForm, AdminPropertyEditForm,
@@ -33,6 +39,91 @@ from .forms import (
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
+
+
+def add_calendar_months(d, months):
+    """Сдвиг даты на N месяцев (для календаря)."""
+    m = d.month - 1 + months
+    y = d.year + m // 12
+    m = m % 12 + 1
+    day = min(d.day, calendar.monthrange(y, m)[1])
+    return datetime(y, m, day).date()
+
+
+def booking_overlaps_calendar_day(booking, day):
+    """Пересекается ли бронирование с календарным днём (локальная дата)."""
+    day_start = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+    day_end = day_start + timedelta(days=1)
+    return booking.end_datetime > day_start and booking.start_datetime < day_end
+
+
+def build_property_occupancy(property_obj, start_date, num_days, bookings_qs=None):
+    """
+    Занятость по дням и по часам для интервала [start_date, start_date + num_days).
+    bookings_qs — необязательный список/QuerySet бронирований (уже отфильтрованный).
+    """
+    if bookings_qs is None:
+        end_d = start_date + timedelta(days=num_days)
+        range_start = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
+        range_end = timezone.make_aware(datetime.combine(end_d, datetime.min.time()))
+        bookings_qs = property_obj.bookings.filter(
+            status__in=['pending', 'paid', 'confirmed'],
+            end_datetime__gt=range_start,
+            start_datetime__lt=range_end,
+        ).select_related('tenant')
+    bookings_list = list(bookings_qs)
+    today = timezone.now().date()
+    occupancy_days = []
+    hourly_by_date = {}
+    for i in range(num_days):
+        d = start_date + timedelta(days=i)
+        overlapping = [b for b in bookings_list if booking_overlaps_calendar_day(b, d)]
+        count = len(overlapping)
+        level = min(3, count)
+        occupancy_days.append({
+            'date': d,
+            'count': count,
+            'level': level,
+            'is_past': d < today,
+            'is_today': d == today,
+        })
+        busy_hours = []
+        for h in range(24):
+            slot_start = timezone.make_aware(datetime.combine(d, dt_time(h, 0)))
+            slot_end = slot_start + timedelta(hours=1)
+            if any(b.end_datetime > slot_start and b.start_datetime < slot_end for b in overlapping):
+                busy_hours.append(h)
+        hourly_by_date[d.isoformat()] = busy_hours
+    return occupancy_days, hourly_by_date, bookings_list
+
+
+def occupancy_days_to_month_blocks(occupancy_days):
+    """
+    Группирует плоский список дней занятости в блоки по календарным месяцам
+    с сеткой 7×N (дни недели Пн–Вс) для компактного отображения на карточке.
+    """
+    if not occupancy_days:
+        return []
+    month_names = [
+        '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+    ]
+    blocks = []
+    for (y, m), iterator in groupby(
+        occupancy_days, key=lambda x: (x['date'].year, x['date'].month)
+    ):
+        days = list(iterator)
+        first = days[0]['date']
+        cells = [None] * first.weekday()
+        cells.extend(days)
+        while len(cells) % 7 != 0:
+            cells.append(None)
+        weeks = [cells[i:i + 7] for i in range(0, len(cells), 7)]
+        blocks.append({
+            'title': f'{month_names[m]} {y}',
+            'weeks': weeks,
+        })
+    return blocks
 
 
 # ============================================================================
@@ -121,198 +212,410 @@ def create_message_notification(message):
     )
 
 
+_CONTRACT_PDF_FONT_REGISTERED = None  # кэш: имя шрифта ReportLab для кириллицы
+
+
+def _get_contract_pdf_font_name():
+    """
+    Подключает TTF с кириллицей для reportlab (один раз).
+    Порядок: DejaVu в проекте → Arial (Windows) → системные DejaVu/Liberation (Linux).
+    Если ничего не найдено — Helvetica (кириллица может отображаться некорректно).
+    """
+    global _CONTRACT_PDF_FONT_REGISTERED
+    if _CONTRACT_PDF_FONT_REGISTERED is not None:
+        return _CONTRACT_PDF_FONT_REGISTERED
+
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    base = settings.BASE_DIR
+    candidates = [
+        os.path.join(base, 'dejavu-sans-book.ttf'),
+        os.path.join(base, 'fonts', 'DejaVuSans.ttf'),
+    ]
+    windir = os.environ.get('WINDIR', '') or os.environ.get('SystemRoot', '')
+    if windir:
+        candidates.extend([
+            os.path.join(windir, 'Fonts', 'arial.ttf'),
+            os.path.join(windir, 'Fonts', 'Arial.ttf'),
+        ])
+    candidates.extend([
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+    ])
+
+    name = 'Helvetica'
+    for font_path in candidates:
+        if not font_path or not os.path.isfile(font_path):
+            continue
+        try:
+            pdfmetrics.registerFont(TTFont('ContractPdfSans', font_path))
+            name = 'ContractPdfSans'
+            logger.info('PDF договор: используется шрифт %s', font_path)
+            break
+        except Exception as err:
+            logger.warning('Не удалось подключить шрифт %s: %s', font_path, err)
+
+    if name == 'Helvetica':
+        logger.warning(
+            'Для корректной кириллицы в PDF положите DejaVuSans.ttf в папку fonts/ у проекта '
+            'или используйте систему с Arial/DejaVu (см. документацию DejaVu).'
+        )
+
+    _CONTRACT_PDF_FONT_REGISTERED = name
+    return name
+
+
+def _contract_party_block(user, party_label):
+    """Текст стороны для шапки договора (физ./юр. лицо упрощённо)."""
+    name = user.get_full_name_or_username()
+    company = (user.company_name or '').strip()
+    doc_basis = 'Устава / свидетельства о регистрации' if company else 'паспорта гражданина РФ'
+    rep = f'{name} (самостоятельно)' if not company else f'{name}, представитель организации'
+    org_line = f'{company}, ' if company else ''
+    return (
+        f'{escape(org_line)}именуем__ в дальнейшем «{party_label}», в лице {escape(rep)}, '
+        f'действующ___ на основании {escape(doc_basis)}'
+    )
+
+
 def generate_contract_pdf(booking):
     """
-    Генерация PDF договора для бронирования
-    Требуется установка: pip install reportlab
+    PDF договора аренды нежилого помещения (структура по ГОСТ Р 7.0.97-2016, сокращённый текст).
+    Данные подставляются из бронирования и профилей; реквизиты ИНН/КПП и кадастр — под заполнение вручную.
     """
     try:
-        from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.units import mm
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-        from reportlab.lib import colors
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
         from django.core.files.base import ContentFile
 
-        # Создаем буфер
+        contract, _ = Contract.objects.get_or_create(booking=booking)
+        contract.save()
+        contract_number = contract.contract_number
+
         buffer = io.BytesIO()
-        # Создаем PDF документ
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            leftMargin=18 * mm,
+            rightMargin=18 * mm,
+            topMargin=14 * mm,
+            bottomMargin=14 * mm,
+        )
 
-        # === РЕГИСТРАЦИЯ ШРИФТА С КИРИЛЛИЦЕЙ ===
-        # Путь к шрифту в корне проекта
-        font_path = os.path.join(settings.BASE_DIR, 'dejavu-sans-book.ttf')
+        font_name = _get_contract_pdf_font_name()
 
-        if os.path.exists(font_path):
-            # Регистрируем шрифт
-            pdfmetrics.registerFont(TTFont('DejaVuSans', font_path))
-            font_name = 'DejaVuSans'
-        else:
-            logger.error(f"Шрифт не найден: {font_path}")
-            font_name = 'Helvetica'  # Запасной вариант (без кириллицы)
-
-        # Создаем стили с кириллическим шрифтом
         styles = getSampleStyleSheet()
-
-        # Добавляем свои стили с правильным шрифтом
         styles.add(ParagraphStyle(
             name='NormalCyrillic',
             parent=styles['Normal'],
             fontName=font_name,
-            fontSize=10,
-            leading=12,
-            alignment=0
+            fontSize=9,
+            leading=11,
+            alignment=0,
         ))
-
         styles.add(ParagraphStyle(
             name='Heading2Cyrillic',
             parent=styles['Heading2'],
             fontName=font_name,
-            fontSize=12,
-            leading=14,
-            spaceBefore=12,
-            spaceAfter=6,
-            alignment=0
+            fontSize=11,
+            leading=13,
+            spaceBefore=10,
+            spaceAfter=4,
+            alignment=0,
         ))
-
         styles.add(ParagraphStyle(
             name='TitleCyrillic',
             parent=styles['Title'],
             fontName=font_name,
-            fontSize=14,
-            leading=16,
-            spaceAfter=12,
-            alignment=1  # По центру
+            fontSize=13,
+            leading=15,
+            spaceAfter=8,
+            alignment=1,
         ))
-        # ===========================================
+        styles.add(ParagraphStyle(
+            name='SmallCyrillic',
+            parent=styles['Normal'],
+            fontName=font_name,
+            fontSize=8,
+            leading=10,
+            alignment=4,  # justify
+        ))
+
+        def P(text):
+            return Paragraph(escape(str(text)), styles['NormalCyrillic'])
+
+        prop = booking.property
+        landlord = prop.landlord
+        tenant = booking.tenant
+
+        type_labels = dict(Property.PROPERTY_TYPE_CHOICES)
+        purpose = type_labels.get(prop.property_type, prop.property_type)
+        amenities_qs = prop.amenities.all()[:20]
+        amenities_txt = ', '.join(a.name for a in amenities_qs) if amenities_qs.exists() else 'согласно описанию объекта на платформе «Простор»'
+        floor_txt = str(prop.floor) if prop.floor is not None else '_______'
+        payment_labels = dict(Booking._meta.get_field('payment_method').choices)
+        pay_method = payment_labels.get(booking.payment_method, booking.payment_method)
+
+        now_local = timezone.localtime(timezone.now())
+
+        start_l = timezone.localtime(booking.start_datetime)
+        end_l = timezone.localtime(booking.end_datetime)
 
         elements = []
+        elements.append(Paragraph(
+            escape(f'ДОГОВОР АРЕНДЫ НЕЖИЛОГО ПОМЕЩЕНИЯ № {contract_number}'),
+            styles['TitleCyrillic'],
+        ))
+        elements.append(Spacer(1, 4))
+        elements.append(P(f'г. {prop.city or "_______________"}'))
+        elements.append(P(
+            f'«{now_local.day:02d}» {_contract_month_name(now_local.month)} {now_local.year} г.'
+        ))
+        elements.append(Spacer(1, 8))
 
-        # Заголовок
-        elements.append(Paragraph(f"ДОГОВОР АРЕНДЫ №{booking.booking_id}", styles['TitleCyrillic']))
-        elements.append(Spacer(1, 12))
+        intro = (
+            f'{_contract_party_block(landlord, "Арендодатель")}, с одной стороны, и '
+            f'<br/>{_contract_party_block(tenant, "Арендатор")}, с другой стороны, '
+            f'совместно именуемые «Стороны», заключили настоящий Договор о нижеследующем:'
+        )
+        elements.append(Paragraph(intro, styles['NormalCyrillic']))
+        elements.append(Spacer(1, 8))
 
-        # Дата
-        elements.append(Paragraph(f"г. Москва, {timezone.now().strftime('%d.%m.%Y')}", styles['NormalCyrillic']))
-        elements.append(Spacer(1, 24))
+        # --- 1. Предмет ---
+        elements.append(Paragraph('<b>1. ПРЕДМЕТ ДОГОВОРА</b>', styles['Heading2Cyrillic']))
+        elements.append(P(
+            f'1.1. Арендодатель передает, а Арендатор принимает во временное владение и пользование '
+            f'нежилое помещение (далее — «Помещение»), расположенное по адресу: {prop.address}, '
+            f'{prop.city}, общей площадью {prop.area} кв. м, этаж {floor_txt}, '
+            f'кадастровый номер ________________________ (при наличии).'
+        ))
+        elements.append(P(
+            f'1.2. Помещение предоставляется для использования в целях: {purpose} '
+            f'(коммерческая аренда через платформу «Простор»).'
+        ))
+        elements.append(P(
+            f'1.3. Характеристики: назначение — {purpose}; состояние — пригодно для использования по назначению '
+            f'(по данным карточки объекта); оснащение — {amenities_txt}.'
+        ))
+        elements.append(P(
+            '1.4. Передача Помещения оформляется Актом приема-передачи (Приложение № 1), '
+            'являющимся неотъемлемой частью настоящего Договора.'
+        ))
 
-        # Информация о сторонах
-        landlord = booking.property.landlord
-        tenant = booking.tenant
-        landlord_info = f"Арендодатель: {landlord.get_full_name_or_username()}, {landlord.email or 'Email не указан'}, {landlord.phone or 'Тел. не указан'}"
-        tenant_info = f"Арендатор: {tenant.get_full_name_or_username()}, {tenant.email or 'Email не указан'}, {tenant.phone or 'Тел. не указан'}"
+        # --- 2. Срок ---
+        elements.append(Paragraph('<b>2. СРОК ДЕЙСТВИЯ ДОГОВОРА</b>', styles['Heading2Cyrillic']))
+        elements.append(P(
+            '2.1. Договор заключен на срок фактического пользования Помещением в интервале, указанном в п. 2.3.'
+        ))
+        elements.append(P('2.2. Договор вступает в силу с даты подписания Сторонами (в т. ч. путём акцепта на платформе).'))
+        elements.append(P(
+            f'2.3. Срок аренды: начало — «{start_l.day:02d}» {_contract_month_name(start_l.month)} {start_l.year} г. '
+            f'с {start_l.strftime("%H")} ч. {start_l.strftime("%M")} мин.; '
+            f'окончание — «{end_l.day:02d}» {_contract_month_name(end_l.month)} {end_l.year} г. '
+            f'до {end_l.strftime("%H")} ч. {end_l.strftime("%M")} мин.'
+        ))
+        elements.append(P('2.4. По окончании срока Арендатор обязан освободить Помещение в день окончания аренды.'))
 
-        elements.append(Paragraph("1. СТОРОНЫ ДОГОВОРА", styles['Heading2Cyrillic']))
-        elements.append(Spacer(1, 6))
-        elements.append(Paragraph(landlord_info, styles['NormalCyrillic']))
-        elements.append(Paragraph(tenant_info, styles['NormalCyrillic']))
-        elements.append(Spacer(1, 12))
+        # --- 3. Плата ---
+        elements.append(Paragraph('<b>3. АРЕНДНАЯ ПЛАТА И ПОРЯДОК РАСЧЁТОВ</b>', styles['Heading2Cyrillic']))
+        ph = prop.price_per_hour
+        pd_ = prop.price_per_day
+        pw = prop.price_per_week
+        pm = prop.price_per_month
+        elements.append(P(
+            f'3.1. Ориентировочные тарифы: за 1 час — {ph} руб.; '
+            f'за 1 день — {pd_ if pd_ is not None else "—"}; '
+            f'за 1 неделю — {pw if pw is not None else "—"}; '
+            f'за 1 месяц — {pm if pm is not None else "—"} (при указании в карточке объекта).'
+        ))
+        elements.append(P(
+            f'3.2. Общая стоимость аренды по настоящему Договору (бронирование № {booking.booking_id}): '
+            f'{booking.total_price} руб. (сумма прописью: ________________________________).'
+        ))
+        elements.append(P(
+            f'3.3. Расчёты: предоплата в размере 100% до начала использования Помещения (если иное не согласовано). '
+            f'Способ оплаты: {pay_method}.'
+        ))
+        elements.append(P('3.4. Датой оплаты считается дата поступления денежных средств Арендодателю.'))
+        elements.append(P(
+            '3.5–3.6. Коммунальные услуги и дополнительные расходы определяются соглашением Сторон / '
+            'условиями объекта; при отсутствии особых условий — по фактическому потреблению и тарифам поставщиков.'
+        ))
 
-        # Предмет договора
-        elements.append(Paragraph("2. ПРЕДМЕТ ДОГОВОРА", styles['Heading2Cyrillic']))
-        elements.append(Spacer(1, 6))
-        elements.append(
-            Paragraph(f"Арендодатель передает, а Арендатор принимает во временное владение и пользование помещение:",
-                      styles['NormalCyrillic']))
-        elements.append(Paragraph(f"Название: {booking.property.title}", styles['NormalCyrillic']))
-        elements.append(
-            Paragraph(f"Адрес: {booking.property.address}, {booking.property.city}", styles['NormalCyrillic']))
-        elements.append(
-            Paragraph(f"Площадь: {booking.property.area} кв.м., вместимость: {booking.property.capacity} чел.",
-                      styles['NormalCyrillic']))
-        elements.append(Spacer(1, 12))
+        # --- 4. Права и обязанности (сжато) ---
+        elements.append(Paragraph('<b>4. ПРАВА И ОБЯЗАННОСТИ СТОРОН</b>', styles['Heading2Cyrillic']))
+        elements.append(P(
+            '4.1. Арендодатель обязуется: передать Помещение в состоянии, пригодном для использования; '
+            'обеспечить доступ; не чинить неправомерных препятствий; информировать о правах третьих лиц (при наличии).'
+        ))
+        elements.append(P(
+            '4.2. Арендодатель вправе: проверять состояние Помещения с предварительным уведомлением; '
+            'расторгнуть Договор при существенном нарушении условий Арендатором.'
+        ))
+        elements.append(P(
+            '4.3. Арендатор обязуется: использовать Помещение по назначению; своевременно вносить плату; '
+            'соблюдать правила пожарной безопасности и санитарные нормы; не производить перепланировку без согласия; '
+            'возместить ущерб при порче; вернуть Помещение с учётом нормального износа.'
+        ))
+        elements.append(P(
+            '4.4. Арендатор вправе: пользоваться Помещением в соответствии с Договором; '
+            'субаренда — только с письменного согласия Арендодателя.'
+        ))
 
-        # Срок аренды
-        elements.append(Paragraph("3. СРОК АРЕНДЫ", styles['Heading2Cyrillic']))
-        elements.append(Spacer(1, 6))
-        start_str = booking.start_datetime.strftime('%d.%m.%Y %H:%M')
-        end_str = booking.end_datetime.strftime('%d.%m.%Y %H:%M')
-        elements.append(Paragraph(f"Начало: {start_str}", styles['NormalCyrillic']))
-        elements.append(Paragraph(f"Окончание: {end_str}", styles['NormalCyrillic']))
-        elements.append(Spacer(1, 12))
+        # --- 5–9 сокращённо ---
+        elements.append(Paragraph('<b>5. ОТВЕТСТВЕННОСТЬ СТОРОН</b>', styles['Heading2Cyrillic']))
+        elements.append(P(
+            '5.1. За просрочку арендной платы может взиматься пеня в размере _____ % в день от просроченной суммы '
+            '(конкретный размер определяется дополнительным соглашением).'
+        ))
+        elements.append(P('5.2–5.4. Иные случаи ответственности — в соответствии с законодательством РФ и настоящим Договором.'))
 
-        # Платежи
-        elements.append(Paragraph("4. ПЛАТЕЖИ", styles['Heading2Cyrillic']))
-        elements.append(Spacer(1, 6))
-        elements.append(Paragraph(f"Общая стоимость аренды: {booking.total_price} рублей", styles['NormalCyrillic']))
-        elements.append(
-            Paragraph(f"Статус оплаты: {'Оплачено' if booking.is_paid else 'Ожидает оплаты'}",
-                      styles['NormalCyrillic']))
-        elements.append(Spacer(1, 12))
+        elements.append(Paragraph('<b>6. ФОРС-МАЖОР</b>', styles['Heading2Cyrillic']))
+        elements.append(P(
+            '6.1–6.3. Стороны освобождаются от ответственности при обстоятельствах непреодолимой силы при условии '
+            'уведомления другой Стороны в разумный срок; сроки исполнения сдвигаются соразмерно.'
+        ))
 
-        # Подписи - ИСПРАВЛЕННАЯ ТАБЛИЦА
-        elements.append(Paragraph("5. ПОДПИСИ СТОРОН", styles['Heading2Cyrillic']))
-        elements.append(Spacer(1, 30))
+        elements.append(Paragraph('<b>7. ИЗМЕНЕНИЕ И РАСТОРЖЕНИЕ</b>', styles['Heading2Cyrillic']))
+        elements.append(P(
+            '7.1. Изменения — по письменным дополнительным соглашениям. 7.2. Досрочное расторжение — по соглашению Сторон, '
+            'а также по основаниям, предусмотренным ГК РФ и настоящим Договором (существенные нарушения, неисполнение оплаты и др.).'
+        ))
+        elements.append(P('7.3. Уведомление о расторжении направляется за _____ календарных дней (подлежит согласованию Сторонами).'))
 
-        # Создаем таблицу с правильными отступами
-        data = [
-            ['Арендодатель:', '______________________', 'Арендатор:', '______________________'],
-            ['', f'({landlord.get_full_name_or_username()})', '', f'({tenant.get_full_name_or_username()})']
+        elements.append(Paragraph('<b>8. СПОРЫ</b>', styles['Heading2Cyrillic']))
+        elements.append(P(
+            '8.1–8.3. Споры разрешаются путём переговоров; при недостижении согласия — в суде по месту нахождения Помещения '
+            'после соблюдения претензионного порядка (срок ответа на претензию _____ дней).'
+        ))
+
+        elements.append(Paragraph('<b>9. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ</b>', styles['Heading2Cyrillic']))
+        elements.append(P(
+            '9.1. Договор составлен в двух экземплярах. 9.2. Во всём, что не урегулировано, применяется законодательство РФ '
+            '(гл. 34 ГК РФ «Аренда»). 9.3. Приложения являются неотъемлемой частью Договора.'
+        ))
+
+        # --- 10. Реквизиты (таблица) ---
+        elements.append(Paragraph('<b>10. АДРЕСА, РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</b>', styles['Heading2Cyrillic']))
+        elements.append(Spacer(1, 4))
+
+        def cell(txt):
+            return Paragraph(escape(str(txt)), styles['NormalCyrillic'])
+
+        req_data = [
+            [cell('<b>Арендодатель</b>'), cell('<b>Арендатор</b>')],
+            [cell(f'ФИО / наименование: {landlord.get_full_name_or_username()}'
+                  + (f', {landlord.company_name}' if landlord.company_name else '')),
+             cell(f'ФИО / наименование: {tenant.get_full_name_or_username()}'
+                  + (f', {tenant.company_name}' if tenant.company_name else ''))],
+            [cell(f'Тел.: {landlord.phone or "________________"}'),
+             cell(f'Тел.: {tenant.phone or "________________"}')],
+            [cell(f'Email: {landlord.email or "________________"}'),
+             cell(f'Email: {tenant.email or "________________"}')],
+            [cell('ИНН: ____________  КПП: ____________  ОГРН: ____________'),
+             cell('ИНН: ____________  КПП: ____________  ОГРН: ____________')],
+            [cell('Банк / БИК / р/с / к/с: ________________________________'),
+             cell('Банк / БИК / р/с / к/с: ________________________________')],
         ]
-        table = Table(data, colWidths=[50 * mm, 55 * mm, 50 * mm, 55 * mm])
-        table.setStyle(TableStyle([
-            ('ALIGN', (1, 0), (1, 0), 'CENTER'),
-            ('ALIGN', (3, 0), (3, 0), 'CENTER'),
-            ('ALIGN', (1, 1), (1, 1), 'CENTER'),
-            ('ALIGN', (3, 1), (3, 1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('FONT', (0, 0), (-1, -1), font_name),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('LEFTPADDING', (0, 0), (-1, -1), 5),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        req_tbl = Table(req_data, colWidths=[87 * mm, 87 * mm])
+        req_tbl.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('BOX', (0, 0), (-1, -1), 0.5, (0.75, 0.75, 0.75)),
+            ('INNERGRID', (0, 0), (-1, -1), 0.25, (0.85, 0.85, 0.85)),
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         ]))
-        elements.append(table)
+        elements.append(req_tbl)
+        elements.append(Spacer(1, 12))
 
-        # Сборка PDF
+        sig_data = [
+            [cell('_________________ / _____________ /'), cell('_________________ / _____________ /')],
+            [cell('М.П.'), cell('М.П.')],
+        ]
+        sig_tbl = Table(sig_data, colWidths=[87 * mm, 87 * mm])
+        sig_tbl.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONT', (0, 0), (-1, -1), font_name),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(sig_tbl)
+
+        # --- Приложение 1 ---
+        elements.append(PageBreak())
+        elements.append(Paragraph(escape('Приложение № 1'), styles['Heading2Cyrillic']))
+        elements.append(Paragraph(escape('АКТ ПРИЕМА-ПЕРЕДАЧИ ПОМЕЩЕНИЯ'), styles['TitleCyrillic']))
+        elements.append(Spacer(1, 6))
+        elements.append(P(f'г. {prop.city or "_______________"}'))
+        elements.append(P(
+            f'«{now_local.day:02d}» {_contract_month_name(now_local.month)} {now_local.year} г.'
+        ))
+        elements.append(Spacer(1, 6))
+        elements.append(Paragraph(
+            f'{_contract_party_block(landlord, "Арендодатель")}, с одной стороны, и '
+            f'<br/>{_contract_party_block(tenant, "Арендатор")}, с другой стороны, составили настоящий Акт о нижеследующем:',
+            styles['NormalCyrillic'],
+        ))
+        elements.append(Spacer(1, 6))
+        elements.append(P(
+            f'1. Арендодатель передал, а Арендатор принял нежилое помещение по адресу: {prop.address}, {prop.city}.'
+        ))
+        elements.append(P('2. Техническое состояние на момент передачи: пригодно для использования по назначению (осмотр Сторон).'))
+        elements.append(P(f'3. Оснащение (по данным объекта): {amenities_txt}.'))
+        elements.append(P('4. Недостатки при осмотре: ________________________________________________.'))
+        elements.append(P('5. Показания приборов учёта: электроэнергия _____; вода _____; тепло _____ (при наличии).'))
+        elements.append(P('6. Претензий к состоянию Помещения Стороны не имеют / имеют (нужное подчеркнуть вручную).'))
+        elements.append(Spacer(1, 16))
+        app_sig = Table([
+            [cell('Арендодатель: _________________ / _____________ /'),
+             cell('Арендатор: _________________ / _____________ /')],
+            [cell('М.П.'), cell('М.П.')],
+        ], colWidths=[87 * mm, 87 * mm])
+        app_sig.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(app_sig)
+
+        elements.append(Spacer(1, 14))
+        elements.append(Paragraph(
+            escape(
+                'Примечание: текст договора ориентирован на требования к оформлению организационно-распорядительной '
+                'документации (ГОСТ Р 7.0.97-2016) и общие положения главы 34 ГК РФ «Аренда». '
+                'Юридически значимые реквизиты и суммы прописью Стороны дополняют вручную.'
+            ),
+            styles['SmallCyrillic'],
+        ))
+
         doc.build(elements)
         buffer.seek(0)
 
-        # Сохраняем в модель
-        contract, created = Contract.objects.get_or_create(booking=booking)
-        if not created and contract.pdf_file:
+        if contract.pdf_file:
             contract.pdf_file.delete(save=False)
 
-        filename = f"contract_{booking.booking_id}.pdf"
+        safe_id = re.sub(r'[^\w\-]', '_', str(booking.booking_id))
+        filename = f"contract_{safe_id}.pdf"
         contract.pdf_file.save(filename, ContentFile(buffer.getvalue()), save=True)
 
         return contract
 
-    except ImportError:
-        # Если reportlab не установлен, создаем текстовый файл
-        contract, created = Contract.objects.get_or_create(booking=booking)
-        landlord = booking.property.landlord
-        tenant = booking.tenant
-        content = f"""
-ДОГОВОР АРЕНДЫ №{booking.booking_id}
-Дата: {timezone.now().strftime('%d.%m.%Y')}
+    except ImportError as e:
+        raise RuntimeError(
+            'Для договора в формате PDF установите пакет: pip install reportlab'
+        ) from e
 
-1. СТОРОНЫ ДОГОВОРА
-Арендодатель: {landlord.get_full_name_or_username()}, {landlord.email}, {landlord.phone}
-Арендатор: {tenant.get_full_name_or_username()}, {tenant.email}, {tenant.phone}
 
-2. ПРЕДМЕТ ДОГОВОРА
-Помещение: {booking.property.title}
-Адрес: {booking.property.address}, {booking.property.city}
-
-3. СРОК АРЕНДЫ
-С {booking.start_datetime.strftime('%d.%m.%Y %H:%M')} по {booking.end_datetime.strftime('%d.%m.%Y %H:%M')}
-
-4. ПЛАТЕЖИ
-Стоимость: {booking.total_price} рублей
-
-5. ПОДПИСИ СТОРОН
-Арендодатель: ______________________
-Арендатор: ______________________
-"""
-        from django.core.files.base import ContentFile
-        filename = f"contract_{booking.booking_id}.txt"
-        contract.pdf_file.save(filename, ContentFile(content.encode('utf-8')), save=True)
-        return contract
+def _contract_month_name(m):
+    months = (
+        '', 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+        'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+    )
+    return months[m] if 1 <= m <= 12 else str(m)
 
 
 def auto_cancel_expired_bookings():
@@ -344,6 +647,112 @@ def auto_cancel_expired_bookings():
     return count
 
 
+def _preserve_get_query(request, exclude_page=True, exclude_keys=None):
+    q = request.GET.copy()
+    if exclude_page:
+        q.pop('page', None)
+    if exclude_keys:
+        for k in exclude_keys:
+            q.pop(k, None)
+    return q.urlencode()
+
+
+def _filter_tenant_bookings_queryset(request, base_qs):
+    """Фильтры страницы «Мои бронирования» (список и экспорт CSV)."""
+    bookings = base_qs.order_by('-created_at')
+    status_filter = request.GET.get('status')
+    if status_filter:
+        bookings = bookings.filter(status=status_filter)
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        bookings = _filter_icase_contains(
+            bookings,
+            ['booking_id', 'property__title', 'property__city'],
+            q,
+            prefix='mbq',
+        )
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    if date_from:
+        bookings = bookings.filter(start_datetime__date__gte=date_from)
+    if date_to:
+        bookings = bookings.filter(start_datetime__date__lte=date_to)
+    sort = request.GET.get('sort') or 'newest'
+    if sort == 'oldest':
+        bookings = bookings.order_by('start_datetime')
+    elif sort == 'price_desc':
+        bookings = bookings.order_by('-total_price')
+    elif sort == 'price_asc':
+        bookings = bookings.order_by('total_price')
+    else:
+        bookings = bookings.order_by('-created_at')
+    return bookings
+
+
+# Статусы бронирований, по которым учитываются расходы арендатора / доход арендодателя
+def _paid_like_statuses():
+    return ['paid', 'confirmed', 'completed']
+
+
+def _is_platform_admin(user):
+    """Доступ к кастомной админке: staff или тип пользователя «Администратор»."""
+    return bool(getattr(user, 'is_staff', False) or getattr(user, 'user_type', None) == 'admin')
+
+
+def _unicode_case_variants(s):
+    """
+    Набор вариантов регистра для поиска (кириллица и латиница).
+    Нужен потому что в SQLite функция LOWER() в SQL не меняет регистр кириллицы,
+    а LIKE с кириллицей остаётся чувствительным к регистру.
+    """
+    s = (s or '').strip()
+    if not s:
+        return []
+    variants = {
+        s,
+        s.lower(),
+        s.upper(),
+        s.title(),
+        s.capitalize(),
+    }
+    if len(s) > 1:
+        variants.add(s[0].upper() + s[1:].lower())
+        variants.add(s[0].lower() + s[1:].upper())
+    return list({v for v in variants if v})
+
+
+def _filter_icase_contains(queryset, field_paths, q, prefix='ic'):
+    """
+    Поиск подстроки без учёта регистра (в т.ч. кириллица на SQLite).
+    Строит OR из __icontains по нескольким вариантам строки (title/lower/upper…).
+    prefix оставлен для совместимости вызовов, не используется.
+    """
+    _ = prefix
+    q = (q or '').strip()
+    if not q or not field_paths:
+        return queryset
+    cond = Q()
+    for v in _unicode_case_variants(q):
+        for path in field_paths:
+            cond |= Q(**{f'{path}__icontains': v})
+    return queryset.filter(cond)
+
+
+def _month_range(year, month):
+    """Начало месяца и первый момент следующего месяца (для __lt)."""
+    start = datetime(year, month, 1, tzinfo=timezone.get_current_timezone())
+    if month == 12:
+        end = datetime(year + 1, 1, 1, tzinfo=timezone.get_current_timezone())
+    else:
+        end = datetime(year, month + 1, 1, tzinfo=timezone.get_current_timezone())
+    return start, end
+
+
+def _calendar_month_bounds(dt):
+    """Границы календарного месяца для aware datetime dt."""
+    return _month_range(dt.year, dt.month)
+
+
 # ============================================================================
 # ПУБЛИЧНЫЕ СТРАНИЦЫ
 # ============================================================================
@@ -358,11 +767,27 @@ def home(request):
         is_featured=True
     ).select_related('landlord', 'category')[:5]
 
+    recently_viewed = []
+    raw_ids = request.session.get('recently_viewed_properties') or []
+    if isinstance(raw_ids, list) and raw_ids:
+        qs = Property.objects.filter(
+            id__in=raw_ids[:12],
+            status='active',
+        ).select_related('landlord', 'category').prefetch_related('images')
+        order_map = {pid: i for i, pid in enumerate(raw_ids)}
+        recently_viewed = sorted(qs, key=lambda p: order_map.get(p.id, 999))[:8]
+
     context = {
         'properties': properties,
+        'recently_viewed': recently_viewed,
         'title': 'Аренда коммерческих помещений'
     }
     return render(request, 'core/home.html', context)
+
+
+def help_page(request):
+    """Справка и ответы на частые вопросы."""
+    return render(request, 'core/help.html', {'title': 'Справка'})
 
 
 def property_list(request):
@@ -378,17 +803,60 @@ def property_list(request):
     category = request.GET.get('category')
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
+    q = (request.GET.get('q') or '').strip()
+    min_area = request.GET.get('min_area')
+    max_area = request.GET.get('max_area')
+    min_capacity = request.GET.get('min_capacity')
+    sort = request.GET.get('sort') or 'newest'
 
+    if q:
+        properties = _filter_icase_contains(
+            properties,
+            ['title', 'description', 'address', 'city'],
+            q,
+            prefix='plq',
+        )
     if property_type:
         properties = properties.filter(property_type=property_type)
     if city:
-        properties = properties.filter(city__icontains=city)
+        properties = _filter_icase_contains(properties, ['city'], city, prefix='plc')
     if category:
         properties = properties.filter(category_id=category)
     if min_price:
-        properties = properties.filter(price_per_hour__gte=float(min_price))
+        try:
+            properties = properties.filter(price_per_hour__gte=float(min_price))
+        except ValueError:
+            pass
     if max_price:
-        properties = properties.filter(price_per_hour__lte=float(max_price))
+        try:
+            properties = properties.filter(price_per_hour__lte=float(max_price))
+        except ValueError:
+            pass
+    if min_area:
+        try:
+            properties = properties.filter(area__gte=float(min_area))
+        except ValueError:
+            pass
+    if max_area:
+        try:
+            properties = properties.filter(area__lte=float(max_area))
+        except ValueError:
+            pass
+    if min_capacity:
+        try:
+            properties = properties.filter(capacity__gte=int(min_capacity))
+        except ValueError:
+            pass
+
+    sort_map = {
+        'price_asc': 'price_per_hour',
+        'price_desc': '-price_per_hour',
+        'area_asc': 'area',
+        'area_desc': '-area',
+        'newest': '-created_at',
+        'popular': '-views_count',
+    }
+    properties = properties.order_by(sort_map.get(sort, sort_map['newest']))
 
     # Фильтр "Только доступные"
     show_available_only = request.GET.get('available_only') == 'on'
@@ -431,6 +899,7 @@ def property_list(request):
         'categories': Category.objects.all(),
         'title': 'Все помещения для аренды',
         'today': timezone.now().date().isoformat(),
+        'current_sort': sort,
     }
     return render(request, 'core/property_list.html', context)
 
@@ -444,10 +913,18 @@ def property_detail(request, slug):
         status='active'
     )
 
-    # Увеличиваем счетчик просмотров
-    property_obj.views_count = F('views_count') + 1
-    property_obj.save()
+    Property.objects.filter(pk=property_obj.pk).update(views_count=F('views_count') + 1)
     property_obj.refresh_from_db()
+
+    # Недавно просмотренные (сессия)
+    rid = property_obj.id
+    visited = request.session.get('recently_viewed_properties', [])
+    if not isinstance(visited, list):
+        visited = []
+    if rid in visited:
+        visited.remove(rid)
+    visited.insert(0, rid)
+    request.session['recently_viewed_properties'] = visited[:15]
 
     # Получаем только одобренные отзывы с пагинацией (5 на странице)
     reviews = Review.objects.filter(
@@ -476,28 +953,9 @@ def property_detail(request, slug):
             property=property_obj
         ).exists()
 
-    # Готовим данные календаря на 30 дней
     today = timezone.now().date()
-    calendar_data = []
-    booked_dates = []
-
-    bookings = property_obj.bookings.filter(
-        status__in=['pending', 'paid', 'confirmed'],
-        start_datetime__date__gte=today,
-        start_datetime__date__lte=today + timedelta(days=30)
-    )
-
-    for booking in bookings:
-        booking_date = booking.start_datetime.date()
-        if booking_date not in booked_dates:
-            booked_dates.append(booking_date)
-
-    for i in range(30):
-        current_date = today + timedelta(days=i)
-        calendar_data.append({
-            'date': current_date,
-            'bookings': bookings.filter(start_datetime__date=current_date).exists()
-        })
+    occupancy_days, hourly_by_date, _ = build_property_occupancy(property_obj, today, 90)
+    occupancy_month_blocks = occupancy_days_to_month_blocks(occupancy_days)
 
     # Похожие помещения (максимум 5)
     similar_properties = Property.objects.filter(
@@ -511,11 +969,11 @@ def property_detail(request, slug):
         'reviews': reviews_page_obj,
         'is_favorite': is_favorite,
         'in_cart': in_cart,
-        'calendar_data': calendar_data,
-        'booked_dates_json': json.dumps([d.strftime('%Y-%m-%d') for d in booked_dates]),
+        'occupancy_days': occupancy_days,
+        'occupancy_month_blocks': occupancy_month_blocks,
+        'hourly_occupancy_json': json.dumps(hourly_by_date),
         'similar_properties': similar_properties,
         'today': today.strftime('%Y-%m-%d'),
-        'hours_range': range(9, 22),
         'title': property_obj.title
     }
     return render(request, 'core/property_detail.html', context)
@@ -566,15 +1024,48 @@ def dashboard(request):
         # Для арендатора
         bookings = user.bookings_as_tenant.select_related('property').order_by('-created_at')
         active_bookings = bookings.filter(status__in=['pending', 'paid', 'confirmed'])
+        paid_like = _paid_like_statuses()
+        expense_qs = bookings.filter(status__in=paid_like)
+        ref_expr = Coalesce('payment_date', 'created_at', output_field=DateTimeField())
+
+        total_spent = expense_qs.aggregate(t=Sum('total_price'))['t'] or 0
+
+        now = timezone.localtime()
+        cur_start, cur_end = _calendar_month_bounds(now)
+        prev_anchor = cur_start - timedelta(days=1)
+        prev_start, prev_end = _calendar_month_bounds(prev_anchor)
+
+        spent_this_month = (
+            expense_qs.annotate(ref_date=ref_expr)
+            .filter(ref_date__gte=cur_start, ref_date__lt=cur_end)
+            .aggregate(t=Sum('total_price'))['t'] or 0
+        )
+        spent_prev_month = (
+            expense_qs.annotate(ref_date=ref_expr)
+            .filter(ref_date__gte=prev_start, ref_date__lt=prev_end)
+            .aggregate(t=Sum('total_price'))['t'] or 0
+        )
+        spending_trend = 0
+        if spent_prev_month and spent_prev_month > 0:
+            spending_trend = round(
+                float((spent_this_month - spent_prev_month) / spent_prev_month * 100), 1
+            )
+
+        by_status_spent = {
+            row['status']: row['total']
+            for row in expense_qs.values('status').annotate(total=Sum('total_price'))
+        }
 
         # Статистика
         stats = {
             'total_bookings': bookings.count(),
             'active_bookings': active_bookings.count(),
             'completed_bookings': bookings.filter(status='completed').count(),
-            'total_spent': bookings.filter(status='completed').aggregate(
-                total=Sum('total_price')
-            )['total'] or 0,
+            'total_spent': total_spent,
+            'spent_this_month': spent_this_month,
+            'spent_prev_month': spent_prev_month,
+            'spending_trend': spending_trend,
+            'by_status_spent': by_status_spent,
             'favorite_count': user.favorites.count(),
             'cart_count': Cart.objects.filter(user=user).count(),
         }
@@ -589,7 +1080,8 @@ def dashboard(request):
             'active_bookings': safe_active_bookings,
             'favorite_properties': favorite_properties,
             'has_favorites': len(favorite_properties) > 0,
-            'has_active_bookings': len(safe_active_bookings) > 0
+            'has_active_bookings': len(safe_active_bookings) > 0,
+            'dashboard_role': 'tenant',
         })
 
     elif user.user_type == 'landlord':
@@ -633,6 +1125,17 @@ def dashboard(request):
             start_datetime__gte=timezone.now()
         ).order_by('start_datetime')[:5])
 
+        ref_l = Coalesce('payment_date', 'updated_at', 'created_at', output_field=DateTimeField())
+        rev_now = timezone.localtime()
+        rs, re = _calendar_month_bounds(rev_now)
+        revenue_this_month = (
+            bookings.filter(status__in=_paid_like_statuses())
+            .annotate(ref_date=ref_l)
+            .filter(ref_date__gte=rs, ref_date__lt=re)
+            .aggregate(t=Sum('total_price'))['t'] or 0
+        )
+        stats['revenue_this_month'] = revenue_this_month
+
         context.update({
             'stats': stats,
             'properties': safe_properties,
@@ -640,10 +1143,37 @@ def dashboard(request):
             'active_bookings': active_bookings,
             'has_new_bookings': len(new_bookings) > 0,
             'has_active_bookings': len(active_bookings) > 0,
+            'dashboard_role': 'landlord',
         })
 
     elif user.user_type == 'admin' or user.is_staff:
         # Для администратора
+        paid_like_admin = _paid_like_statuses()
+        ref_admin = Coalesce('payment_date', 'updated_at', 'created_at', output_field=DateTimeField())
+        rev_all = Booking.objects.filter(status__in=paid_like_admin)
+        total_platform_revenue = rev_all.aggregate(t=Sum('total_price'))['t'] or 0
+
+        now_ad = timezone.localtime()
+        cur_s, cur_e = _calendar_month_bounds(now_ad)
+        prev_anchor_ad = cur_s - timedelta(days=1)
+        prev_s, prev_e = _calendar_month_bounds(prev_anchor_ad)
+
+        revenue_this_month = (
+            rev_all.annotate(ref_date=ref_admin)
+            .filter(ref_date__gte=cur_s, ref_date__lt=cur_e)
+            .aggregate(t=Sum('total_price'))['t'] or 0
+        )
+        revenue_prev_month = (
+            rev_all.annotate(ref_date=ref_admin)
+            .filter(ref_date__gte=prev_s, ref_date__lt=prev_e)
+            .aggregate(t=Sum('total_price'))['t'] or 0
+        )
+        platform_revenue_trend = 0
+        if revenue_prev_month and revenue_prev_month > 0:
+            platform_revenue_trend = round(
+                float((revenue_this_month - revenue_prev_month) / revenue_prev_month * 100), 1
+            )
+
         stats = {
             'total_users': User.objects.count(),
             'new_users_today': User.objects.filter(date_joined__date=timezone.now().date()).count(),
@@ -658,6 +1188,10 @@ def dashboard(request):
                 status__in=['paid', 'confirmed', 'completed'],
                 updated_at__gte=timezone.now() - timedelta(days=30)
             ).aggregate(total=Sum('total_price'))['total'] or 0,
+            'total_platform_revenue': total_platform_revenue,
+            'revenue_this_month': revenue_this_month,
+            'revenue_prev_month': revenue_prev_month,
+            'platform_revenue_trend': platform_revenue_trend,
         }
 
         # Последние записи (максимум 5)
@@ -671,9 +1205,171 @@ def dashboard(request):
             'recent_bookings': recent_bookings,
             'recent_reviews': recent_reviews,
             'is_admin_dashboard': True,
+            'dashboard_role': 'admin',
         })
 
     return render(request, 'core/dashboard.html', context)
+
+
+@login_required
+def tenant_expenses(request):
+    """Детализация расходов арендатора по месяцам и статусам."""
+    if request.user.user_type != 'tenant':
+        messages.info(request, 'Раздел доступен арендаторам.')
+        return redirect('dashboard')
+
+    auto_cancel_expired_bookings()
+    bookings = request.user.bookings_as_tenant.select_related('property')
+    paid_like = _paid_like_statuses()
+    expense_qs = bookings.filter(status__in=paid_like)
+    ref_expr = Coalesce('payment_date', 'created_at', output_field=DateTimeField())
+
+    total = expense_qs.aggregate(t=Sum('total_price'))['t'] or 0
+
+    monthly = list(
+        expense_qs.annotate(ref_date=ref_expr)
+        .annotate(month=TruncMonth('ref_date'))
+        .values('month')
+        .annotate(total=Sum('total_price'))
+        .order_by('-month')[:24]
+    )
+
+    by_status = list(
+        expense_qs.values('status').annotate(total=Sum('total_price'), cnt=Count('id')).order_by('-total')
+    )
+
+    recent_lines = list(
+        expense_qs.select_related('property')
+        .annotate(ref_date=Coalesce('payment_date', 'created_at', output_field=DateTimeField()))
+        .order_by('-ref_date')[:50]
+    )
+
+    now = timezone.localtime()
+    cur_start, cur_end = _calendar_month_bounds(now)
+    prev_anchor = cur_start - timedelta(days=1)
+    prev_start, prev_end = _calendar_month_bounds(prev_anchor)
+
+    spent_this_month = (
+        expense_qs.annotate(ref_date=ref_expr)
+        .filter(ref_date__gte=cur_start, ref_date__lt=cur_end)
+        .aggregate(t=Sum('total_price'))['t'] or 0
+    )
+    spent_prev_month = (
+        expense_qs.annotate(ref_date=ref_expr)
+        .filter(ref_date__gte=prev_start, ref_date__lt=prev_end)
+        .aggregate(t=Sum('total_price'))['t'] or 0
+    )
+
+    return render(request, 'core/tenant_expenses.html', {
+        'title': 'Мои расходы',
+        'total_spent': total,
+        'monthly_rows': monthly,
+        'by_status': by_status,
+        'recent_lines': recent_lines,
+        'spent_this_month': spent_this_month,
+        'spent_prev_month': spent_prev_month,
+    })
+
+
+@login_required
+def landlord_revenue(request):
+    """Доход арендодателя по месяцам (по оплаченным и завершённым бронированиям)."""
+    if request.user.user_type != 'landlord':
+        messages.info(request, 'Раздел доступен арендодателям.')
+        return redirect('dashboard')
+
+    auto_cancel_expired_bookings()
+    bookings = Booking.objects.filter(property__landlord=request.user).select_related('property', 'tenant')
+    paid_like = _paid_like_statuses()
+    rev_qs = bookings.filter(status__in=paid_like)
+    ref_expr = Coalesce('payment_date', 'updated_at', 'created_at', output_field=DateTimeField())
+
+    total = rev_qs.aggregate(t=Sum('total_price'))['t'] or 0
+
+    monthly = list(
+        rev_qs.annotate(ref_date=ref_expr)
+        .annotate(month=TruncMonth('ref_date'))
+        .values('month')
+        .annotate(total=Sum('total_price'))
+        .order_by('-month')[:24]
+    )
+
+    by_status = list(
+        rev_qs.values('status').annotate(total=Sum('total_price'), cnt=Count('id')).order_by('-total')
+    )
+
+    recent_lines = list(
+        rev_qs.select_related('property', 'tenant')
+        .annotate(ref_date=Coalesce('payment_date', 'updated_at', 'created_at', output_field=DateTimeField()))
+        .order_by('-ref_date')[:50]
+    )
+
+    now = timezone.localtime()
+    cur_start, cur_end = _calendar_month_bounds(now)
+    revenue_this_month = (
+        rev_qs.annotate(ref_date=ref_expr)
+        .filter(ref_date__gte=cur_start, ref_date__lt=cur_end)
+        .aggregate(t=Sum('total_price'))['t'] or 0
+    )
+
+    return render(request, 'core/landlord_revenue.html', {
+        'title': 'Выручка',
+        'total_revenue': total,
+        'monthly_rows': monthly,
+        'by_status': by_status,
+        'recent_lines': recent_lines,
+        'revenue_this_month': revenue_this_month,
+    })
+
+
+@login_required
+def admin_platform_revenue(request):
+    """Агрегированная выручка платформы по всем бронированиям (оплачено / подтверждено / завершено)."""
+    if not (request.user.user_type == 'admin' or request.user.is_staff):
+        messages.info(request, 'Раздел доступен администраторам.')
+        return redirect('dashboard')
+
+    auto_cancel_expired_bookings()
+    paid_like = _paid_like_statuses()
+    rev_qs = Booking.objects.filter(status__in=paid_like).select_related('property', 'tenant')
+    ref_expr = Coalesce('payment_date', 'updated_at', 'created_at', output_field=DateTimeField())
+
+    total = rev_qs.aggregate(t=Sum('total_price'))['t'] or 0
+
+    monthly = list(
+        rev_qs.annotate(ref_date=ref_expr)
+        .annotate(month=TruncMonth('ref_date'))
+        .values('month')
+        .annotate(total=Sum('total_price'))
+        .order_by('-month')[:24]
+    )
+
+    by_status = list(
+        rev_qs.values('status').annotate(total=Sum('total_price'), cnt=Count('id')).order_by('-total')
+    )
+
+    recent_lines = list(
+        rev_qs.select_related('property', 'tenant')
+        .annotate(ref_date=Coalesce('payment_date', 'updated_at', 'created_at', output_field=DateTimeField()))
+        .order_by('-ref_date')[:50]
+    )
+
+    now = timezone.localtime()
+    cur_start, cur_end = _calendar_month_bounds(now)
+    revenue_this_month = (
+        rev_qs.annotate(ref_date=ref_expr)
+        .filter(ref_date__gte=cur_start, ref_date__lt=cur_end)
+        .aggregate(t=Sum('total_price'))['t'] or 0
+    )
+
+    return render(request, 'core/admin_platform_revenue.html', {
+        'title': 'Оборот платформы',
+        'total_revenue': total,
+        'monthly_rows': monthly,
+        'by_status': by_status,
+        'recent_lines': recent_lines,
+        'revenue_this_month': revenue_this_month,
+    })
 
 
 @login_required
@@ -697,17 +1393,15 @@ def edit_profile(request):
 @login_required
 def change_password(request):
     """Смена пароля"""
-    from django.contrib.auth.forms import PasswordChangeForm
-
     if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
+        form = PasswordChangeCustomForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             messages.success(request, 'Пароль успешно изменен.')
             return redirect('dashboard')
     else:
-        form = PasswordChangeForm(request.user)
+        form = PasswordChangeCustomForm(request.user)
 
     return render(request, 'core/change_password.html', {
         'form': form,
@@ -725,34 +1419,72 @@ def my_bookings(request):
     # Проверяем просроченные бронирования
     auto_cancel_expired_bookings()
 
-    bookings = request.user.bookings_as_tenant.select_related('property').order_by('-created_at')
+    base_qs = request.user.bookings_as_tenant.select_related('property')
+    status_stats = {
+        'total': base_qs.count(),
+        'pending': base_qs.filter(status='pending').count(),
+        'paid': base_qs.filter(status='paid').count(),
+        'confirmed': base_qs.filter(status='confirmed').count(),
+        'completed': base_qs.filter(status='completed').count(),
+        'cancelled': base_qs.filter(status='cancelled').count(),
+    }
 
-    # Фильтрация по статусу
     status_filter = request.GET.get('status')
-    if status_filter:
-        bookings = bookings.filter(status=status_filter)
+    sort = request.GET.get('sort') or 'newest'
+    q = (request.GET.get('q') or '').strip()
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
 
-    # Пагинация - 5 элементов на странице
+    bookings = _filter_tenant_bookings_queryset(request, base_qs)
+
     paginator = Paginator(bookings, 5)
     page = request.GET.get('page')
     bookings_page = paginator.get_page(page)
-
-    # Статистика по статусам для фильтра
-    status_stats = {
-        'total': bookings.count(),
-        'pending': bookings.filter(status='pending').count(),
-        'paid': bookings.filter(status='paid').count(),
-        'confirmed': bookings.filter(status='confirmed').count(),
-        'completed': bookings.filter(status='completed').count(),
-        'cancelled': bookings.filter(status='cancelled').count(),
-    }
 
     return render(request, 'core/my_bookings.html', {
         'bookings': bookings_page,
         'status_stats': status_stats,
         'current_status': status_filter,
+        'current_sort': sort,
+        'preserved_query': _preserve_get_query(request),
+        'preserved_no_status': _preserve_get_query(request, exclude_keys=('status',)),
+        'search_query': q,
+        'date_from_val': date_from or '',
+        'date_to_val': date_to or '',
         'title': 'Мои бронирования'
     })
+
+
+@login_required
+def export_my_bookings_csv(request):
+    """Экспорт отфильтрованных бронирований арендатора в CSV (UTF-8 с BOM для Excel)."""
+    if request.user.user_type != 'tenant':
+        messages.error(request, 'Экспорт доступен только арендаторам.')
+        return redirect('dashboard')
+    auto_cancel_expired_bookings()
+    base_qs = request.user.bookings_as_tenant.select_related('property')
+    bookings = _filter_tenant_bookings_queryset(request, base_qs)
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="moi_bronirovaniya.csv"'
+    response.write('\ufeff')
+    w = csv.writer(response, delimiter=';')
+    w.writerow([
+        'Номер бронирования', 'Помещение', 'Город', 'Начало', 'Окончание',
+        'Сумма ₽', 'Статус', 'Создано',
+    ])
+    status_labels = dict(Booking.STATUS_CHOICES)
+    for b in bookings:
+        w.writerow([
+            b.booking_id,
+            b.property.title,
+            b.property.city,
+            timezone.localtime(b.start_datetime).strftime('%d.%m.%Y %H:%M'),
+            timezone.localtime(b.end_datetime).strftime('%d.%m.%Y %H:%M'),
+            str(b.total_price).replace('.', ','),
+            status_labels.get(b.status, b.status),
+            timezone.localtime(b.created_at).strftime('%d.%m.%Y %H:%M'),
+        ])
+    return response
 
 
 @login_required
@@ -773,39 +1505,98 @@ def my_favorites(request):
 
 @login_required
 def my_properties(request):
-    """Мои помещения (для арендодателей) с пагинацией (5 на странице)"""
+    """Мои помещения (арендодатель): фильтры, поиск, сортировка, пагинация."""
     if request.user.user_type != 'landlord':
         messages.error(request, 'Эта страница доступна только арендодателям.')
         return redirect('dashboard')
 
-    properties = request.user.properties.select_related('category').all().order_by('-created_at')
+    base_qs = request.user.properties.select_related('category').all()
 
-    # Фильтрация по статусу
+    stats = {
+        'total_count': base_qs.count(),
+        'active_count': base_qs.filter(status='active').count(),
+        'pending_count': base_qs.filter(status='pending').count(),
+        'featured_count': base_qs.filter(is_featured=True).count(),
+        'booked_count': Booking.objects.filter(
+            property__landlord=request.user,
+            status__in=['paid', 'confirmed'],
+        ).count(),
+    }
+
+    properties = base_qs
     status_filter = request.GET.get('status')
     if status_filter:
         properties = properties.filter(status=status_filter)
 
-    # Статистика
-    stats = {
-        'active_count': properties.filter(status='active').count(),
-        'pending_count': properties.filter(status='pending').count(),
-        'featured_count': properties.filter(is_featured=True).count(),
-        'booked_count': Booking.objects.filter(
-            property__in=properties,
-            status__in=['paid', 'confirmed']
-        ).count(),
-    }
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        properties = _filter_icase_contains(
+            properties,
+            ['title', 'description', 'address', 'city'],
+            q,
+            prefix='mpq',
+        )
 
-    # Пагинация - 5 элементов на странице
+    property_type = request.GET.get('property_type')
+    if property_type:
+        properties = properties.filter(property_type=property_type)
+
+    city_filter = (request.GET.get('city') or '').strip()
+    if city_filter:
+        properties = _filter_icase_contains(properties, ['city'], city_filter, prefix='mpc')
+
+    featured = request.GET.get('featured')
+    if featured == '1':
+        properties = properties.filter(is_featured=True)
+    elif featured == '0':
+        properties = properties.filter(is_featured=False)
+
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
+    if min_price:
+        try:
+            properties = properties.filter(price_per_hour__gte=float(min_price))
+        except ValueError:
+            pass
+    if max_price:
+        try:
+            properties = properties.filter(price_per_hour__lte=float(max_price))
+        except ValueError:
+            pass
+
+    sort = request.GET.get('sort') or 'newest'
+    sort_map = {
+        'newest': '-created_at',
+        'oldest': 'created_at',
+        'price_asc': 'price_per_hour',
+        'price_desc': '-price_per_hour',
+        'title': 'title',
+        'views': '-views_count',
+    }
+    properties = properties.order_by(sort_map.get(sort, sort_map['newest']))
+    properties = properties.prefetch_related('images')
+
     paginator = Paginator(properties, 5)
-    page = request.GET.get('page')
-    properties_page = paginator.get_page(page)
+    properties_page = paginator.get_page(request.GET.get('page'))
+
+    owner_cities = sorted({c for c in base_qs.values_list('city', flat=True) if c})
 
     return render(request, 'core/my_properties.html', {
         'properties': properties_page,
         'stats': stats,
         'current_status': status_filter,
-        'title': 'Мои помещения'
+        'search_query': q,
+        'current_type': property_type or '',
+        'current_city': city_filter,
+        'current_featured': featured or '',
+        'min_price_val': min_price or '',
+        'max_price_val': max_price or '',
+        'current_sort': sort,
+        'preserved_query': _preserve_get_query(request),
+        'property_types': Property.PROPERTY_TYPE_CHOICES,
+        'status_choices': Property.STATUS_CHOICES,
+        'owner_cities': owner_cities,
+        'title': 'Мои помещения',
     })
 
 
@@ -840,6 +1631,18 @@ def create_booking(request, property_id):
     # Проверяем просроченные бронирования
     auto_cancel_expired_bookings()
 
+    initial = {}
+    if request.method != 'POST':
+        date_str = request.GET.get('date')
+        if date_str:
+            try:
+                picked = datetime.strptime(date_str, '%Y-%m-%d').date()
+                if picked >= timezone.now().date():
+                    initial['start_date'] = picked
+                    initial['end_date'] = picked
+            except ValueError:
+                pass
+
     if request.method == 'POST':
         form = BookingForm(request.POST, property_obj=property_obj)
         if form.is_valid():
@@ -857,7 +1660,7 @@ def create_booking(request, property_id):
                 for error in errors:
                     messages.error(request, f'{error}')
     else:
-        form = BookingForm(property_obj=property_obj)
+        form = BookingForm(property_obj=property_obj, initial=initial)
 
     context = {
         'form': form,
@@ -909,11 +1712,20 @@ def booking_detail(request, booking_id):
     days_count = (booking.end_datetime.date() - booking.start_datetime.date()).days + 1
     hours_count = (booking.end_datetime - booking.start_datetime).total_seconds() / 3600
 
-    # Рассчитываем оставшееся время для оплаты
-    time_left = None
-    if booking.status == 'pending':
-        time_elapsed = timezone.now() - booking.created_at
-        time_left = max(0, 30 - time_elapsed.total_seconds() / 60)
+    # Оставшееся время оплаты картой (как на странице payment — от created_at, не от загрузки страницы)
+    time_left_minutes = 0
+    time_left_seconds = 0
+    time_left_total = 0
+    if (
+        booking.status == 'pending'
+        and not booking.is_paid
+        and booking.payment_method == 'card'
+    ):
+        elapsed = timezone.now() - booking.created_at
+        remaining = timedelta(minutes=30) - elapsed
+        time_left_total = max(0, int(remaining.total_seconds()))
+        time_left_minutes = time_left_total // 60
+        time_left_seconds = time_left_total % 60
 
     return render(request, 'core/booking_detail.html', {
         'booking': booking,
@@ -924,7 +1736,9 @@ def booking_detail(request, booking_id):
         'has_contract': has_contract,
         'days_count': days_count,
         'hours_count': hours_count,
-        'time_left': time_left,
+        'time_left_minutes': time_left_minutes,
+        'time_left_seconds': time_left_seconds,
+        'time_left_total': time_left_total,
         'title': f'Бронирование #{booking.booking_id}'
     })
 
@@ -1260,8 +2074,11 @@ def payment_success(request, booking_id):
 
 @login_required
 def download_contract(request, booking_id):
-    """Скачивание договора"""
-    booking = get_object_or_404(Booking, id=booking_id)
+    """Скачивание договора только в формате PDF."""
+    booking = get_object_or_404(
+        Booking.objects.select_related('property', 'property__landlord', 'tenant'),
+        id=booking_id
+    )
 
     if not (request.user == booking.tenant or request.user == booking.property.landlord or request.user.is_staff):
         messages.error(request, 'У вас нет прав для скачивания этого договора.')
@@ -1271,20 +2088,62 @@ def download_contract(request, booking_id):
         messages.error(request, 'Договор доступен только для оплаченных бронирований.')
         return redirect('booking_detail', booking_id=booking.id)
 
-    # Получаем или генерируем договор
-    try:
-        contract = Contract.objects.get(booking=booking)
-    except Contract.DoesNotExist:
-        contract = generate_contract_pdf(booking)
+    contract, _ = Contract.objects.get_or_create(booking=booking)
 
-    if contract.pdf_file:
-        response = FileResponse(contract.pdf_file.open('rb'), as_attachment=True)
-        filename = f"contract_{booking.booking_id}.pdf"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
-    else:
-        messages.error(request, 'Файл договора не найден.')
+    def _regenerate_pdf():
+        if contract.pdf_file:
+            contract.pdf_file.delete(save=False)
+            contract.refresh_from_db()
+        generate_contract_pdf(booking)
+        contract.refresh_from_db()
+
+    def _need_pdf():
+        if not contract.pdf_file or not contract.pdf_file.name:
+            return True
+        if not contract.pdf_file.name.lower().endswith('.pdf'):
+            return True
+        try:
+            return not contract.pdf_file.storage.exists(contract.pdf_file.name)
+        except NotImplementedError:
+            return False
+
+    if _need_pdf():
+        try:
+            _regenerate_pdf()
+        except RuntimeError as e:
+            messages.error(request, str(e))
+            return redirect('booking_detail', booking_id=booking.id)
+        except Exception:
+            logger.exception('Не удалось сгенерировать PDF договора')
+            messages.error(
+                request,
+                'Не удалось сформировать PDF. Установите reportlab (pip install reportlab) и повторите попытку.'
+            )
+            return redirect('booking_detail', booking_id=booking.id)
+
+    if not contract.pdf_file or not contract.pdf_file.name or not contract.pdf_file.name.lower().endswith('.pdf'):
+        messages.error(request, 'Файл договора PDF не найден.')
         return redirect('booking_detail', booking_id=booking.id)
+
+    safe_id = re.sub(r'[^\w\-]', '_', str(booking.booking_id))
+    download_name = f'dogovor_{safe_id}.pdf'
+
+    try:
+        file_obj = contract.pdf_file.open('rb')
+    except (FileNotFoundError, OSError):
+        try:
+            _regenerate_pdf()
+            file_obj = contract.pdf_file.open('rb')
+        except Exception:
+            messages.error(request, 'Не удалось открыть или пересоздать PDF договора.')
+            return redirect('booking_detail', booking_id=booking.id)
+
+    return FileResponse(
+        file_obj,
+        as_attachment=True,
+        filename=download_name,
+        content_type='application/pdf',
+    )
 
 
 # ============================================================================
@@ -1591,11 +2450,18 @@ def add_property(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = PropertyForm(request.POST, request.FILES)
+        form = PropertyForm(
+            request.POST,
+            request.FILES,
+            allow_featured=_is_platform_admin(request.user),
+            allow_admin_statuses=_is_platform_admin(request.user),
+        )
         if form.is_valid():
             property_obj = form.save(commit=False)
             property_obj.landlord = request.user
             property_obj.status = 'pending'  # Отправляем на модерацию
+            if not _is_platform_admin(request.user):
+                property_obj.is_featured = False
             property_obj.save()
             form.save_m2m()
 
@@ -1619,7 +2485,10 @@ def add_property(request):
                              'Помещение отправлено на модерацию. После проверки оно станет доступным для бронирования.')
             return redirect('my_properties')
     else:
-        form = PropertyForm()
+        form = PropertyForm(
+            allow_featured=_is_platform_admin(request.user),
+            allow_admin_statuses=_is_platform_admin(request.user),
+        )
 
     return render(request, 'core/add_property.html', {
         'form': form,
@@ -1637,7 +2506,13 @@ def edit_property(request, property_id):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = PropertyForm(request.POST, request.FILES, instance=property_obj)
+        form = PropertyForm(
+            request.POST,
+            request.FILES,
+            instance=property_obj,
+            allow_featured=_is_platform_admin(request.user),
+            allow_admin_statuses=_is_platform_admin(request.user),
+        )
         if form.is_valid():
             property_obj = form.save()
 
@@ -1648,7 +2523,11 @@ def edit_property(request, property_id):
             messages.success(request, 'Помещение успешно обновлено.')
             return redirect('my_properties')
     else:
-        form = PropertyForm(instance=property_obj)
+        form = PropertyForm(
+            instance=property_obj,
+            allow_featured=_is_platform_admin(request.user),
+            allow_admin_statuses=_is_platform_admin(request.user),
+        )
 
     return render(request, 'core/edit_property.html', {
         'form': form,
@@ -1701,23 +2580,65 @@ def landlord_bookings(request):
         messages.error(request, 'Эта страница доступна только арендодателям.')
         return redirect('dashboard')
 
-    bookings = Booking.objects.filter(
-        property__landlord=request.user
-    ).select_related('property', 'tenant').order_by('-created_at')
+    base = Booking.objects.filter(property__landlord=request.user)
+    bookings_count = {
+        'all': base.count(),
+        'pending': base.filter(status='pending').count(),
+        'paid': base.filter(status='paid').count(),
+        'confirmed': base.filter(status='confirmed').count(),
+        'cancelled': base.filter(status='cancelled').count(),
+        'completed': base.filter(status='completed').count(),
+    }
 
-    # Фильтрация по статусу
+    bookings = base.select_related('property', 'tenant').order_by('-created_at')
+
     status_filter = request.GET.get('status')
     if status_filter:
         bookings = bookings.filter(status=status_filter)
 
-    # Пагинация - 5 элементов на странице
+    property_id = request.GET.get('property')
+    if property_id:
+        try:
+            pid = int(property_id)
+            if request.user.properties.filter(id=pid).exists():
+                bookings = bookings.filter(property_id=pid)
+        except ValueError:
+            pass
+
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    if date_from:
+        bookings = bookings.filter(start_datetime__date__gte=date_from)
+    if date_to:
+        bookings = bookings.filter(start_datetime__date__lte=date_to)
+
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        bookings = _filter_icase_contains(
+            bookings,
+            [
+                'booking_id',
+                'property__title',
+                'tenant__username',
+                'tenant__first_name',
+                'tenant__last_name',
+                'tenant__email',
+            ],
+            q,
+            prefix='llq',
+        )
+
     paginator = Paginator(bookings, 5)
     page = request.GET.get('page')
     bookings_page = paginator.get_page(page)
 
+    landlord_properties = request.user.properties.order_by('title')
+
     context = {
         'bookings': bookings_page,
         'current_status': status_filter,
+        'landlord_properties': landlord_properties,
+        'bookings_count': bookings_count,
         'title': 'Бронирования моих помещений'
     }
     return render(request, 'core/landlord_bookings.html', context)
@@ -1781,7 +2702,7 @@ def add_property_image(request, property_id):
 @login_required
 def custom_admin_dashboard(request):
     """Кастомная админ-панель"""
-    if not request.user.is_staff:
+    if not _is_platform_admin(request.user):
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
 
@@ -1856,7 +2777,7 @@ def custom_admin_dashboard(request):
 @login_required
 def admin_user_management(request):
     """Управление пользователями с пагинацией (5 на странице)"""
-    if not request.user.is_staff:
+    if not _is_platform_admin(request.user):
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
 
@@ -1867,12 +2788,14 @@ def admin_user_management(request):
     status_filter = request.GET.get('status')
 
     if search_query:
-        users = users.filter(
-            Q(username__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(first_name__icontains=search_query) |
-            Q(last_name__icontains=search_query) |
-            Q(phone__icontains=search_query)
+        users = _filter_icase_contains(
+            users,
+            [
+                'username', 'email', 'first_name', 'last_name',
+                'phone', 'company_name',
+            ],
+            search_query,
+            prefix='adu',
         )
     if user_type_filter:
         users = users.filter(user_type=user_type_filter)
@@ -1929,7 +2852,7 @@ def admin_user_management(request):
 @login_required
 def admin_property_management(request):
     """Управление помещениями (админ) с пагинацией (5 на странице)"""
-    if not request.user.is_staff:
+    if not _is_platform_admin(request.user):
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
 
@@ -1938,13 +2861,42 @@ def admin_property_management(request):
     status_filter = request.GET.get('status')
     city_filter = request.GET.get('city')
     type_filter = request.GET.get('type')
+    search = (request.GET.get('search') or '').strip()
+    landlord_q = (request.GET.get('landlord') or '').strip()
 
+    if search:
+        properties = _filter_icase_contains(
+            properties,
+            ['title', 'address', 'description', 'slug'],
+            search,
+            prefix='adp',
+        )
+    if landlord_q:
+        properties = _filter_icase_contains(
+            properties,
+            [
+                'landlord__username',
+                'landlord__email',
+                'landlord__first_name',
+                'landlord__last_name',
+            ],
+            landlord_q,
+            prefix='adpl',
+        )
     if status_filter:
         properties = properties.filter(status=status_filter)
     if city_filter:
-        properties = properties.filter(city__icontains=city_filter)
+        properties = _filter_icase_contains(properties, ['city'], city_filter, prefix='adpc')
     if type_filter:
         properties = properties.filter(property_type=type_filter)
+
+    all_for_stats = Property.objects.all()
+    property_stats = {
+        'total': all_for_stats.count(),
+        'active': all_for_stats.filter(status='active').count(),
+        'pending': all_for_stats.filter(status='pending').count(),
+        'views': all_for_stats.aggregate(total=Sum('views_count'))['total'] or 0,
+    }
 
     # Пагинация - 5 элементов на странице
     paginator = Paginator(properties, 5)
@@ -1986,6 +2938,7 @@ def admin_property_management(request):
 
     return render(request, 'admin/property_management.html', {
         'properties': properties_page,
+        'property_stats': property_stats,
         'title': 'Управление помещениями'
     })
 
@@ -1993,55 +2946,120 @@ def admin_property_management(request):
 @login_required
 def admin_booking_management(request):
     """Управление бронированиями (админ) с пагинацией (5 на странице)"""
-    if not request.user.is_staff:
+    if not _is_platform_admin(request.user):
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
 
-    bookings = Booking.objects.select_related('property', 'tenant').all().order_by('-created_at')
+    all_bookings = Booking.objects.all()
+    booking_stats = {
+        'total_bookings': all_bookings.count(),
+        'pending_bookings': all_bookings.filter(status='pending').count(),
+        'paid_bookings': all_bookings.filter(status='paid').count(),
+        'confirmed_bookings': all_bookings.filter(status='confirmed').count(),
+        'completed_bookings': all_bookings.filter(status='completed').count(),
+        'cancelled_bookings': all_bookings.filter(status='cancelled').count(),
+        'total_revenue': all_bookings.filter(
+            status__in=['paid', 'confirmed', 'completed']
+        ).aggregate(total=Sum('total_price'))['total'] or 0,
+    }
 
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        booking_id = request.POST.get('booking_id')
+        try:
+            booking = Booking.objects.get(id=booking_id)
+            if action == 'confirm' and booking.status == 'pending':
+                booking.status = 'confirmed'
+                booking.save()
+                create_booking_notification(booking, 'booking_confirmed')
+                try:
+                    generate_contract_pdf(booking)
+                except Exception as e:
+                    logger.error('Contract PDF: %s', e)
+                messages.success(request, 'Бронирование подтверждено.')
+            elif action == 'cancel' and booking.status in ('pending', 'paid', 'confirmed'):
+                booking.status = 'cancelled'
+                booking.save()
+                create_booking_notification(booking, 'booking_cancelled')
+                messages.success(request, 'Бронирование отменено.')
+            elif action == 'complete' and booking.status == 'confirmed':
+                booking.status = 'completed'
+                booking.save()
+                create_booking_notification(booking, 'booking_completed')
+                messages.success(request, 'Бронирование завершено.')
+            elif action == 'delete':
+                bid = booking.booking_id
+                booking.delete()
+                messages.success(request, f'Бронирование {bid} удалено.')
+            else:
+                messages.error(request, 'Действие недоступно для текущего статуса.')
+        except Booking.DoesNotExist:
+            messages.error(request, 'Бронирование не найдено.')
+        qs = request.GET.copy()
+        qs.pop('page', None)
+        if qs:
+            return redirect(f'{reverse("admin_booking_management")}?{qs.urlencode()}')
+        return redirect('admin_booking_management')
+
+    bookings = Booking.objects.select_related('property', 'tenant', 'property__landlord').order_by('-created_at')
+
+    search = (request.GET.get('search') or '').strip()
     status_filter = request.GET.get('status')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    paid_filter = request.GET.get('paid')
+    property_filter = (request.GET.get('property_q') or '').strip()
 
+    if search:
+        bookings = _filter_icase_contains(
+            bookings,
+            [
+                'booking_id',
+                'property__title',
+                'tenant__username',
+                'tenant__email',
+                'tenant__first_name',
+                'tenant__last_name',
+            ],
+            search,
+            prefix='adbk',
+        )
     if status_filter:
         bookings = bookings.filter(status=status_filter)
     if date_from:
         bookings = bookings.filter(start_datetime__date__gte=date_from)
     if date_to:
         bookings = bookings.filter(start_datetime__date__lte=date_to)
+    if paid_filter == 'yes':
+        bookings = bookings.filter(is_paid=True)
+    elif paid_filter == 'no':
+        bookings = bookings.filter(is_paid=False)
+    if property_filter:
+        bookings = _filter_icase_contains(
+            bookings,
+            ['property__title', 'property__city'],
+            property_filter,
+            prefix='adpf',
+        )
 
-    # Пагинация - 5 элементов на странице
     paginator = Paginator(bookings, 5)
     page = request.GET.get('page')
     bookings_page = paginator.get_page(page)
 
-    return render(request, 'admin/booking_management.html', {
+    context = {
         'bookings': bookings_page,
-        'title': 'Управление бронированиями'
-    })
+        'title': 'Управление бронированиями',
+        **booking_stats,
+    }
+    return render(request, 'admin/booking_management.html', context)
 
 
 @login_required
 def admin_review_management(request):
     """Управление отзывами (админ) с пагинацией (5 на странице)"""
-    if not request.user.is_staff:
+    if not _is_platform_admin(request.user):
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
-
-    reviews = Review.objects.select_related('property', 'user').all().order_by('-created_at')
-
-    status_filter = request.GET.get('status')
-    rating_filter = request.GET.get('rating')
-
-    if status_filter:
-        reviews = reviews.filter(status=status_filter)
-    if rating_filter:
-        reviews = reviews.filter(rating=rating_filter)
-
-    # Пагинация - 5 элементов на странице
-    paginator = Paginator(reviews, 5)
-    page = request.GET.get('page')
-    reviews_page = paginator.get_page(page)
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -2050,29 +3068,84 @@ def admin_review_management(request):
             review = Review.objects.get(id=review_id)
             if action == 'approve':
                 review.status = 'approved'
+                review.admin_comment = None
                 review.save()
-                messages.success(request, 'Отзыв одобрен.')
+                messages.success(request, 'Отзыв одобрен и опубликован.')
             elif action == 'reject':
                 review.status = 'rejected'
+                comment = (request.POST.get('admin_comment') or '').strip()
+                review.admin_comment = comment if comment else None
                 review.save()
-                messages.success(request, 'Отзыв отклонен.')
+                messages.success(request, 'Отзыв отклонён.')
             elif action == 'delete':
                 review.delete()
-                messages.success(request, 'Отзыв удален.')
+                messages.success(request, 'Отзыв удалён.')
+            else:
+                messages.error(request, 'Неизвестное действие.')
         except Review.DoesNotExist:
             messages.error(request, 'Отзыв не найден.')
+        next_url = request.POST.get('next')
+        if next_url and next_url.startswith('/'):
+            return redirect(next_url)
         return redirect('admin_review_management')
+
+    reviews = Review.objects.select_related('property', 'user').order_by('-created_at')
+
+    search = (request.GET.get('search') or '').strip()
+    if search:
+        reviews = _filter_icase_contains(
+            reviews,
+            [
+                'comment',
+                'property__title',
+                'property__city',
+                'user__username',
+                'user__first_name',
+                'user__last_name',
+                'user__email',
+            ],
+            search,
+            prefix='arv',
+        )
+
+    status_filter = request.GET.get('status')
+    rating_filter = request.GET.get('rating')
+    if status_filter:
+        reviews = reviews.filter(status=status_filter)
+    if rating_filter:
+        reviews = reviews.filter(rating=rating_filter)
+
+    paginator = Paginator(reviews, 5)
+    page = request.GET.get('page')
+    reviews_page = paginator.get_page(page)
+
+    total_reviews = Review.objects.count()
+    avg_rating = Review.objects.filter(status='approved').aggregate(v=Avg('rating'))['v']
+    if avg_rating is None:
+        avg_rating = 0
+    pending_reviews_count = Review.objects.filter(status='pending').count()
+    rating_5_count = Review.objects.filter(rating=5).count()
+
+    pending_properties_count = Property.objects.filter(status='pending').count()
+    pending_bookings_count = Booking.objects.filter(status='pending').count()
 
     return render(request, 'admin/review_management.html', {
         'reviews': reviews_page,
-        'title': 'Управление отзывами'
+        'title': 'Управление отзывами',
+        'total_reviews': total_reviews,
+        'avg_rating': avg_rating,
+        'pending_reviews_count': pending_reviews_count,
+        'rating_5': rating_5_count,
+        'pending_users_count': 0,
+        'pending_properties_count': pending_properties_count,
+        'pending_bookings_count': pending_bookings_count,
     })
 
 
 @login_required
 def export_users_csv(request):
     """Экспорт пользователей в CSV"""
-    if not request.user.is_staff:
+    if not _is_platform_admin(request.user):
         messages.error(request, 'У вас нет прав для доступа к этой странице.')
         return redirect('dashboard')
 
@@ -2148,74 +3221,119 @@ def ajax_create_booking(request, property_id):
 
 
 def booking_calendar(request, property_id):
-    """Календарь бронирований"""
+    """Календарь занятости: три календарных месяца подряд и почасовая сетка выбранного дня."""
     property_obj = get_object_or_404(Property, id=property_id)
 
     month_str = request.GET.get('month')
     if month_str:
         try:
-            current_month = datetime.strptime(month_str, '%Y-%m').date()
+            anchor = datetime.strptime(month_str, '%Y-%m').date().replace(day=1)
         except ValueError:
-            current_month = timezone.now().date().replace(day=1)
+            anchor = timezone.now().date().replace(day=1)
     else:
-        current_month = timezone.now().date().replace(day=1)
+        anchor = timezone.now().date().replace(day=1)
 
-    if current_month.month == 1:
-        prev_month = current_month.replace(year=current_month.year - 1, month=12)
-    else:
-        prev_month = current_month.replace(month=current_month.month - 1)
+    third = add_calendar_months(anchor, 2)
+    last_day = datetime(third.year, third.month,
+                        calendar.monthrange(third.year, third.month)[1]).date()
 
-    if current_month.month == 12:
-        next_month = current_month.replace(year=current_month.year + 1, month=1)
-    else:
-        next_month = current_month.replace(month=current_month.month + 1)
+    range_start_dt = timezone.make_aware(datetime.combine(anchor, datetime.min.time()))
+    range_end_dt = timezone.make_aware(datetime.combine(last_day, dt_time(23, 59, 59)))
 
-    bookings = property_obj.bookings.filter(
-        start_datetime__year=current_month.year,
-        start_datetime__month=current_month.month,
-        status__in=['pending', 'paid', 'confirmed']
-    ).select_related('tenant')
+    bookings_list = list(property_obj.bookings.filter(
+        status__in=['pending', 'paid', 'confirmed'],
+        end_datetime__gte=range_start_dt,
+        start_datetime__date__lte=last_day,
+    ).select_related('tenant'))
 
-    import calendar
     cal = calendar.Calendar()
-    calendar_weeks = []
+    three_month_blocks = []
+    month_names = [
+        '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+    ]
+    for mi in range(3):
+        cur_first = add_calendar_months(anchor, mi)
+        y, m = cur_first.year, cur_first.month
+        calendar_weeks = []
+        for week in cal.monthdatescalendar(y, m):
+            week_days = []
+            for day in week:
+                in_month = day.month == m
+                overlapping = [b for b in bookings_list if booking_overlaps_calendar_day(b, day)]
+                week_days.append({
+                    'date': day,
+                    'in_month': in_month,
+                    'is_today': day == timezone.now().date(),
+                    'has_bookings': len(overlapping) > 0,
+                    'booking_count': len(overlapping),
+                    'bookings': [{
+                        'tenant': b.tenant.get_full_name_or_username(),
+                        'start_time': b.start_datetime.time().strftime('%H:%M'),
+                        'end_time': b.end_datetime.time().strftime('%H:%M')
+                    } for b in overlapping[:4]]
+                })
+            calendar_weeks.append(week_days)
+        three_month_blocks.append({
+            'year': y,
+            'month': m,
+            'title': f'{month_names[m]} {y}',
+            'weeks': calendar_weeks,
+        })
 
-    for week in cal.monthdatescalendar(current_month.year, current_month.month):
-        week_days = []
-        for day in week:
-            day_bookings = bookings.filter(start_datetime__date=day)
-            week_days.append({
-                'date': day,
-                'is_today': day == timezone.now().date(),
-                'has_bookings': day_bookings.exists(),
-                'bookings': [{
-                    'tenant': b.tenant.get_full_name_or_username(),
-                    'start_time': b.start_datetime.time().strftime('%H:%M'),
-                    'end_time': b.end_datetime.time().strftime('%H:%M')
-                } for b in day_bookings]
-            })
-        calendar_weeks.append(week_days)
+    today = timezone.now().date()
+    selected_day_str = request.GET.get('day') or today.isoformat()
+    try:
+        selected_day = datetime.strptime(selected_day_str, '%Y-%m-%d').date()
+    except ValueError:
+        selected_day = today
+        selected_day_str = selected_day.isoformat()
+    if selected_day < anchor:
+        selected_day = anchor
+        selected_day_str = selected_day.isoformat()
+    elif selected_day > last_day:
+        selected_day = last_day
+        selected_day_str = selected_day.isoformat()
+
+    hourly_slots = []
+    for h in range(8, 22):
+        slot_start = timezone.make_aware(datetime.combine(selected_day, dt_time(h, 0)))
+        slot_end = slot_start + timedelta(hours=1)
+        overlapping = [b for b in bookings_list if b.end_datetime > slot_start and b.start_datetime < slot_end]
+        hourly_slots.append({
+            'hour': h,
+            'busy': len(overlapping) > 0,
+            'bookings': overlapping,
+        })
+
+    prev_anchor = add_calendar_months(anchor, -3)
+    next_anchor = add_calendar_months(anchor, 3)
 
     upcoming_bookings = property_obj.bookings.filter(
         start_datetime__gte=timezone.now(),
-        status__in=['paid', 'confirmed']
-    ).select_related('tenant').order_by('start_datetime')[:5]
+        status__in=['pending', 'paid', 'confirmed']
+    ).select_related('tenant').order_by('start_datetime')[:8]
 
-    month_start = current_month
-    month_end = month_start + timedelta(days=calendar.monthrange(current_month.year, current_month.month)[1])
-    bookings_count = bookings.count()
-    total_days = (month_end - month_start).days
-    booked_days = bookings.values('start_datetime__date').distinct().count()
-    occupancy_rate = round((booked_days / total_days) * 100) if total_days > 0 else 0
+    total_days = (last_day - anchor).days + 1
+    booked_day_set = set()
+    for offset in range(total_days):
+        d = anchor + timedelta(days=offset)
+        if any(booking_overlaps_calendar_day(b, d) for b in bookings_list):
+            booked_day_set.add(d)
+    occupancy_rate = round(len(booked_day_set) / total_days * 100) if total_days > 0 else 0
 
     return render(request, 'core/booking_calendar.html', {
         'property': property_obj,
-        'current_month': current_month,
-        'prev_month': prev_month,
-        'next_month': next_month,
-        'calendar_weeks': calendar_weeks,
+        'anchor_month': anchor,
+        'prev_anchor': prev_anchor,
+        'next_anchor': next_anchor,
+        'three_month_blocks': three_month_blocks,
+        'range_label': f'{anchor.strftime("%d.%m.%Y")} — {last_day.strftime("%d.%m.%Y")}',
+        'hourly_slots': hourly_slots,
+        'selected_day': selected_day,
+        'selected_day_str': selected_day_str,
         'upcoming_bookings': upcoming_bookings,
-        'bookings_count': bookings_count,
+        'bookings_count': len(bookings_list),
         'occupancy_rate': occupancy_rate,
         'title': f'Календарь бронирований - {property_obj.title}'
     })

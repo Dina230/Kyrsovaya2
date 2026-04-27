@@ -1,33 +1,40 @@
 :root {
-    --primary-color: #2563eb;
+    --primary-color: #0d6efd;
+    --primary-dark: #0a58ca;
+    --accent-green: #198754;
     --secondary-color: #64748b;
-    --background-color: #f8fafc;
+    --background-color: #f0f7ff;
     --surface-color: #ffffff;
+    --text-dark: #0f172a;
 }
 
 body {
-    background-color: var(--background-color);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(180deg, var(--background-color) 0%, #f8fffb 100%);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-dark);
 }
 
 .navbar {
     background-color: var(--surface-color) !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 24px rgba(13, 110, 253, 0.1);
+    border-bottom: 1px solid rgba(25, 135, 84, 0.12);
 }
 
 .property-card {
-    border: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
+    border: 1px solid rgba(13, 110, 253, 0.08);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 16px;
+    overflow: hidden;
 }
 
 .property-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(13, 110, 253, 0.14);
 }
 
 .price-tag {
-    background: linear-gradient(45deg, #2563eb, #3b82f6);
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-green));
     color: white;
     padding: 0.5rem 1rem;
     border-radius: 20px;
@@ -35,13 +42,18 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    border-color: var(--primary-dark);
 }
 
 .btn-primary:hover {
-    background-color: #1d4ed8;
-    border-color: #1d4ed8;
+    background: linear-gradient(135deg, #0b5ed7 0%, #084298 100%);
+    border-color: #084298;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border-color: #146c43;
 }
 
 .calendar-day {
@@ -49,11 +61,581 @@ body {
 }
 
 .calendar-day.booked {
-    background-color: #fee2e2;
-    border-color: #ef4444;
+    background-color: #dbeafe;
+    border-color: var(--primary-color);
 }
 
 .calendar-day.today {
-    background-color: #dbeafe;
-    border-color: #3b82f6;
+    background-color: #d1e7dd;
+    border-color: var(--accent-green);
+}
+
+/* —— Общий UI: карточки, таблицы, фильтры —— */
+.page-hero {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.07) 0%, rgba(25, 135, 84, 0.09) 100%);
+    border-radius: 20px;
+    padding: 1.75rem 2rem;
+    border: 1px solid rgba(13, 110, 253, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.letter-spacing-tight {
+    letter-spacing: 0.06em;
+}
+
+.filter-panel-pro {
+    border-radius: 16px !important;
+    border: 1px solid rgba(13, 110, 253, 0.1) !important;
+    background: var(--surface-color);
+}
+
+.table-modern thead {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--secondary-color);
+}
+
+.table-modern thead th {
+    font-weight: 600;
+    border-bottom: 1px solid rgba(13, 110, 253, 0.12) !important;
+    padding: 1rem 1.25rem;
+}
+
+.table-modern tbody td {
+    padding: 1rem 1.25rem;
+    border-color: rgba(15, 23, 42, 0.06);
+    vertical-align: middle;
+}
+
+.table-modern tbody tr {
+    transition: background 0.15s ease;
+}
+
+.table-modern tbody tr:hover {
+    background: rgba(13, 110, 253, 0.04);
+}
+
+.link-premise {
+    color: var(--primary-color);
+}
+
+.link-premise:hover {
+    color: #157347;
+}
+
+.status-pill {
+    font-weight: 600;
+    font-size: 0.78rem;
+    padding: 0.45em 0.85em;
+}
+
+.status-confirmed {
+    background: linear-gradient(135deg, #198754, #157347) !important;
+    color: #fff !important;
+}
+
+.status-pending {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    color: #422006 !important;
+}
+
+.status-paid {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca) !important;
+    color: #fff !important;
+}
+
+.status-completed {
+    background: linear-gradient(135deg, #22d3ee, #06b6d4) !important;
+    color: #083344 !important;
+}
+
+.status-cancelled {
+    background: linear-gradient(135deg, #f87171, #dc2626) !important;
+    color: #fff !important;
+}
+
+.pagination .page-link {
+    border: 1px solid rgba(13, 110, 253, 0.15);
+    color: var(--primary-color);
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-color: var(--primary-dark);
+}
+
+.card {
+    border-radius: 16px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: rgba(13, 110, 253, 0.5);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+/* Показать/скрыть пароль (кнопка с иконкой глаза) */
+.input-group.password-toggle .btn[data-password-toggle] {
+    border-color: rgba(15, 23, 42, 0.12);
+    color: var(--secondary-color, #64748b);
+    min-width: 2.75rem;
+}
+
+.input-group.password-toggle .btn[data-password-toggle]:hover {
+    border-color: rgba(13, 110, 253, 0.35);
+    color: var(--primary-color, #0d6efd);
+    background: rgba(13, 110, 253, 0.06);
+}
+
+/* Вход / сброс пароля: полные стили в templates/base.html (inline), чтобы карточка не «ломалась» без static */
+
+/* Боковая панель кабинета (бело-сине-зелёная тема) */
+.user-sidebar__profile {
+    border-radius: 16px;
+    border: 1px solid rgba(13, 110, 253, 0.08) !important;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.user-sidebar__avatar {
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 14px rgba(13, 110, 253, 0.15);
+}
+
+.user-sidebar__nav {
+    gap: 0.35rem;
+    border-radius: 14px;
+    padding: 0.35rem;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(13, 110, 253, 0.08);
+}
+
+.user-sidebar__nav .list-group-item {
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.925rem;
+    color: #0f172a;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-sidebar__nav .list-group-item:hover {
+    background: rgba(13, 110, 253, 0.06);
+    color: #0a58ca;
+}
+
+.user-sidebar__nav .list-group-item.is-active {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.11) 0%, rgba(25, 135, 84, 0.14) 100%);
+    color: #0f172a;
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 #198754;
+}
+
+.user-sidebar__icon {
+    font-size: 1.1rem;
+    margin-right: 0.5rem;
+    color: rgba(13, 110, 253, 0.85);
+}
+
+.user-sidebar__nav .list-group-item.is-active .user-sidebar__icon {
+    color: #157347;
+}
+
+.user-sidebar__badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(13, 110, 253, 0.12) !important;
+    color: #0a58ca !important;
+}
+
+.user-sidebar__badge--danger {
+    background: rgba(220, 53, 69, 0.12) !important;
+    color: #b02a37 !important;
+}
+
+/* Карточки избранного в общем стиле кабинета */
+.favorites-page__header {
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.06) 0%, rgba(25, 135, 84, 0.08) 100%);
+    border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.favorites-page__card {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(13, 110, 253, 0.08);
+}
+
+.favorites-page__property-card {
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.favorites-page__property-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    border-color: rgba(25, 135, 84, 0.25);
+}
+
+/* Страница смены пароля */
+.auth-password-page .card {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.auth-password-page__header {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(25, 135, 84, 0.14) 100%);
+    border-bottom: 1px solid rgba(13, 110, 253, 0.12);
+    padding: 1.75rem 1.5rem;
+}
+
+.auth-password-page__header h3 {
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.auth-password-page__header p {
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+.auth-password-page .input-group.password-toggle .form-control {
+    border-radius: 0.5rem 0 0 0.5rem;
+    border-color: rgba(13, 110, 253, 0.2);
+}
+
+.auth-password-page .input-group.password-toggle .btn {
+    border-color: rgba(13, 110, 253, 0.2);
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.auth-password-page__hint {
+    background: rgba(13, 110, 253, 0.06);
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    border-radius: 12px;
+    color: #0f172a;
+}
+
+.auth-password-page__hint .alert-heading {
+    color: #157347;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.auth-password-page .password-strength .progress {
+    height: 6px;
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.08);
+}
+
+.auth-password-page .requirement-met {
+    color: #157347;
+    font-weight: 500;
+}
+
+.auth-password-page .requirement-not-met {
+    color: #64748b;
+}
+
+/* Страница регистрации */
+.auth-register-page .card {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.auth-register-page__header {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.12) 0%, rgba(25, 135, 84, 0.14) 100%);
+    border-bottom: 1px solid rgba(13, 110, 253, 0.12);
+    padding: 2.75rem 1.5rem 3rem;
+    text-align: center !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-register-page__header-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center !important;
+    width: 100%;
+    max-width: 28rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.auth-register-page__header-icon-wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.auth-register-page__header .auth-register-page__title {
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    text-align: center !important;
+    width: 100%;
+}
+
+.auth-register-page__header p,
+.auth-register-page__header .auth-register-page__lead {
+    color: #475569;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin-bottom: 0 !important;
+    margin-top: 0.65rem;
+    text-align: center !important;
+    width: 100%;
+    max-width: 26rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.auth-register-page .card > .card-body {
+    padding-top: 3rem !important;
+}
+
+.auth-register-page .form-label,
+.auth-register-page__label {
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.5rem;
+}
+
+.auth-register-page__label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    line-height: 1.3;
+}
+
+.auth-register-page__label-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    flex-shrink: 0;
+    color: var(--primary-color, #0d6efd);
+}
+
+.auth-register-page__field {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.auth-register-page__field-hint {
+    min-height: 2.75rem;
+    margin-top: 0.35rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: #64748b;
+}
+
+.auth-register-page .form-control,
+.auth-register-page .form-select {
+    border-radius: 0.5rem;
+    border-color: rgba(13, 110, 253, 0.2);
+}
+
+.auth-register-page .form-control:focus,
+.auth-register-page .form-select:focus {
+    border-color: rgba(13, 110, 253, 0.45);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+}
+
+.auth-register-page .input-group.password-toggle .form-control {
+    border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.auth-register-page .input-group.password-toggle .btn {
+    border-color: rgba(13, 110, 253, 0.2);
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.auth-register-page .input-group:not(.password-toggle) .input-group-text {
+    border-radius: 0.5rem 0 0 0.5rem;
+    background: rgba(13, 110, 253, 0.06);
+    border-color: rgba(13, 110, 253, 0.2);
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.auth-register-page .input-group:not(.password-toggle) .form-control {
+    border-radius: 0 0.5rem 0.5rem 0;
+    border-left: none;
+}
+
+.auth-register-page__section-title {
+    width: 100%;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0;
+    margin-top: 0.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(13, 110, 253, 0.12);
+}
+
+.auth-register-page__section-block + .auth-register-page__section-block {
+    margin-top: 1.75rem;
+}
+
+.auth-register-page__hint {
+    background: rgba(13, 110, 253, 0.06);
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    border-radius: 12px;
+    color: #0f172a;
+}
+
+.auth-register-page__hint .alert-heading {
+    color: #157347;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.auth-register-page .form-check-input:checked {
+    background-color: #198754;
+    border-color: #157347;
+}
+
+.auth-register-page .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.2);
+}
+
+.auth-register-page__footer {
+    border-top: 1px solid rgba(13, 110, 253, 0.1);
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.5) 0%, #fff 100%);
+}
+
+/* Список сообщений */
+.messages-page__card {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(13, 110, 253, 0.08);
+}
+
+.messages-page__header {
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.06) 0%, rgba(25, 135, 84, 0.08) 100%);
+    border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+    padding: 1rem 1.25rem;
+}
+
+.messages-page__list {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.messages-page__conversation {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    padding: 1rem 1.1rem;
+    transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    background: #fff;
+}
+
+.messages-page__conversation:hover {
+    background: rgba(13, 110, 253, 0.04);
+    border-color: rgba(13, 110, 253, 0.18);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    transform: translateY(-1px);
+}
+
+.messages-page__conversation--unread {
+    border-color: rgba(25, 135, 84, 0.35);
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(25, 135, 84, 0.07) 100%);
+    box-shadow: inset 3px 0 0 #198754;
+}
+
+.messages-page__avatar {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 10px rgba(13, 110, 253, 0.15);
+}
+
+.messages-page__empty {
+    padding: 3rem 1.5rem;
+}
+
+.messages-page__badge-role {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* Переписка (страница отправки сообщения) */
+.messages-thread__header {
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.06) 0%, rgba(25, 135, 84, 0.08) 100%);
+    border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+    padding: 1rem 1.25rem;
+}
+
+.messages-thread__card {
+    border-radius: 16px;
+    border: 1px solid rgba(13, 110, 253, 0.08);
+    overflow: hidden;
+}
+
+.messages-thread__scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 1rem 1.1rem;
+    background: linear-gradient(180deg, #f8fafc 0%, #f0fdf6 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(13, 110, 253, 0.08);
+}
+
+.messages-thread__scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages-thread__scroll::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.04);
+    border-radius: 8px;
+}
+
+.messages-thread__scroll::-webkit-scrollbar-thumb {
+    background: rgba(13, 110, 253, 0.25);
+    border-radius: 8px;
+}
+
+.message-bubble--own {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+    color: #fff !important;
+    border: none;
+    box-shadow: 0 4px 14px rgba(13, 110, 253, 0.35);
+}
+
+.message-bubble--other {
+    background: #fff !important;
+    border: 1px solid rgba(13, 110, 253, 0.12) !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.messages-thread__recipient-alert {
+    background: rgba(13, 110, 253, 0.06);
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    border-radius: 12px;
+    color: #0f172a;
 }

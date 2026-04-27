@@ -759,7 +759,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Таймер для неоплаченных бронирований (только для карты)
     {% if booking.status == 'pending' and not booking.is_paid and booking.payment_method == 'card' %}
     const timerElement = document.getElementById('timer');
-    const totalSeconds = {{ time_left_total|default:1800 }};
+    const totalSeconds = {{ time_left_total }};
 
     if (timerElement && totalSeconds > 0) {
         let timeLeft = totalSeconds;

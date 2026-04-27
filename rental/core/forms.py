@@ -38,12 +38,14 @@ class CustomUserCreationForm(UserCreationForm):
         })
     )
     phone = forms.CharField(
-        required=False,
+        required=True,
         max_length=20,
+        label='Телефон',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': '+7 (999) 999-99-99',
-            'id': 'phone'
+            'id': 'phone',
+            'autocomplete': 'tel',
         })
     )
     company_name = forms.CharField(
@@ -85,8 +87,8 @@ class CustomUserCreationForm(UserCreationForm):
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
-        if not phone:
-            return phone
+        if not phone or not str(phone).strip():
+            raise ValidationError('Укажите номер телефона.')
 
         phone_digits = re.sub(r'\D', '', phone)
 
@@ -443,8 +445,25 @@ class PropertyForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        allow_featured = kwargs.pop('allow_featured', False)
+        allow_admin_statuses = kwargs.pop('allow_admin_statuses', False)
         super().__init__(*args, **kwargs)
+        self._allow_admin_statuses = allow_admin_statuses
         self.fields['amenities'].queryset = Amenity.objects.all()
+
+        if not allow_featured:
+            self.fields.pop('is_featured', None)
+
+        # Статус «На модерации» — только у администратора; арендодатель не выбирает статус при создании
+        if not allow_admin_statuses:
+            if not self.instance.pk:
+                self.fields.pop('status', None)
+            elif self.instance.status == 'pending':
+                self.fields.pop('status', None)
+            elif 'status' in self.fields:
+                self.fields['status'].choices = [
+                    c for c in Property.STATUS_CHOICES if c[0] != 'pending'
+                ]
 
         self.fields['category'].required = False
         self.fields['area'].required = False
@@ -462,6 +481,17 @@ class PropertyForm(forms.ModelForm):
 
             if not self.initial.get('price_per_month') and self.instance.price_per_hour:
                 self.initial['price_per_month'] = self.instance.price_per_hour * 8 * 20
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if 'status' in self.fields:
+            status = cleaned_data.get('status')
+            if status == 'pending' and not getattr(self, '_allow_admin_statuses', False):
+                self.add_error(
+                    'status',
+                    'Отправка на модерацию доступна только администратору платформы.',
+                )
+        return cleaned_data
 
 
 class BookingForm(forms.ModelForm):
@@ -552,9 +582,11 @@ class BookingForm(forms.ModelForm):
         self.fields['start_date'].widget.attrs['min'] = today
         self.fields['end_date'].widget.attrs['min'] = today
 
-        tomorrow = timezone.now() + timedelta(days=1)
-        self.fields['start_date'].initial = tomorrow.date()
-        self.fields['end_date'].initial = tomorrow.date()
+        tomorrow = (timezone.now() + timedelta(days=1)).date()
+        start_initial = self.initial.get('start_date', tomorrow)
+        end_initial = self.initial.get('end_date', tomorrow)
+        self.fields['start_date'].initial = start_initial
+        self.fields['end_date'].initial = end_initial
 
     def clean(self):
         cleaned_data = super().clean()
@@ -586,8 +618,7 @@ class BookingForm(forms.ModelForm):
         duration = end_datetime - start_datetime
         if booking_type == 'hourly' and duration < timedelta(hours=1):
             raise ValidationError({'end_time': 'Минимальное время бронирования - 1 час.'})
-        if booking_type == 'daily' and duration < timedelta(days=1):
-            raise ValidationError({'end_date': 'Минимальное время бронирования - 1 день.'})
+        # Посуточное: календарные дни (заязд–выезд включительно); см. duration_days в расчёте цены
         if booking_type == 'weekly' and duration < timedelta(days=7):
             raise ValidationError({'end_date': 'Минимальное время бронирования - 7 дней.'})
         if booking_type == 'monthly' and duration < timedelta(days=28):

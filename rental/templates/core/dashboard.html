@@ -286,7 +286,7 @@
     <!-- Приветствие -->
     <div class="dashboard-hero">
         <div class="row align-items-center">
-            <div class="col-md-8">
+            <div class="col-12">
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
                         {% if user.avatar %}
@@ -299,6 +299,7 @@
                     </div>
                     <div class="flex-grow-1 ms-4">
                         <h1 class="h2 mb-2 fw-bold">Добро пожаловать, {{ user.get_full_name|default:user.username }}!</h1>
+                        <p class="mb-2 opacity-90 small">@{{ user.username }}</p>
                         <p class="mb-3 opacity-75">
                             <i class="bi bi-person-badge"></i> {{ user.get_user_type_display }}
                             {% if user.company_name %}
@@ -318,22 +319,12 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 text-md-end mt-4 mt-md-0">
-                <div class="d-grid gap-2">
-                    <a href="{% url 'edit_profile' %}" class="btn btn-light">
-                        <i class="bi bi-pencil"></i> Редактировать профиль
-                    </a>
-                    <a href="{% url 'change_password' %}" class="btn btn-outline-light">
-                        <i class="bi bi-key"></i> Сменить пароль
-                    </a>
-                </div>
-            </div>
         </div>
     </div>
 
     <!-- Статистика -->
     <div class="stats-grid">
-        {% if user.user_type == 'tenant' %}
+        {% if dashboard_role == 'tenant' %}
         <!-- Статистика арендатора -->
         <div class="stat-card" data-type="bookings">
             <div class="stat-icon">
@@ -342,19 +333,26 @@
             <div class="stat-value">{{ stats.active_bookings|default:0 }}</div>
             <div class="stat-label">Активные бронирования</div>
             <div class="stat-trend positive">
-                <i class="bi bi-arrow-up"></i> {{ stats.bookings_trend|default:"0" }}%
+                ожидание, оплачено и подтверждено
             </div>
         </div>
 
-        <div class="stat-card" data-type="revenue">
+        <div class="stat-card d-flex flex-column" data-type="revenue">
             <div class="stat-icon">
                 <i class="bi bi-cash-coin"></i>
             </div>
             <div class="stat-value">{{ stats.total_spent|default:0|floatformat:0 }} ₽</div>
-            <div class="stat-label">Общие расходы</div>
-            <div class="stat-trend positive">
-                <i class="bi bi-arrow-up"></i> {{ stats.spending_trend|default:"0" }}%
+            <div class="stat-label">Расходы (оплачено, подтверждено, завершено)</div>
+            <p class="small text-muted mb-2 mb-lg-3">За текущий месяц: <strong>{{ stats.spent_this_month|default:0|floatformat:0 }} ₽</strong></p>
+            {% if stats.spending_trend != 0 %}
+            <div class="stat-trend {% if stats.spending_trend > 0 %}negative{% else %}positive{% endif %}">
+                <i class="bi bi-{% if stats.spending_trend > 0 %}graph-up-arrow{% else %}graph-down-arrow{% endif %}"></i>
+                {% if stats.spending_trend > 0 %}+{% endif %}{{ stats.spending_trend }}% к прошлому месяцу
             </div>
+            {% else %}
+            <div class="stat-trend positive">без изменений к прошлому месяцу</div>
+            {% endif %}
+            <a href="{% url 'tenant_expenses' %}" class="btn btn-sm btn-outline-primary rounded-pill mt-2 align-self-start">Подробнее: по месяцам и статусам</a>
         </div>
 
         <div class="stat-card" data-type="favorites">
@@ -364,7 +362,7 @@
             <div class="stat-value">{{ stats.favorite_count|default:0 }}</div>
             <div class="stat-label">В избранном</div>
             <div class="stat-trend positive">
-                <i class="bi bi-plus"></i> {{ stats.favorites_trend|default:"0" }}%
+                сохранённые объекты
             </div>
         </div>
 
@@ -375,11 +373,11 @@
             <div class="stat-value">{{ stats.total_bookings|default:0 }}</div>
             <div class="stat-label">Всего бронирований</div>
             <div class="stat-trend positive">
-                <i class="bi bi-check-circle"></i> {{ stats.completion_rate|default:"0" }}%
+                за всё время
             </div>
         </div>
 
-        {% elif user.user_type == 'landlord' %}
+        {% elif dashboard_role == 'landlord' %}
         <!-- Статистика арендодателя -->
         <div class="stat-card" data-type="properties">
             <div class="stat-icon">
@@ -392,15 +390,15 @@
             </div>
         </div>
 
-        <div class="stat-card" data-type="revenue">
+        <div class="stat-card d-flex flex-column" data-type="revenue">
             <div class="stat-icon">
                 <i class="bi bi-cash-stack"></i>
             </div>
             <div class="stat-value">{{ stats.monthly_revenue|default:0|floatformat:0 }} ₽</div>
-            <div class="stat-label">Выручка (30 дней)</div>
-            <div class="stat-trend positive">
-                <i class="bi bi-arrow-up"></i> {{ stats.revenue_trend|default:"0" }}%
-            </div>
+            <div class="stat-label">Выручка за 30 дней</div>
+            <p class="small text-muted mb-2">Текущий месяц: <strong>{{ stats.revenue_this_month|default:0|floatformat:0 }} ₽</strong></p>
+            <div class="stat-trend positive">по оплаченным и завершённым брони</div>
+            <a href="{% url 'landlord_revenue' %}" class="btn btn-sm btn-outline-success rounded-pill mt-2 align-self-start">Подробнее: помесячно</a>
         </div>
 
         <div class="stat-card" data-type="bookings">
@@ -424,20 +422,78 @@
                 {{ stats.reviews_count|default:0 }} отзывов
             </div>
         </div>
+
+        {% elif dashboard_role == 'admin' %}
+        <div class="stat-card" data-type="bookings">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+            <div class="stat-value">{{ stats.total_users|default:0 }}</div>
+            <div class="stat-label">Пользователей</div>
+            <div class="stat-trend positive">+{{ stats.new_users_today|default:0 }} сегодня</div>
+        </div>
+        <div class="stat-card" data-type="properties">
+            <div class="stat-icon"><i class="bi bi-buildings"></i></div>
+            <div class="stat-value">{{ stats.total_properties|default:0 }}</div>
+            <div class="stat-label">Помещений</div>
+            <div class="stat-trend positive">{{ stats.active_properties|default:0 }} активных</div>
+        </div>
+        <div class="stat-card" data-type="revenue">
+            <div class="stat-icon"><i class="bi bi-calendar-week"></i></div>
+            <div class="stat-value">{{ stats.total_bookings|default:0 }}</div>
+            <div class="stat-label">Бронирований</div>
+            <div class="stat-trend {% if stats.pending_bookings|default:0 > 0 %}negative{% else %}positive{% endif %}">{{ stats.pending_bookings|default:0 }} ожидают оплаты</div>
+        </div>
+        <div class="stat-card d-flex flex-column" data-type="revenue">
+            <div class="stat-icon"><i class="bi bi-currency-exchange"></i></div>
+            <div class="stat-value">{{ stats.revenue_this_month|default:0|floatformat:0 }} ₽</div>
+            <div class="stat-label">Оборот за текущий месяц</div>
+            <p class="small text-muted mb-2">За 30 дней: <strong>{{ stats.month_revenue|default:0|floatformat:0 }} ₽</strong></p>
+            <p class="small text-muted mb-2">Всего за всё время: <strong>{{ stats.total_platform_revenue|default:0|floatformat:0 }} ₽</strong></p>
+            {% if stats.platform_revenue_trend != 0 %}
+            <div class="stat-trend {% if stats.platform_revenue_trend > 0 %}positive{% else %}negative{% endif %}">
+                <i class="bi bi-{% if stats.platform_revenue_trend > 0 %}graph-up-arrow{% else %}graph-down-arrow{% endif %}"></i>
+                {% if stats.platform_revenue_trend > 0 %}+{% endif %}{{ stats.platform_revenue_trend }}% к прошлому месяцу
+            </div>
+            {% else %}
+            <div class="stat-trend positive">без изменений к прошлому месяцу</div>
+            {% endif %}
+            <p class="small text-muted mb-0 mt-1">{{ stats.today_bookings|default:0 }} брони сегодня</p>
+            <a href="{% url 'admin_platform_revenue' %}" class="btn btn-sm btn-outline-warning rounded-pill mt-2 align-self-start">Подробнее: помесячно и по статусам</a>
+        </div>
         {% endif %}
     </div>
 
-    <!-- Быстрые действия -->
+    <!-- Быстрые действия (по роли) -->
     <div class="quick-actions mb-4">
+        {% if dashboard_role == 'tenant' %}
         <a href="{% url 'my_bookings' %}" class="action-btn">
             <i class="bi bi-calendar-check text-primary"></i>
             <span>Мои бронирования</span>
+        </a>
+        <a href="{% url 'tenant_expenses' %}" class="action-btn">
+            <i class="bi bi-wallet2 text-warning"></i>
+            <span>Расходы подробно</span>
         </a>
         <a href="{% url 'my_favorites' %}" class="action-btn">
             <i class="bi bi-heart text-danger"></i>
             <span>Избранное</span>
         </a>
-        {% if user.user_type == 'landlord' %}
+        <a href="{% url 'property_list' %}" class="action-btn">
+            <i class="bi bi-search text-info"></i>
+            <span>Найти помещение</span>
+        </a>
+        <a href="{% url 'edit_profile' %}" class="action-btn">
+            <i class="bi bi-gear text-secondary"></i>
+            <span>Профиль и настройки</span>
+        </a>
+        {% elif dashboard_role == 'landlord' %}
+        <a href="{% url 'landlord_bookings' %}" class="action-btn">
+            <i class="bi bi-calendar-week text-primary"></i>
+            <span>Бронирования</span>
+        </a>
+        <a href="{% url 'landlord_revenue' %}" class="action-btn">
+            <i class="bi bi-graph-up-arrow text-success"></i>
+            <span>Выручка подробно</span>
+        </a>
         <a href="{% url 'my_properties' %}" class="action-btn">
             <i class="bi bi-buildings text-success"></i>
             <span>Мои помещения</span>
@@ -446,19 +502,47 @@
             <i class="bi bi-plus-circle text-warning"></i>
             <span>Добавить помещение</span>
         </a>
-        {% else %}
         <a href="{% url 'property_list' %}" class="action-btn">
-            <i class="bi bi-search text-info"></i>
-            <span>Найти помещение</span>
+            <i class="bi bi-globe text-info"></i>
+            <span>Каталог (как видят арендаторы)</span>
         </a>
         <a href="{% url 'edit_profile' %}" class="action-btn">
             <i class="bi bi-gear text-secondary"></i>
-            <span>Настройки</span>
+            <span>Профиль</span>
+        </a>
+        {% elif dashboard_role == 'admin' %}
+        <a href="{% url 'admin_platform_revenue' %}" class="action-btn">
+            <i class="bi bi-graph-up-arrow text-success"></i>
+            <span>Оборот платформы</span>
+        </a>
+        <a href="{% url 'custom_admin_dashboard' %}" class="action-btn">
+            <i class="bi bi-speedometer2 text-primary"></i>
+            <span>Админ-дашборд</span>
+        </a>
+        <a href="{% url 'admin_user_management' %}" class="action-btn">
+            <i class="bi bi-people text-info"></i>
+            <span>Пользователи</span>
+        </a>
+        <a href="{% url 'admin_property_management' %}" class="action-btn">
+            <i class="bi bi-building text-success"></i>
+            <span>Помещения</span>
+        </a>
+        <a href="{% url 'admin_booking_management' %}" class="action-btn">
+            <i class="bi bi-calendar-check text-warning"></i>
+            <span>Бронирования</span>
+        </a>
+        <a href="{% url 'property_list' %}" class="action-btn">
+            <i class="bi bi-eye text-secondary"></i>
+            <span>Сайт (каталог)</span>
+        </a>
+        <a href="{% url 'admin_review_management' %}" class="action-btn">
+            <i class="bi bi-star text-warning"></i>
+            <span>Отзывы (модерация)</span>
         </a>
         {% endif %}
     </div>
 
-    {% if user.user_type == 'tenant' %}
+    {% if dashboard_role == 'tenant' %}
     <!-- Активные бронирования для арендатора -->
     <div class="mb-5">
         <h3 class="section-title">
@@ -586,7 +670,7 @@
         {% endif %}
     </div>
 
-    {% elif user.user_type == 'landlord' %}
+    {% elif dashboard_role == 'landlord' %}
     <!-- Мои помещения для арендодателя -->
     <div class="mb-5">
         <h3 class="section-title">
@@ -665,26 +749,64 @@
         </div>
         {% endif %}
     </div>
+
+    {% elif dashboard_role == 'admin' %}
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <h3 class="section-title"><i class="bi bi-people"></i> Последние регистрации</h3>
+            <div class="list-group shadow-sm rounded-3 overflow-hidden">
+                {% for u in recent_users %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ u.get_full_name|default:u.username }}</strong>
+                        <span class="text-muted small d-block">@{{ u.username }} · {{ u.get_user_type_display }}</span>
+                    </div>
+                    <small class="text-muted">{{ u.date_joined|date:"d.m.Y" }}</small>
+                </div>
+                {% empty %}
+                <p class="text-muted">Нет пользователей.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <h3 class="section-title"><i class="bi bi-calendar-check"></i> Последние бронирования</h3>
+            <div class="list-group shadow-sm rounded-3 overflow-hidden">
+                {% for b in recent_bookings %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-semibold">{{ b.booking_id }}</span>
+                        <span class="badge bg-secondary">{{ b.get_status_display }}</span>
+                    </div>
+                    <small class="text-muted">{{ b.property.title|truncatechars:40 }} · {{ b.tenant.username }}</small>
+                </div>
+                {% empty %}
+                <p class="text-muted">Нет бронирований.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
     {% endif %}
 
-    <!-- Панель администратора -->
-    {% if user.is_staff %}
+    <!-- Панель администратора (Django / расширенные инструменты) -->
+    {% if user.is_staff or dashboard_role == 'admin' %}
     <div class="admin-panel">
         <h3 class="text-white mb-4">
             <i class="bi bi-shield-check"></i> Административная панель
         </h3>
 
         <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-{% if user.is_staff %}6{% else %}12{% endif %} mb-3">
                 <a href="{% url 'custom_admin_dashboard' %}" class="btn btn-light w-100">
                     <i class="bi bi-speedometer2"></i> Кастомная админка
                 </a>
             </div>
+            {% if user.is_staff %}
             <div class="col-md-6 mb-3">
                 <a href="/admin/" target="_blank" class="btn btn-outline-light w-100">
                     <i class="bi bi-box-arrow-up-right"></i> Django Admin
                 </a>
             </div>
+            {% endif %}
         </div>
 
         <div class="row mt-3">

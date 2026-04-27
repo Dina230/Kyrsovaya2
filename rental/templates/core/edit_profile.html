@@ -2,162 +2,337 @@
 
 {% block title %}Редактирование профиля{% endblock %}
 
+{% block extra_css %}
+<style>
+    .profile-page-wrap {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .profile-hero {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(25, 135, 84, 0.1) 100%);
+        border-radius: 20px;
+        padding: 1.25rem 1.5rem;
+        border: 1px solid rgba(13, 110, 253, 0.12);
+        margin-bottom: 1.5rem;
+    }
+    .profile-sidebar-card {
+        border: 1px solid rgba(13, 110, 253, 0.1);
+        border-radius: 18px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    }
+    .profile-sidebar-head {
+        background: linear-gradient(135deg, #0d6efd 0%, #157347 100%);
+        color: #fff;
+        padding: 1.35rem 1.25rem;
+        text-align: center;
+    }
+    .profile-sidebar-head .avatar-ring {
+        width: 88px;
+        height: 88px;
+        margin: 0 auto 0.75rem;
+        border-radius: 50%;
+        padding: 3px;
+        background: linear-gradient(135deg, rgba(255,255,255,.5), rgba(255,255,255,.15));
+    }
+    .profile-sidebar-head .avatar-inner {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        overflow: hidden;
+        background: rgba(255,255,255,.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    .profile-sidebar-head .badge-role {
+        background: rgba(255,255,255,.22);
+        color: #fff;
+        font-weight: 600;
+        padding: 0.35em 0.85em;
+        border-radius: 999px;
+        font-size: 0.8rem;
+    }
+    .profile-nav .nav-link {
+        border-radius: 12px;
+        padding: 0.65rem 1rem;
+        margin-bottom: 4px;
+        color: #475569;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.2s, color 0.2s;
+    }
+    .profile-nav .nav-link:hover {
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d6efd;
+    }
+    .profile-nav .nav-link.active {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.12), rgba(25, 135, 84, 0.1));
+        color: #0d6efd;
+        font-weight: 600;
+    }
+    .profile-nav .nav-link i {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    .profile-main-card {
+        border: 1px solid rgba(13, 110, 253, 0.1);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+        background: #fff;
+    }
+    .profile-main-card .card-header-profile {
+        background: linear-gradient(120deg, #f8fafc 0%, #f0f7ff 50%, #f6fffa 100%);
+        border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+        padding: 1.35rem 1.75rem;
+    }
+    .profile-main-card .card-header-profile h1 {
+        font-size: 1.35rem;
+        font-weight: 800;
+        background: linear-gradient(120deg, #0d6efd, #157347);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin: 0;
+    }
+    .profile-avatar-box {
+        border: 2px dashed rgba(13, 110, 253, 0.25);
+        border-radius: 20px;
+        padding: 1.25rem;
+        background: linear-gradient(180deg, #f8fafc, #fff);
+    }
+    .profile-avatar-preview {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin: 0 auto 1rem;
+        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.2);
+        border: 4px solid #fff;
+    }
+    .profile-edit-main .form-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+    }
+    .profile-edit-main .form-control {
+        border-radius: 12px;
+        border-color: rgba(15, 23, 42, 0.12);
+        padding: 0.65rem 1rem;
+    }
+    .profile-edit-main .form-control:focus {
+        border-color: rgba(13, 110, 253, 0.45);
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+    }
+    .profile-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    .profile-meta-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 23, 42, 0.06);
+    }
+    .profile-meta-item i {
+        font-size: 1.25rem;
+        color: #0d6efd;
+        margin-top: 2px;
+    }
+    .profile-meta-item small {
+        display: block;
+        color: #64748b;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+    }
+    .profile-meta-item strong {
+        color: #0f172a;
+        font-weight: 600;
+    }
+    .avatar-circle { transition: transform 0.2s, box-shadow 0.2s; }
+    .avatar-circle:hover { transform: scale(1.02); }
+    #{{ form.avatar.id_for_label }} { display: none; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-    <div class="row">
-        <!-- Левая колонка - навигация -->
-        <div class="col-lg-3 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-center mb-4">
-                        <div class="avatar-circle bg-primary text-white d-inline-flex align-items-center justify-content-center rounded-circle mb-3" 
-                             style="width: 80px; height: 80px; font-size: 2rem;">
+<div class="container py-4 py-lg-5 profile-page-wrap">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Личный кабинет</a></li>
+            <li class="breadcrumb-item active">Профиль</li>
+        </ol>
+    </nav>
+
+    <div class="profile-hero">
+        <p class="text-uppercase small fw-semibold text-primary mb-1" style="letter-spacing:0.06em;">Настройки аккаунта</p>
+        <h2 class="h4 fw-bold mb-0">Редактирование профиля</h2>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4 col-xl-3">
+            <div class="profile-sidebar-card mb-4 mb-lg-0">
+                <div class="profile-sidebar-head">
+                    <div class="avatar-ring">
+                        <div class="avatar-inner">
                             {% if user.avatar %}
-                                <img src="{{ user.avatar.url }}" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="{{ user.avatar.url }}" alt="" class="w-100 h-100" style="object-fit:cover;">
                             {% else %}
-                                {{ user.get_full_name|default:user.username|first|upper }}
+                            {{ user.get_full_name|default:user.username|first|upper }}
                             {% endif %}
                         </div>
-                        <h5>{{ user.get_full_name|default:user.username }}</h5>
-                        <span class="badge bg-primary">{{ user.get_user_type_display }}</span>
                     </div>
-                    
-                    <nav class="nav flex-column">
-                        <a class="nav-link active" href="{% url 'edit_profile' %}">
-                            <i class="bi bi-person"></i> Профиль
-                        </a>
-                        <a class="nav-link" href="{% url 'change_password' %}">
-                            <i class="bi bi-shield-lock"></i> Безопасность
-                        </a>
-                        <a class="nav-link" href="{% url 'my_bookings' %}">
-                            <i class="bi bi-calendar-check"></i> Мои бронирования
-                        </a>
-                        <a class="nav-link" href="{% url 'my_favorites' %}">
-                            <i class="bi bi-heart"></i> Избранное
-                        </a>
-                        {% if user.user_type == 'landlord' %}
-                        <a class="nav-link" href="{% url 'my_properties' %}">
-                            <i class="bi bi-buildings"></i> Мои помещения
-                        </a>
-                        {% endif %}
-                        <hr>
-                        <a class="nav-link" href="{% url 'dashboard' %}">
-                            <i class="bi bi-arrow-left"></i> Назад в кабинет
-                        </a>
-                    </nav>
+                    <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="small opacity-90 mb-2">@{{ user.username }}</div>
+                    <span class="badge-role">{{ user.get_user_type_display }}</span>
                 </div>
+                <nav class="nav flex-column p-3 profile-nav">
+                    <a class="nav-link active" href="{% url 'edit_profile' %}"><i class="bi bi-person"></i> Профиль</a>
+                    <a class="nav-link" href="{% url 'change_password' %}"><i class="bi bi-shield-lock"></i> Безопасность</a>
+
+                    {% if user.user_type == 'tenant' %}
+                    <a class="nav-link" href="{% url 'my_bookings' %}"><i class="bi bi-calendar-check"></i> Мои бронирования</a>
+                    <a class="nav-link" href="{% url 'tenant_expenses' %}"><i class="bi bi-wallet2"></i> Расходы</a>
+                    <a class="nav-link" href="{% url 'my_favorites' %}"><i class="bi bi-heart"></i> Избранное</a>
+                    {% elif user.user_type == 'landlord' %}
+                    <a class="nav-link" href="{% url 'landlord_bookings' %}"><i class="bi bi-calendar-week"></i> Бронирования</a>
+                    <a class="nav-link" href="{% url 'landlord_revenue' %}"><i class="bi bi-graph-up-arrow"></i> Выручка</a>
+                    <a class="nav-link" href="{% url 'my_properties' %}"><i class="bi bi-buildings"></i> Мои помещения</a>
+                    {% endif %}
+
+                    {% if user.is_staff or user.user_type == 'admin' %}
+                    <a class="nav-link" href="{% url 'custom_admin_dashboard' %}"><i class="bi bi-speedometer2"></i> Админ-панель</a>
+                    {% endif %}
+
+                    <hr class="my-2 opacity-25">
+                    <a class="nav-link text-secondary" href="{% url 'dashboard' %}"><i class="bi bi-arrow-left-circle"></i> В кабинет</a>
+                </nav>
             </div>
         </div>
-        
-        <!-- Правая колонка - форма редактирования -->
-        <div class="col-lg-9">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="bi bi-person-gear"></i> Редактирование профиля</h4>
+
+        <div class="col-lg-8 col-xl-9">
+            <div class="profile-main-card">
+                <div class="card-header-profile d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h1><i class="bi bi-person-gear me-2" style="color:#0d6efd;"></i>Данные профиля</h1>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4 p-lg-5 profile-edit-main">
                     <form method="post" enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
-                        
-                        <div class="row">
-                            <!-- Аватар -->
-                            <div class="col-md-4 mb-4">
-                                <div class="text-center">
-                                    <div class="mb-3">
-                                        <div class="avatar-circle bg-light border d-inline-flex align-items-center justify-content-center rounded-circle mb-3" 
-                                             style="width: 150px; height: 150px; font-size: 3rem; overflow: hidden;">
-                                            {% if user.avatar %}
-                                                <img src="{{ user.avatar.url }}" id="avatarPreview" class="w-100 h-100" style="object-fit: cover;">
-                                            {% else %}
-                                                <div id="avatarPreview" class="w-100 h-100 d-flex align-items-center justify-content-center bg-primary text-white">
-                                                    {{ user.get_full_name|default:user.username|first|upper }}
-                                                </div>
-                                            {% endif %}
+
+                        <div class="row g-4">
+                            <div class="col-md-5 col-xl-4">
+                                <div class="profile-avatar-box text-center">
+                                    <div class="profile-avatar-preview avatar-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto">
+                                        {% if user.avatar %}
+                                        <img src="{{ user.avatar.url }}" id="avatarPreview" class="w-100 h-100" style="object-fit: cover;" alt="">
+                                        {% else %}
+                                        <div id="avatarPreview" class="w-100 h-100 d-flex align-items-center justify-content-center fs-1 fw-bold">
+                                            {{ user.get_full_name|default:user.username|first|upper }}
                                         </div>
-                                        <label for="{{ form.avatar.id_for_label }}" class="btn btn-outline-primary btn-sm">
-                                            <i class="bi bi-camera"></i> Изменить фото
-                                        </label>
-                                        {{ form.avatar }}
+                                        {% endif %}
                                     </div>
+                                    <label for="{{ form.avatar.id_for_label }}" class="btn btn-outline-primary rounded-pill px-4">
+                                        <i class="bi bi-camera me-1"></i> Изменить фото
+                                    </label>
+                                    {{ form.avatar }}
+                                    <p class="small text-muted mt-2 mb-0">JPG, PNG до 2 МБ</p>
                                 </div>
                             </div>
-                            
-                            <!-- Информация -->
-                            <div class="col-md-8">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
+
+                            <div class="col-md-7 col-xl-8">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
                                         <label class="form-label">Имя *</label>
                                         {{ form.first_name }}
-                                        {% if form.first_name.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>
-                                        {% endif %}
+                                        {% if form.first_name.errors %}<div class="invalid-feedback d-block">{{ form.first_name.errors }}</div>{% endif %}
                                     </div>
-                                    
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-6">
                                         <label class="form-label">Фамилия *</label>
                                         {{ form.last_name }}
-                                        {% if form.last_name.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>
-                                        {% endif %}
+                                        {% if form.last_name.errors %}<div class="invalid-feedback d-block">{{ form.last_name.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Email *</label>
+                                        {{ form.email }}
+                                        {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Телефон</label>
+                                        {{ form.phone }}
+                                        {% if form.phone.errors %}<div class="invalid-feedback d-block">{{ form.phone.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Название компании</label>
+                                        {{ form.company_name }}
+                                        {% if form.company_name.errors %}<div class="invalid-feedback d-block">{{ form.company_name.errors }}</div>{% endif %}
                                     </div>
                                 </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Email *</label>
-                                    {{ form.email }}
-                                    {% if form.email.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Телефон</label>
-                                    {{ form.phone }}
-                                    {% if form.phone.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.phone.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Название компании</label>
-                                    {{ form.company_name }}
-                                    {% if form.company_name.errors %}
-                                    <div class="invalid-feedback d-block">{{ form.company_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Информация только для чтения -->
-                                <div class="alert alert-info">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <p class="mb-1"><strong>Тип аккаунта:</strong> {{ user.get_user_type_display }}</p>
-                                            <p class="mb-1"><strong>Имя пользователя:</strong> {{ user.username }}</p>
+
+                                <div class="profile-meta-grid mt-4 pt-2">
+                                    <div class="profile-meta-item">
+                                        <i class="bi bi-person-badge"></i>
+                                        <div>
+                                            <small>Тип аккаунта</small>
+                                            <strong>{{ user.get_user_type_display }}</strong>
                                         </div>
-                                        <div class="col-md-6">
-                                            <p class="mb-1"><strong>Дата регистрации:</strong> {{ user.date_joined|date:"d.m.Y" }}</p>
-                                            <p class="mb-0"><strong>Статус:</strong> 
+                                    </div>
+                                    <div class="profile-meta-item">
+                                        <i class="bi bi-at"></i>
+                                        <div>
+                                            <small>Логин</small>
+                                            <strong>{{ user.username }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="profile-meta-item">
+                                        <i class="bi bi-calendar3"></i>
+                                        <div>
+                                            <small>Регистрация</small>
+                                            <strong>{{ user.date_joined|date:"d.m.Y" }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="profile-meta-item">
+                                        <i class="bi bi-check-circle"></i>
+                                        <div>
+                                            <small>Статус</small>
+                                            <strong>
                                                 {% if user.is_active %}
-                                                <span class="badge bg-success">Активен</span>
+                                                <span class="badge bg-success rounded-pill">Активен</span>
                                                 {% else %}
-                                                <span class="badge bg-danger">Неактивен</span>
+                                                <span class="badge bg-danger rounded-pill">Неактивен</span>
                                                 {% endif %}
-                                            </p>
+                                            </strong>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Отмена
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 pt-4 border-top">
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="bi bi-arrow-left me-1"></i> Отмена
                             </a>
-                            <div>
-                                <button type="reset" class="btn btn-outline-warning me-2">
-                                    <i class="bi bi-arrow-counterclockwise"></i> Сбросить
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="reset" class="btn btn-outline-secondary rounded-pill px-3">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Сбросить
                                 </button>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-circle"></i> Сохранить изменения
+                                <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                                    <i class="bi bi-check2-circle me-1"></i> Сохранить изменения
                                 </button>
                             </div>
                         </div>
@@ -168,38 +343,20 @@
     </div>
 </div>
 
-<style>
-    .avatar-circle {
-        transition: all 0.3s ease;
-        border: 3px solid #dee2e6;
-    }
-    
-    .avatar-circle:hover {
-        border-color: #0d6efd;
-        transform: scale(1.05);
-    }
-    
-    #{{ form.avatar.id_for_label }} {
-        display: none;
-    }
-</style>
-
 <script>
-    // Превью аватара
-    document.addEventListener('DOMContentLoaded', function() {
-        const avatarInput = document.querySelector('#{{ form.avatar.id_for_label }}');
-        const avatarPreview = document.querySelector('#avatarPreview');
-        
-        avatarInput.addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    avatarPreview.innerHTML = `<img src="${e.target.result}" class="w-100 h-100" style="object-fit: cover;">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    const avatarInput = document.querySelector('#{{ form.avatar.id_for_label }}');
+    const avatarPreview = document.querySelector('#avatarPreview');
+    if (!avatarInput || !avatarPreview) return;
+    avatarInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            avatarPreview.innerHTML = '<img src="' + e.target.result + '" class="w-100 h-100" style="object-fit:cover" alt="">';
+        };
+        reader.readAsDataURL(file);
     });
+});
 </script>
 {% endblock %}

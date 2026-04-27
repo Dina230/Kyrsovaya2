@@ -565,13 +565,22 @@
                                     <label for="cvv">
                                         <i class="bi bi-shield-lock"></i> CVV
                                     </label>
-                                    <input type="password"
-                                           name="cvv"
-                                           class="form-control cvv-input"
-                                           id="cvv"
-                                           placeholder="123"
-                                           maxlength="4"
-                                           {% if form.payment_method.value != 'cash' %}required{% endif %}>
+                                    <div class="input-group password-toggle">
+                                        <input type="password"
+                                               name="cvv"
+                                               class="form-control cvv-input rounded-start"
+                                               id="cvv"
+                                               placeholder="123"
+                                               maxlength="4"
+                                               inputmode="numeric"
+                                               autocomplete="cc-csc"
+                                               {% if form.payment_method.value != 'cash' %}required{% endif %}>
+                                        <button type="button" class="btn btn-outline-secondary rounded-end"
+                                                data-password-toggle
+                                                aria-label="Показать CVV" title="Показать CVV">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                     {% if form.cvv.errors %}
                                     <div class="invalid-feedback">
                                         {% for error in form.cvv.errors %}

@@ -148,25 +148,25 @@
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="stats-mini-card">
-            <div class="value">{{ properties.paginator.count|default:"0" }}</div>
+            <div class="value">{{ property_stats.total|default:"0" }}</div>
             <div class="label">Всего помещений</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-mini-card">
-            <div class="value">{{ properties.paginator.count|default:"0" }}</div>
+            <div class="value">{{ property_stats.active|default:"0" }}</div>
             <div class="label">Активных</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-mini-card">
-            <div class="value">{{ properties.paginator.count|default:"0" }}</div>
+            <div class="value">{{ property_stats.pending|default:"0" }}</div>
             <div class="label">На модерации</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stats-mini-card">
-            <div class="value">{{ properties.paginator.count|default:"0" }}</div>
+            <div class="value">{{ property_stats.views|default:"0" }}</div>
             <div class="label">Всего просмотров</div>
         </div>
     </div>
@@ -204,6 +204,9 @@
         </div>
         <div class="col-md-2">
             <input type="text" class="form-control" name="city" placeholder="Город" value="{{ request.GET.city|default:'' }}">
+        </div>
+        <div class="col-md-2">
+            <input type="text" class="form-control" name="landlord" placeholder="Владелец (имя/email)" value="{{ request.GET.landlord|default:'' }}">
         </div>
         <div class="col-md-3">
             <div class="d-flex gap-2">
@@ -335,12 +338,12 @@
             <ul class="pagination justify-content-center">
                 {% if properties.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}">
+                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.landlord %}&landlord={{ request.GET.landlord }}{% endif %}">
                         <i class="bi bi-chevron-double-left"></i>
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ properties.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}">
+                    <a class="page-link" href="?page={{ properties.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.landlord %}&landlord={{ request.GET.landlord }}{% endif %}">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
@@ -353,7 +356,7 @@
                     </li>
                     {% elif num > properties.number|add:'-3' and num < properties.number|add:'3' %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.landlord %}&landlord={{ request.GET.landlord }}{% endif %}">
                             {{ num }}
                         </a>
                     </li>
@@ -362,12 +365,12 @@
 
                 {% if properties.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ properties.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}">
+                    <a class="page-link" href="?page={{ properties.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.landlord %}&landlord={{ request.GET.landlord }}{% endif %}">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ properties.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}">
+                    <a class="page-link" href="?page={{ properties.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.city %}&city={{ request.GET.city }}{% endif %}{% if request.GET.landlord %}&landlord={{ request.GET.landlord }}{% endif %}">
                         <i class="bi bi-chevron-double-right"></i>
                     </a>
                 </li>
