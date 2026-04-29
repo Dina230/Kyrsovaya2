@@ -1,0 +1,16 @@
+.git
+.gitignore
+.idea
+.venv
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+node_modules
+rental/.env
+rental/data_migration.json
+rental/media/
+rental/staticfiles/

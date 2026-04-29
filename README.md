@@ -39,3 +39,40 @@ cd .\rental
 & "..\.venv\Scripts\python.exe" manage.py check
 & "..\.venv\Scripts\python.exe" manage.py runserver
 ```
+
+## Запуск в Docker (SQLite3)
+
+Из корня проекта:
+
+```powershell
+docker compose up --build
+```
+
+После старта приложение будет доступно по адресу:
+
+```text
+http://localhost:8000
+```
+
+Остановка:
+
+```powershell
+docker compose down
+```
+
+### Демонстрационный PostgreSQL (не используется приложением)
+
+В `docker-compose.yml` добавлен отдельный сервис `postgres` в профиле `demo`.
+Приложение по-прежнему работает на `SQLite3`.
+
+Запуск только demo PostgreSQL:
+
+```powershell
+docker compose --profile demo up -d postgres
+```
+
+Запуск приложения + demo PostgreSQL:
+
+```powershell
+docker compose --profile demo up --build
+```

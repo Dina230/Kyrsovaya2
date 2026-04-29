@@ -24,7 +24,7 @@ from xml.sax.saxutils import escape
 # Импорты моделей
 from .models import (
     User, Property, Booking, Review, Favorite,
-    Category, Amenity, Notification, Message, Cart, Contract
+    Category, Amenity, Notification, Message, Cart, Contract, AdminAuditLog, UserAuditLog
 )
 # Импорты форм
 from .forms import (
@@ -699,6 +699,48 @@ def _is_platform_admin(user):
     return bool(getattr(user, 'is_staff', False) or getattr(user, 'user_type', None) == 'admin')
 
 
+def _get_client_ip(request):
+    """Получить IP клиента с учетом прокси."""
+    forwarded = (request.META.get('HTTP_X_FORWARDED_FOR') or '').strip()
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def log_admin_action(request, action, target_model, target_obj=None, details=''):
+    """Записать действие администратора в аудит-лог."""
+    target_id = None
+    target_repr = ''
+    if target_obj is not None:
+        target_id = getattr(target_obj, 'pk', None)
+        target_repr = str(target_obj)
+
+    AdminAuditLog.objects.create(
+        admin_user=request.user if request.user.is_authenticated else None,
+        action=action,
+        target_model=target_model,
+        target_id=target_id,
+        target_repr=target_repr,
+        details=details or '',
+        ip_address=_get_client_ip(request),
+    )
+
+
+def log_user_event(request, event_type, user=None, details=''):
+    """Записать событие пользователя в аудит-лог."""
+    actor = user or (request.user if getattr(request, 'user', None) and request.user.is_authenticated else None)
+    username_snapshot = getattr(actor, 'username', '')
+    user_agent = (request.META.get('HTTP_USER_AGENT') or '')[:255] if request is not None else ''
+    UserAuditLog.objects.create(
+        user=actor,
+        username_snapshot=username_snapshot,
+        event_type=event_type,
+        details=details or '',
+        ip_address=_get_client_ip(request) if request is not None else None,
+        user_agent=user_agent,
+    )
+
+
 def _unicode_case_variants(s):
     """
     Набор вариантов регистра для поиска (кириллица и латиница).
@@ -988,6 +1030,12 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            log_user_event(
+                request,
+                event_type='register',
+                user=user,
+                details='Создан новый аккаунт'
+            )
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password1')
             user = authenticate(username=username, password=password)
@@ -1136,11 +1184,45 @@ def dashboard(request):
         )
         stats['revenue_this_month'] = revenue_this_month
 
+        # Данные для диаграмм арендодателя
+        revenue_qs = bookings.filter(status__in=_paid_like_statuses()).annotate(ref_date=ref_l)
+        month_labels = []
+        month_revenue_values = []
+        month_bookings_values = []
+        chart_anchor = timezone.localtime()
+        for i in range(5, -1, -1):
+            d = chart_anchor - timedelta(days=30 * i)
+            month_start, month_end = _calendar_month_bounds(d)
+            month_labels.append(month_start.strftime('%m.%Y'))
+            month_slice = revenue_qs.filter(ref_date__gte=month_start, ref_date__lt=month_end)
+            month_revenue_values.append(float(month_slice.aggregate(t=Sum('total_price'))['t'] or 0))
+            month_bookings_values.append(month_slice.count())
+
+        booking_status_order = ['pending', 'paid', 'confirmed', 'completed', 'cancelled']
+        booking_status_labels_map = {
+            'pending': 'Ожидают',
+            'paid': 'Оплачены',
+            'confirmed': 'Подтверждены',
+            'completed': 'Завершены',
+            'cancelled': 'Отменены',
+        }
+        booking_status_counts = {
+            item['status']: item['count']
+            for item in bookings.values('status').annotate(count=Count('id'))
+        }
+        status_labels = [booking_status_labels_map[s] for s in booking_status_order]
+        status_values = [booking_status_counts.get(s, 0) for s in booking_status_order]
+
         context.update({
             'stats': stats,
             'properties': safe_properties,
             'new_bookings': new_bookings,
             'active_bookings': active_bookings,
+            'landlord_chart_month_labels': json.dumps(month_labels),
+            'landlord_chart_month_revenue': json.dumps(month_revenue_values),
+            'landlord_chart_month_bookings': json.dumps(month_bookings_values),
+            'landlord_chart_status_labels': json.dumps(status_labels),
+            'landlord_chart_status_values': json.dumps(status_values),
             'has_new_bookings': len(new_bookings) > 0,
             'has_active_bookings': len(active_bookings) > 0,
             'dashboard_role': 'landlord',
@@ -1379,6 +1461,11 @@ def edit_profile(request):
         form = CustomUserChangeForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             form.save()
+            log_user_event(
+                request,
+                event_type='profile_update',
+                details='Пользователь обновил профиль'
+            )
             messages.success(request, 'Профиль успешно обновлен.')
             return redirect('dashboard')
     else:
@@ -1398,6 +1485,12 @@ def change_password(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
+            log_user_event(
+                request,
+                event_type='password_change',
+                user=user,
+                details='Пользователь сменил пароль'
+            )
             messages.success(request, 'Пароль успешно изменен.')
             return redirect('dashboard')
     else:
@@ -1760,7 +1853,12 @@ def cancel_booking(request, booking_id):
         messages.error(request, 'Нельзя отменить начавшееся бронирование.')
         return redirect('booking_detail', booking_id=booking_id)
 
+    was_paid = booking.is_paid or booking.status == 'paid'
     booking.status = 'cancelled'
+    if was_paid:
+        # Откат признаков оплаты при отмене, чтобы состояние брони было консистентным.
+        booking.is_paid = False
+        booking.payment_date = None
     booking.save()
 
     create_booking_notification(booking, 'booking_cancelled')
@@ -1964,6 +2062,14 @@ def payment(request, booking_id):
             booking.save()
 
             if payment_method == 'card':
+                contract, _ = Contract.objects.get_or_create(booking=booking)
+                if not (contract.signed_by_tenant and contract.signed_by_landlord):
+                    messages.error(
+                        request,
+                        'Перед оплатой договор должен быть подписан арендатором и арендодателем.'
+                    )
+                    return redirect('booking_detail', booking_id=booking.id)
+
                 # Проверка времени только для карты
                 if time_elapsed > timedelta(minutes=30):
                     booking.status = 'cancelled'
@@ -2775,6 +2881,79 @@ def custom_admin_dashboard(request):
 
 
 @login_required
+def admin_audit_log(request):
+    """Журнал аудита действий в кастомной админке."""
+    if not _is_platform_admin(request.user):
+        messages.error(request, 'У вас нет прав для доступа к этой странице.')
+        return redirect('dashboard')
+
+    logs = AdminAuditLog.objects.select_related('admin_user').all()
+
+    action_filter = (request.GET.get('action') or '').strip()
+    model_filter = (request.GET.get('model') or '').strip()
+    admin_filter = (request.GET.get('admin') or '').strip()
+
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+    if model_filter:
+        logs = logs.filter(target_model__iexact=model_filter)
+    if admin_filter:
+        logs = _filter_icase_contains(
+            logs,
+            ['admin_user__username', 'admin_user__email', 'details', 'target_repr'],
+            admin_filter,
+            prefix='aad',
+        )
+
+    paginator = Paginator(logs, 20)
+    page = request.GET.get('page')
+    logs_page = paginator.get_page(page)
+
+    return render(request, 'admin/audit_log.html', {
+        'logs': logs_page,
+        'action_filter': action_filter,
+        'model_filter': model_filter,
+        'admin_filter': admin_filter,
+        'action_choices': AdminAuditLog.ACTION_CHOICES,
+        'title': 'Аудит админки'
+    })
+
+
+@login_required
+def admin_user_audit_log(request):
+    """Журнал пользовательской активности."""
+    if not _is_platform_admin(request.user):
+        messages.error(request, 'У вас нет прав для доступа к этой странице.')
+        return redirect('dashboard')
+
+    logs = UserAuditLog.objects.select_related('user').all()
+    event_filter = (request.GET.get('event') or '').strip()
+    user_filter = (request.GET.get('user_q') or '').strip()
+
+    if event_filter:
+        logs = logs.filter(event_type=event_filter)
+    if user_filter:
+        logs = _filter_icase_contains(
+            logs,
+            ['username_snapshot', 'user__username', 'user__email', 'details', 'ip_address'],
+            user_filter,
+            prefix='aul',
+        )
+
+    paginator = Paginator(logs, 20)
+    page = request.GET.get('page')
+    logs_page = paginator.get_page(page)
+
+    return render(request, 'admin/user_audit_log.html', {
+        'logs': logs_page,
+        'event_filter': event_filter,
+        'user_filter': user_filter,
+        'event_choices': UserAuditLog.EVENT_CHOICES,
+        'title': 'Аудит пользователей'
+    })
+
+
+@login_required
 def admin_user_management(request):
     """Управление пользователями с пагинацией (5 на странице)"""
     if not _is_platform_admin(request.user):
@@ -2828,13 +3007,28 @@ def admin_user_management(request):
                 user.is_active = not user.is_active
                 user.save()
                 status = 'активирован' if user.is_active else 'деактивирован'
+                log_admin_action(
+                    request,
+                    action='status_change',
+                    target_model='User',
+                    target_obj=user,
+                    details=f'Изменен статус активности: {status}'
+                )
                 messages.success(request, f'Пользователь {user.username} {status}.')
             elif action == 'delete':
                 if user == request.user:
                     messages.error(request, 'Вы не можете удалить свой аккаунт.')
                 else:
+                    username = user.username
+                    user_repr = str(user)
                     user.delete()
-                    messages.success(request, f'Пользователь {user.username} удален.')
+                    log_admin_action(
+                        request,
+                        action='delete',
+                        target_model='User',
+                        details=f'Удален пользователь: {user_repr} ({username})'
+                    )
+                    messages.success(request, f'Пользователь {username} удален.')
         except User.DoesNotExist:
             messages.error(request, 'Пользователь не найден.')
         return redirect('admin_user_management')
@@ -2911,6 +3105,13 @@ def admin_property_management(request):
             if action == 'approve':
                 property_obj.status = 'active'
                 property_obj.save()
+                log_admin_action(
+                    request,
+                    action='moderation',
+                    target_model='Property',
+                    target_obj=property_obj,
+                    details='Помещение одобрено в админке'
+                )
                 # Уведомление владельцу
                 create_notification(
                     user=property_obj.landlord,
@@ -2924,13 +3125,36 @@ def admin_property_management(request):
             elif action == 'reject':
                 property_obj.status = 'rejected'
                 property_obj.save()
+                log_admin_action(
+                    request,
+                    action='moderation',
+                    target_model='Property',
+                    target_obj=property_obj,
+                    details='Помещение отклонено в админке'
+                )
                 messages.success(request, f'Помещение "{property_obj.title}" отклонено.')
             elif action == 'toggle_featured':
                 property_obj.is_featured = not property_obj.is_featured
                 property_obj.save()
+                state = 'включен' if property_obj.is_featured else 'выключен'
+                log_admin_action(
+                    request,
+                    action='update',
+                    target_model='Property',
+                    target_obj=property_obj,
+                    details=f'Флаг "рекомендуемое" {state}'
+                )
                 messages.success(request, f'Статус "Рекомендуемое" изменен.')
             elif action == 'delete':
+                prop_title = property_obj.title
+                prop_id = property_obj.id
                 property_obj.delete()
+                log_admin_action(
+                    request,
+                    action='delete',
+                    target_model='Property',
+                    details=f'Удалено помещение #{prop_id}: {prop_title}'
+                )
                 messages.success(request, f'Помещение удалено.')
         except Property.DoesNotExist:
             messages.error(request, 'Помещение не найдено.')
@@ -2971,6 +3195,13 @@ def admin_booking_management(request):
             if action == 'confirm' and booking.status == 'pending':
                 booking.status = 'confirmed'
                 booking.save()
+                log_admin_action(
+                    request,
+                    action='status_change',
+                    target_model='Booking',
+                    target_obj=booking,
+                    details='Бронирование подтверждено'
+                )
                 create_booking_notification(booking, 'booking_confirmed')
                 try:
                     generate_contract_pdf(booking)
@@ -2980,16 +3211,36 @@ def admin_booking_management(request):
             elif action == 'cancel' and booking.status in ('pending', 'paid', 'confirmed'):
                 booking.status = 'cancelled'
                 booking.save()
+                log_admin_action(
+                    request,
+                    action='status_change',
+                    target_model='Booking',
+                    target_obj=booking,
+                    details='Бронирование отменено'
+                )
                 create_booking_notification(booking, 'booking_cancelled')
                 messages.success(request, 'Бронирование отменено.')
             elif action == 'complete' and booking.status == 'confirmed':
                 booking.status = 'completed'
                 booking.save()
+                log_admin_action(
+                    request,
+                    action='status_change',
+                    target_model='Booking',
+                    target_obj=booking,
+                    details='Бронирование завершено'
+                )
                 create_booking_notification(booking, 'booking_completed')
                 messages.success(request, 'Бронирование завершено.')
             elif action == 'delete':
                 bid = booking.booking_id
                 booking.delete()
+                log_admin_action(
+                    request,
+                    action='delete',
+                    target_model='Booking',
+                    details=f'Удалено бронирование: {bid}'
+                )
                 messages.success(request, f'Бронирование {bid} удалено.')
             else:
                 messages.error(request, 'Действие недоступно для текущего статуса.')
@@ -3070,15 +3321,36 @@ def admin_review_management(request):
                 review.status = 'approved'
                 review.admin_comment = None
                 review.save()
+                log_admin_action(
+                    request,
+                    action='moderation',
+                    target_model='Review',
+                    target_obj=review,
+                    details='Отзыв одобрен'
+                )
                 messages.success(request, 'Отзыв одобрен и опубликован.')
             elif action == 'reject':
                 review.status = 'rejected'
                 comment = (request.POST.get('admin_comment') or '').strip()
                 review.admin_comment = comment if comment else None
                 review.save()
+                log_admin_action(
+                    request,
+                    action='moderation',
+                    target_model='Review',
+                    target_obj=review,
+                    details=f'Отзыв отклонен. Комментарий: {comment or "без комментария"}'
+                )
                 messages.success(request, 'Отзыв отклонён.')
             elif action == 'delete':
+                review_repr = str(review)
                 review.delete()
+                log_admin_action(
+                    request,
+                    action='delete',
+                    target_model='Review',
+                    details=f'Удален отзыв: {review_repr}'
+                )
                 messages.success(request, 'Отзыв удалён.')
             else:
                 messages.error(request, 'Неизвестное действие.')

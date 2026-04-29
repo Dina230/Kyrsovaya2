@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin
 from .models import (
     User, Category, Amenity, Property,
     PropertyImage, Booking, Review, Favorite,
-    Notification, Message
+    Notification, Message, AdminAuditLog, UserAuditLog
 )
 
 # Кастомная админка для пользователя
@@ -118,6 +118,23 @@ class MessageAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
 
 
+class AdminAuditLogAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'admin_user', 'action', 'target_model', 'target_id', 'target_repr')
+    list_filter = ('action', 'target_model', 'created_at')
+    search_fields = ('target_repr', 'details', 'admin_user__username', 'admin_user__email')
+    readonly_fields = (
+        'created_at', 'admin_user', 'action', 'target_model',
+        'target_id', 'target_repr', 'details', 'ip_address'
+    )
+
+
+class UserAuditLogAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'user', 'username_snapshot', 'event_type', 'ip_address')
+    list_filter = ('event_type', 'created_at')
+    search_fields = ('username_snapshot', 'details', 'user__username', 'user__email', 'ip_address')
+    readonly_fields = ('created_at', 'user', 'username_snapshot', 'event_type', 'details', 'ip_address', 'user_agent')
+
+
 # Регистрация всех моделей
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Category, CategoryAdmin)
@@ -128,3 +145,5 @@ admin.site.register(Review, ReviewAdmin)
 admin.site.register(Favorite, FavoriteAdmin)
 admin.site.register(Notification, NotificationAdmin)
 admin.site.register(Message, MessageAdmin)
+admin.site.register(AdminAuditLog, AdminAuditLogAdmin)
+admin.site.register(UserAuditLog, UserAuditLogAdmin)

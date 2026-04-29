@@ -218,6 +218,19 @@
     padding: 20px;
 }
 
+.chart-card {
+    background: white;
+    border-radius: 14px;
+    border: 1px solid #eef1f4;
+    padding: 18px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.chart-card h6 {
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
 .admin-panel {
     background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
     color: white;
@@ -671,6 +684,26 @@
     </div>
 
     {% elif dashboard_role == 'landlord' %}
+    <div class="mb-5">
+        <h3 class="section-title">
+            <i class="bi bi-bar-chart-line"></i> Статистика по бронированиям
+        </h3>
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <h6 class="mb-3">Динамика выручки и бронирований (6 месяцев)</h6>
+                    <canvas id="landlordRevenueChart" height="120"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="chart-card h-100">
+                    <h6 class="mb-3">Распределение по статусам</h6>
+                    <canvas id="landlordStatusChart" height="220"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Мои помещения для арендодателя -->
     <div class="mb-5">
         <h3 class="section-title">
@@ -830,6 +863,7 @@
     {% endif %}
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Анимация карточек при загрузке
@@ -864,6 +898,82 @@ document.addEventListener('DOMContentLoaded', function() {
             link.style.display = 'none';
         }
     });
+
+    if ('{{ dashboard_role }}' === 'landlord') {
+        const monthLabels = JSON.parse('{{ landlord_chart_month_labels|default:"[]"|escapejs }}');
+        const monthRevenue = JSON.parse('{{ landlord_chart_month_revenue|default:"[]"|escapejs }}');
+        const monthBookings = JSON.parse('{{ landlord_chart_month_bookings|default:"[]"|escapejs }}');
+        const statusLabels = JSON.parse('{{ landlord_chart_status_labels|default:"[]"|escapejs }}');
+        const statusValues = JSON.parse('{{ landlord_chart_status_values|default:"[]"|escapejs }}');
+
+        const revenueCtx = document.getElementById('landlordRevenueChart');
+        if (revenueCtx) {
+            new Chart(revenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Выручка, ₽',
+                            data: monthRevenue,
+                            borderColor: '#198754',
+                            backgroundColor: 'rgba(25, 135, 84, 0.15)',
+                            fill: true,
+                            yAxisID: 'yRevenue',
+                            tension: 0.25
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Бронирования',
+                            data: monthBookings,
+                            backgroundColor: 'rgba(58, 87, 232, 0.65)',
+                            borderRadius: 6,
+                            yAxisID: 'yBookings'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        yRevenue: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: true,
+                            ticks: { callback: (v) => `${v}` }
+                        },
+                        yBookings: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        const statusCtx = document.getElementById('landlordStatusChart');
+        if (statusCtx) {
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusValues,
+                        backgroundColor: ['#ffc107', '#0d6efd', '#198754', '#20c997', '#dc3545'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    }
 });
 </script>
 {% endblock %}

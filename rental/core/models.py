@@ -784,3 +784,131 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender} -> {self.recipient}: {self.subject}"
+
+
+class AdminAuditLog(models.Model):
+    """Журнал действий в кастомной админ-панели."""
+    ACTION_CHOICES = [
+        ('create', 'Создание'),
+        ('update', 'Изменение'),
+        ('delete', 'Удаление'),
+        ('status_change', 'Смена статуса'),
+        ('moderation', 'Модерация'),
+        ('other', 'Другое'),
+    ]
+
+    admin_user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='admin_audit_logs',
+        verbose_name='Администратор'
+    )
+    action = models.CharField(
+        max_length=20,
+        choices=ACTION_CHOICES,
+        default='other',
+        verbose_name='Действие'
+    )
+    target_model = models.CharField(
+        max_length=50,
+        verbose_name='Модель'
+    )
+    target_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='ID объекта'
+    )
+    target_repr = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        verbose_name='Объект'
+    )
+    details = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='Детали'
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        verbose_name='IP-адрес'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата и время'
+    )
+
+    class Meta:
+        verbose_name = 'Лог аудита админки'
+        verbose_name_plural = 'Логи аудита админки'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        actor = self.admin_user.username if self.admin_user else 'system'
+        return f'{self.created_at:%d.%m.%Y %H:%M} | {actor} | {self.target_model}#{self.target_id or "-"}'
+
+
+class UserAuditLog(models.Model):
+    """Журнал пользовательской активности."""
+    EVENT_CHOICES = [
+        ('register', 'Регистрация'),
+        ('login_success', 'Успешный вход'),
+        ('login_failed', 'Ошибка входа'),
+        ('logout', 'Выход'),
+        ('profile_update', 'Обновление профиля'),
+        ('password_change', 'Смена пароля'),
+        ('other', 'Другое'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+        verbose_name='Пользователь'
+    )
+    username_snapshot = models.CharField(
+        max_length=150,
+        blank=True,
+        default='',
+        verbose_name='Логин (снимок)'
+    )
+    event_type = models.CharField(
+        max_length=30,
+        choices=EVENT_CHOICES,
+        default='other',
+        verbose_name='Событие'
+    )
+    details = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='Детали'
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        verbose_name='IP-адрес'
+    )
+    user_agent = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        verbose_name='User-Agent'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата и время'
+    )
+
+    class Meta:
+        verbose_name = 'Лог пользовательского аудита'
+        verbose_name_plural = 'Логи пользовательского аудита'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        uname = self.username_snapshot or (self.user.username if self.user else 'unknown')
+        return f'{self.created_at:%d.%m.%Y %H:%M} | {uname} | {self.event_type}'

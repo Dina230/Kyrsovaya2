@@ -1,0 +1,32 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rental_web
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=rental.settings
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./rental/db.sqlite3:/app/db.sqlite3
+      - ./rental/media:/app/media
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: rental_demo_postgres
+    profiles: ["demo"]
+    environment:
+      - POSTGRES_DB=rental_demo
+      - POSTGRES_USER=demo
+      - POSTGRES_PASSWORD=demo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_demo_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_demo_data:

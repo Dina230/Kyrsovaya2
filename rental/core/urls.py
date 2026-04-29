@@ -77,6 +77,8 @@ urlpatterns = [
     path('admin-panel/properties/', views.admin_property_management, name='admin_property_management'),
     path('admin-panel/bookings/', views.admin_booking_management, name='admin_booking_management'),
     path('admin-panel/reviews/', views.admin_review_management, name='admin_review_management'),
+    path('admin-panel/audit/', views.admin_audit_log, name='admin_audit_log'),
+    path('admin-panel/user-audit/', views.admin_user_audit_log, name='admin_user_audit_log'),
 
     # Встроенные Django представления для сброса пароля
     path('password-reset/', auth_views.PasswordResetView.as_view(template_name='core/password_reset.html'),

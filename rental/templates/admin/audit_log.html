@@ -1,0 +1,123 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Аудит админки{% endblock %}
+{% block page_title %}Аудит админки{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'custom_admin_dashboard' %}">Дашборд</a></li>
+<li class="breadcrumb-item active">Аудит</li>
+{% endblock %}
+
+{% block content %}
+<div class="admin-card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Действие</label>
+                <select name="action" class="form-select">
+                    <option value="">Все действия</option>
+                    {% for value, label in action_choices %}
+                    <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Модель</label>
+                <input type="text" name="model" class="form-control" placeholder="User, Booking, Property..."
+                       value="{{ model_filter }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Админ / детали</label>
+                <input type="text" name="admin" class="form-control" placeholder="Логин, email, текст..."
+                       value="{{ admin_filter }}">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-admin-primary flex-grow-1">
+                    <i class="bi bi-funnel"></i>
+                </button>
+                <a href="{% url 'admin_audit_log' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="card-header">
+        <span>Журнал событий</span>
+        <small class="text-muted">Записей: {{ logs.paginator.count }}</small>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Администратор</th>
+                        <th>Действие</th>
+                        <th>Объект</th>
+                        <th>Детали</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>
+                            <strong>{{ log.created_at|date:"d.m.Y" }}</strong><br>
+                            <small class="text-muted">{{ log.created_at|time:"H:i:s" }}</small>
+                        </td>
+                        <td>
+                            {% if log.admin_user %}
+                                {{ log.admin_user.username }}<br>
+                                <small class="text-muted">{{ log.admin_user.email }}</small>
+                            {% else %}
+                                <span class="text-muted">system</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-secondary">{{ log.get_action_display }}</span></td>
+                        <td>
+                            <strong>{{ log.target_model }}</strong>{% if log.target_id %} #{{ log.target_id }}{% endif %}<br>
+                            <small class="text-muted">{{ log.target_repr|default:"-" }}</small>
+                        </td>
+                        <td>{{ log.details|default:"-"|truncatechars:140 }}</td>
+                        <td><small class="text-muted">{{ log.ip_address|default:"-" }}</small></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">Пока нет записей аудита</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if logs.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination justify-content-center">
+        {% if logs.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ logs.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">‹</a>
+        </li>
+        {% endif %}
+        {% for i in logs.paginator.page_range %}
+            {% if logs.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% elif i > logs.number|add:'-3' and i < logs.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">{{ i }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+        {% if logs.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ logs.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">›</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
