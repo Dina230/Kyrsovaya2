@@ -184,8 +184,8 @@
                             <div class="form-check mb-4">
                                 <input class="form-check-input" type="checkbox" id="agreeTerms" name="agree_terms" required>
                                 <label class="form-check-label small" for="agreeTerms">
-                                    Я соглашаюсь с <a href="#" class="text-decoration-none">условиями использования</a>
-                                    и <a href="#" class="text-decoration-none">политикой конфиденциальности</a> *
+                                    Я соглашаюсь с <a href="{% url 'terms_of_use' %}" class="text-decoration-none" target="_blank" rel="noopener noreferrer">условиями использования</a>
+                                    и <a href="{% url 'privacy_policy' %}" class="text-decoration-none" target="_blank" rel="noopener noreferrer">политикой конфиденциальности</a> *
                                 </label>
                                 <div class="invalid-feedback small">Необходимо принять условия</div>
                             </div>

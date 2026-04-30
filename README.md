@@ -48,7 +48,7 @@ cd .\rental
 docker compose up --build
 ```
 
-После старта приложение будет доступно по адресу:
+После старта приложение будет доступно по адресу (`nginx` reverse proxy):
 
 ```text
 http://localhost:8000
@@ -63,16 +63,42 @@ docker compose down
 ### Демонстрационный PostgreSQL (не используется приложением)
 
 В `docker-compose.yml` добавлен отдельный сервис `postgres` в профиле `demo`.
-Приложение по-прежнему работает на `SQLite3`.
 
-Запуск только demo PostgreSQL:
+Запуск только PostgreSQL:
 
 ```powershell
 docker compose --profile demo up -d postgres
 ```
 
-Запуск приложения + demo PostgreSQL:
+Запуск приложения +  PostgreSQL:
 
 ```powershell
 docker compose --profile demo up --build
+```
+
+## Как показать преподавателю nginx reverse proxy
+
+1. Запустите проект:
+
+```powershell
+docker compose up --build
+```
+
+2. Убедитесь, что поднялись контейнеры `rental_web` и `rental_nginx`:
+
+```powershell
+docker compose ps
+```
+
+3. Откройте приложение: `http://localhost:8000`.
+   В этом режиме внешний порт открывает `nginx`, а `Django runserver` доступен только внутри docker-сети.
+
+4.  конфиг прокси в файле `nginx/nginx.conf`:
+   - `proxy_pass http://django_upstream;`
+   - `upstream django_upstream { server web:8000; }`
+
+5. логи прокси:
+
+```powershell
+docker compose logs -f nginx
 ```

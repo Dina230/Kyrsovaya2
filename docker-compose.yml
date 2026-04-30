@@ -4,14 +4,24 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: rental_web
-    ports:
-      - "8000:8000"
     environment:
       - DJANGO_SETTINGS_MODULE=rental.settings
       - PYTHONUNBUFFERED=1
     volumes:
       - ./rental/db.sqlite3:/app/db.sqlite3
       - ./rental/media:/app/media
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: rental_nginx
+    depends_on:
+      - web
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./rental/media:/app/media:ro
     restart: unless-stopped
 
   postgres:

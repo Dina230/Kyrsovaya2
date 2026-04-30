@@ -832,6 +832,16 @@ def help_page(request):
     return render(request, 'core/help.html', {'title': 'Справка'})
 
 
+def terms_of_use(request):
+    """Условия использования сервиса."""
+    return render(request, 'core/terms_of_use.html', {'title': 'Условия использования'})
+
+
+def privacy_policy(request):
+    """Политика конфиденциальности сервиса."""
+    return render(request, 'core/privacy_policy.html', {'title': 'Политика конфиденциальности'})
+
+
 def property_list(request):
     """Список всех помещений с пагинацией (5 на странице)"""
     # Проверяем просроченные бронирования

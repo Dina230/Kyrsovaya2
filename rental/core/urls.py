@@ -6,6 +6,8 @@ urlpatterns = [
     # Основные пути
     path('', views.home, name='home'),
     path('help/', views.help_page, name='help'),
+    path('terms/', views.terms_of_use, name='terms_of_use'),
+    path('privacy/', views.privacy_policy, name='privacy_policy'),
     path('register/', views.register, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='core/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='home'), name='logout'),
